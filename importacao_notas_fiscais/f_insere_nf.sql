@@ -1,8 +1,5 @@
--- Function: public.f_insere_nf(json)
-
 -- DROP FUNCTION public.f_insere_nf(json);
-
-CREATE OR REPLACE FUNCTION public.f_insere_nf(dadosnf json)
+CREATE OR REPLACE FUNCTION public.f_insere_nf(dadosNf json)
   RETURNS integer AS
 $BODY$
 DECLARE
@@ -71,6 +68,7 @@ DECLARE
 	vCidadeOrigem		integer;
 	vCidadeDestino		integer;
 	vCidadeAgentePadrao	integer;
+	vCidadeOrigemCte	text;
 	vCifFob			integer;
 	vCodigoRemetente	integer;
 	vCodigoDestinatario	integer;
@@ -306,6 +304,10 @@ BEGIN
 	-- Alteracoes: 10/05/2019
 	-- 1 - Valor Padrao para Modal - Valor 1
 
+	-- Alteracoes: 19/09/2019
+	-- A partir de agora, estas observações estarão no controle de versão do GIT.
+	
+
 	
 ------------------------------------------------------------------------------------------------------------------
 --                             DESERIALIZAÇÃO dos dados de estrutura json	
@@ -432,11 +434,11 @@ BEGIN
 ------------------------------------------------------------------------------------------------------------------
 --                                     VERIFICA SE NFE JA EXISTE
 ------------------------------------------------------------------------------------------------------------------
-	RAISE NOTICE 'Tipo Transporte Par %', v_tipo_transporte_par;
+	--RAISE NOTICE 'Tipo Transporte Par %', v_tipo_transporte_par;
 	IF v_pagador_cnpj_cpf IS NOT NULL THEN 
-		RAISE NOTICE 'TEM PAGADOR';
+		--RAISE NOTICE 'TEM PAGADOR';
 		IF trim(v_pagador_cnpj_cpf) <> trim(v_emit_cnpj_cpf) THEN 
-			RAISE NOTICE 'SUBCONTRATO';
+			--RAISE NOTICE 'SUBCONTRATO';
 			v_tipo_transporte_par = 18;
 		END IF;
 		
@@ -454,6 +456,10 @@ BEGIN
 			v_forca_importacao = 1;
 		END IF;
 	END IF;
+
+	IF v_chave_nfe = '' THEN 
+		v_chave_nfe = NULL;
+	END IF;
 	
 	IF v_tipo_transporte_par NOT IN (2,3) AND v_forca_importacao = 0 THEN 
 
@@ -461,24 +467,42 @@ BEGIN
 		INTO 	vCodigoRemetente
 		FROM 	cliente
 		WHERE   cnpj_cpf = v_emit_cnpj_cpf;
-		
-	
-		-- Verifica quantos conhecimentos não cancelados existem para a nota
-		SELECT	
-			COUNT(*) as qt		
-		INTO 	
-			vExiste
-		FROM 
-			scr_notas_fiscais_imp nf
-			LEFT JOIN scr_conhecimento c ON c.id_conhecimento = nf.id_conhecimento
-		WHERE 
-			c.cancelado = 0
-			AND nf.chave_nfe = v_chave_nfe
-		GROUP BY 
-			nf.chave_nfe;
+
+
+		--Verifica quantos conhecimentos não cancelados existem para a nota
+		IF v_chave_nfe IS NULL THEN 
+				
+			SELECT 
+				count(*)
+			INTO 
+				vExiste
+			FROM 
+				scr_conhecimento_notas_fiscais nf
+				LEFT JOIN scr_conhecimento c
+					ON c.id_conhecimento = nf.id_conhecimento
+			WHERE 
+				remetente_id = vCodigoRemetente
+				AND ltrim(nf.serie_nota_fiscal,'0')  = ltrim(v_serie,'0')
+				AND nf.numero_nota_fiscal::integer = v_numero_doc::integer;
+		ELSE
+
+			SELECT	
+				COUNT(*) as qt		
+			INTO 	
+				vExiste
+			FROM 
+				scr_conhecimento_notas_fiscais nf
+				LEFT JOIN scr_conhecimento c ON c.id_conhecimento = nf.id_conhecimento				
+			WHERE 			
+				c.cancelado = 0
+				AND c.tipo_documento IN (1,2)
+				AND nf.chave_nfe = v_chave_nfe;	
+		END IF;
 			
 		IF vExiste IS NOT NULL THEN 
+			
 			IF vExiste > 0 THEN 
+				RAISE NOTICE 'Já existe conhecimento com a chave desta NFe. %',v_chave_cte;
 				INSERT INTO scr_notas_fiscais_nao_imp (
 					dados_parametros,
 					numero_nota_fiscal,
@@ -490,39 +514,7 @@ BEGIN
 					v_numero_doc,
 					v_serie,					
 					vCodigoRemetente,
-					'Já existe conhecimento com esta nota fiscal.'
-				);
-				RETURN 0;
-			END IF;
-		END IF;		
-
-
-		-- Verifica quantos conhecimentos não cancelados existem para a nota
-		SELECT	
-			COUNT(*) as qt		
-		INTO 	
-			vExiste
-		FROM 
-			scr_conhecimento_notas_fiscais nf
-			LEFT JOIN scr_conhecimento c ON c.id_conhecimento = nf.id_conhecimento				
-		WHERE 
-			c.cancelado = 0
-			AND nf.chave_nfe = v_chave_nfe;	
-			
-		IF vExiste IS NOT NULL THEN 
-			IF vExiste > 0 THEN 
-				INSERT INTO scr_notas_fiscais_nao_imp (
-					dados_parametros,
-					numero_nota_fiscal,
-					serie_nota_fiscal,
-					remetente_id,
-					observacao
-				) VALUES (
-					(dadosNf::jsonb || '{"forca_importacao":"1"}'::jsonb)::text,
-					v_numero_doc,
-					v_serie,					
-					vCodigoRemetente,
-					'Já existe conhecimento com esta nota fiscal.'
+					'Já existe conhecimento com a chave desta NFe.'
 				);			
 				RETURN 0;
 			END IF;
@@ -549,8 +541,10 @@ BEGIN
 			vExiste = 0;
 		END;
 
-		IF vExiste IS NOT NULL THEN 
+		IF COALESCE(vExiste,0) > 0 THEN 
+			
 			IF vExiste > 0 THEN 
+				RAISE NOTICE 'Nota Fiscal já importada. Quantidade: % ', vExiste;
 				INSERT INTO scr_notas_fiscais_nao_imp (
 					dados_parametros,
 					numero_nota_fiscal,
@@ -562,10 +556,12 @@ BEGIN
 					v_numero_doc,
 					v_serie,					
 					vCodigoRemetente,
-					'Nota Fiscal já importada.'
+					'Nota Fiscal já importada. ' || COALESCE(v_chave_cte,'')
 				);			
 				RETURN 0;
 			END IF;
+			
+		--v_pagador_cnpj_cpf			
 		END IF;	
 	END IF;	
 
@@ -652,11 +648,14 @@ BEGIN
 --          	                       Dados do Pagador Subcontrato
 ------------------------------------------------------------------------------------------------------------------	
 	IF v_pagador_cnpj_cpf IS NOT NULL THEN 
-		RAISE NOTICE 'Dados do Pagador Subcontrato do cnpj = %',v_pagador_cnpj_cpf; 
+		--RAISE NOTICE 'Dados do Pagador Subcontrato do cnpj = %',v_pagador_cnpj_cpf; 
 		SELECT 	codigo_cliente, id_cidade
 		INTO 	vCodigoConsignatario, vCidadeConsignatario
 		FROM	cliente
-		WHERE 	cnpj_cpf = v_pagador_cnpj_cpf;				
+		WHERE 	cnpj_cpf = v_pagador_cnpj_cpf;
+
+	
+
 	END IF;
 	
 ------------------------------------------------------------------------------------------------------------------
@@ -1052,11 +1051,19 @@ BEGIN
 		--RAISE NOTICE 'Cidade de Origem Pagador %', vCidadeConsignatario;	
 
 		vOrigemCalculo = NULL;
-				
-		SELECT 	COALESCE(valor_parametro::integer,vCidadeConsignatario)
-		INTO 	v_cidade_subcontrato_par
-		FROM 	cliente_parametros 
-		WHERE	codigo_cliente = vCodigoConsignatario AND id_tipo_parametro = 110;
+		vCidadeOrigemCte = dadosNf->>'nfe_origem_cod_mun';
+		
+		IF vCidadeOrigemCte IS NULL THEN 		
+			SELECT 	COALESCE(valor_parametro::integer,vCidadeConsignatario)
+			INTO 	v_cidade_subcontrato_par
+			FROM 	cliente_parametros 
+			WHERE	codigo_cliente = vCodigoConsignatario AND id_tipo_parametro = 110;
+		ELSE
+			SELECT 	id_cidade 
+			INTO 	vCidadeConsignatario
+			FROM 	cidades
+			WHERE 	cod_ibge = vCidadeOrigemCte;
+		END IF;
 					
 		vCidadeOrigem = COALESCE(v_cidade_subcontrato_par, vCidadeConsignatario,vOrigemCalculo);
 		
@@ -1118,9 +1125,9 @@ BEGIN
 		v_modo_frete = '1';
 	END IF;
 	
-	RAISE NOTICE 'Modo Frete %', v_modo_frete;
+	--RAISE NOTICE 'Modo Frete %', v_modo_frete;
 	IF v_modo_frete IN ('0','2','9')  THEN 
-		RAISE NOTICE 'CIF';
+		--RAISE NOTICE 'CIF';
 		vCifFob = 1;
 		
 		SELECT	pag.codigo_cliente,
@@ -1533,14 +1540,15 @@ BEGIN
 			v_numero_doc,
 			v_serie,					
 			vCodigoRemetente,
-			'Nota Fiscal já importada.'
+			'Erro SQL ao inserir nota'
 		);			
 		vIdNotaFiscalImp = 0;
 	END;
 	
-
+	RAISE NOTICE 'Nota Fiscal Importada %',vIdNotaFiscalImp;
 	RETURN vIdNotaFiscalImp;
 END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
+

@@ -20,8 +20,15 @@ DECLARE
 	var_aux text;
 	identificar boolean;
 	v_tpevento text;
+	r boolean;
+	log text;
+	log_original text;
 	
 BEGIN
+
+	log_original = COALESCE(fp_get_session('pst_tipo_especifico_importacao'),'');
+	log = REPLACE(log_original, 'UPLOAD/XML','UPLOAD');
+		
 	identificar = True;
 
 	IF NEW.tipo_doc = -2 THEN 
@@ -84,8 +91,16 @@ BEGIN
 
 	--Verifica se eh Doria Online
 	IF NEW.tipo_doc = 2 THEN
-		IF f_valida_chave_nfe(substr(NEW.doc_xml,326,44)) = 1 OR f_valida_chave_nfe(substr(NEW.doc_xml,294,44)) = 1 OR left(NEW.doc_xml,7) = 'VER0002' OR left(NEW.doc_xml,6) = 'VER002' THEN 
+
+		IF 	f_valida_chave_nfe(substr(NEW.doc_xml,326,44)) = 1 --Doria Com chave
+			OR f_valida_chave_nfe(substr(NEW.doc_xml,294,44)) = 1 --Doria com Chave
+			OR left(NEW.doc_xml,7) = 'VER0002' --Doria Alterado
+			OR left(NEW.doc_xml,6) = 'VER002' --Doria Normal
+			OR fd_valida_cnpj_cpf(substr(NEW.doc_xml,275,14)) = 1 --Doria Profarma
+		THEN 
+
 			NEW.tipo_doc = 8;		
+
 		END IF;
 		
 	END IF;
@@ -96,7 +111,9 @@ BEGIN
 
 	-- 2) Documento tipo XML da NFe
 	IF NEW.tipo_doc = 2 THEN 
-	
+		log = log || ' XML NFe';
+		RAISE NOTICE 'Log %', log;
+                r = fp_set_session('pst_tipo_especifico_importacao',LEFT(log,50));
 		v_dados = fpy_parse_xml_nfe(NEW.doc_xml);	        
 	
 		
@@ -117,6 +134,7 @@ BEGIN
 						chave_nfe = NEW.chave_doc
 						AND id_conhecimento IS NULL;				
 				ELSE
+					r = fp_set_session('pst_tipo_especifico_importacao',log_original);
 					RETURN NULL;
 				END IF;
 			ELSE
@@ -128,6 +146,7 @@ BEGIN
 				
 				IF NEW.chave_doc IS NULL THEN 
 					--RAISE NOTICE 'Não grava o registro, sem chave';
+					r = fp_set_session('pst_tipo_especifico_importacao',log_original);
 					RETURN NULL;
 				END IF;
 				
@@ -142,6 +161,7 @@ BEGIN
 					--RAISE NOTICE 'Qt de Notas %', v_qt;
 
 					IF v_qt > 0 THEN 
+						r = fp_set_session('pst_tipo_especifico_importacao',log_original);
 						RETURN NULL;
 					END IF;
 				END IF;
@@ -157,13 +177,11 @@ BEGIN
 					--RAISE NOTICE 'Qt de Notas %', v_qt;
 
 					IF v_qt > 0 THEN 
+						r = fp_set_session('pst_tipo_especifico_importacao',log_original);
 						RETURN NULL;
 					END IF;
 					NEW.entrou_repetida = 1;
 				END IF;
-
-
-
 				
 
 				v_remetente = f_insere_cliente((v_dados->>'remetente')::json);
@@ -188,33 +206,45 @@ BEGIN
 	IF NEW.tipo_doc IN (4, 5, 6, 7, 1, 8) THEN
 
 
-		IF NEW.tipo_doc = 1 THEN 		
+		IF NEW.tipo_doc = 1 THEN 
+			log = log || ' XML CTe';		
+			r = fp_set_session('pst_tipo_especifico_importacao',LEFT(log,50));
 			v_dados = fpy_parse_xml_cte(NEW.doc_xml);
 			--RAISE NOTICE 'Dados: %s', v_dados;						
 		END IF;
 
 		IF NEW.tipo_doc = 4 THEN 
+			log = log || ' NOTFIS 3.1';
+			r = fp_set_session('pst_tipo_especifico_importacao',LEFT(log,50));
 			v_dados = fpy_get_doc_notfis(NEW.doc_xml);			
 			--RAISE NOTICE '%', v_dados;
 		END IF;
 
 		
 		IF NEW.tipo_doc = 5 THEN 		
+			log = log || ' DCENTER';
+			r = fp_set_session('pst_tipo_especifico_importacao',LEFT(log,50));
 			v_dados = fpy_get_doc_dcenter(NEW.doc_xml);
 			--RAISE NOTICE 'Dados: %s', v_dados;			
 		END IF;
 
 		IF NEW.tipo_doc = 6 THEN 		
+			log = log || ' POLISHOP';
+			r = fp_set_session('pst_tipo_especifico_importacao',LEFT(log,50));
 			v_dados = fpy_get_doc_polishop(NEW.doc_xml);
 			--RAISE NOTICE 'Dados: %s', v_dados;			
 		END IF;
 
 		IF NEW.tipo_doc = 7 THEN 		
+			log = log || ' NOTFIS 50';
+			r = fp_set_session('pst_tipo_especifico_importacao',LEFT(log,50));
 			v_dados = fpy_get_doc_notfis_50(NEW.doc_xml);
 			--RAISE NOTICE 'Dados: %s', v_dados;			
 		END IF;
 
 		IF NEW.tipo_doc = 8 THEN 		
+			log = log || ' DORIA';
+			r = fp_set_session('pst_tipo_especifico_importacao',LEFT(log,50));
 			v_dados = fpy_get_doc_doria(NEW.doc_xml);
 			--RAISE NOTICE 'Dados: %s', v_dados;			
 		END IF;
@@ -233,7 +263,7 @@ BEGIN
 		v_notas_fiscais = (v_dados->>'nfs')::json;
 
 		t = json_array_length(v_notas_fiscais)-1;
-		
+				
 		FOR i IN 0..t LOOP				
 			v_nf = f_insere_nf((v_notas_fiscais->>i)::json);
 			NEW.chave_doc = (((v_notas_fiscais->>i)::json)::json)->>'chave_cte';
@@ -241,13 +271,14 @@ BEGIN
 			INSERT INTO scr_doc_integracao_nfe (id_doc_integracao, id_nota_fiscal_imp, chave_doc)
 			VALUES (NEW.id_doc_integracao, v_nf, (((v_notas_fiscais->>i)::json)::json)->>'nfe_chave_nfe');
 		END LOOP;
-	
+		
 	END IF;
-        
+
+	
+	r = fp_set_session('pst_tipo_especifico_importacao',log_original);
+	
 	RETURN NEW;
 END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
-ALTER FUNCTION public.f_tgg_parser_doc_integracao()
-  OWNER TO softlog_dng;
