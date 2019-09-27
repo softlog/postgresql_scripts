@@ -758,6 +758,10 @@ BEGIN
 			v_is_tonelada = true;
 		END IF;		
 	END IF;
+	
+	--RAISE NOTICE 'Unidade Tonelada Cliente %', vUnidadeTonelada;
+	--RAISE NOTICE 'Unidade Tonelada NFe %', v_unidade;
+	--RAISE NOTICE 'É tonelada? %', v_is_tonelada;
 
 	-- Set Natureza Carga
 	-- Pega o segmento na observação da nfe e associa a uma natureza carga
@@ -1473,10 +1477,10 @@ BEGIN
 			v_serie, --38
 			CASE WHEN v_is_tonelada THEN v_volume_produtos * 1000 ELSE v_volume_produtos END, --39
 			CASE WHEN v_is_tonelada THEN v_peso_produtos * 1000 ELSE v_peso_produtos END, --41
-			COALESCE(v_peso_presumido,0.00), --42
+			CASE WHEN v_is_tonelada THEN COALESCE(v_peso_presumido,0.00) * 1000 ELSE COALESCE(v_peso_presumido,0.00) END, --42
 			v_valor, --43
 			v_volume_cubico::numeric(12,6), --44
-			COALESCE(v_volume_presumido,0.00), --45
+			CASE WHEN v_is_tonelada THEN COALESCE(v_volume_presumido,0.00) * 1000 ELSE COALESCE(v_volume_presumido, 0.00) END, --45
 			2, --46 tipo nota = nfe
 			v_valor_bc, --48
 			v_valor_icms, --49
