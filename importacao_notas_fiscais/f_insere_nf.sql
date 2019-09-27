@@ -1519,7 +1519,8 @@ BEGIN
 			v_codigo_parceiro, --83
 			CASE 	WHEN v_peso_liquido = 0 THEN 
 					CASE WHEN v_is_tonelada THEN v_peso_produtos * 1000 ELSE v_peso_produtos END
-				ELSE v_peso_liquido 
+				ELSE 
+					CASE WHEN v_is_tonelada THEN v_peso_liquido * 1000 ELSE v_peso_liquido END
 			END, --84
 			v_viagem_automatica, --85
 			v_expedidor_cnpj, --86			
