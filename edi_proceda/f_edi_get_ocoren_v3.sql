@@ -31,9 +31,9 @@ BEGIN
 		right(nf.numero_nota_fiscal,8) as numero_nota_fiscal,
 		nf.numero_nota_fiscal as numero_nota_fiscal_9,
 		rpad(COALESCE(trim(leading from nf.serie_nota_fiscal,''0''),''''),3,'' '') AS serie_nota_fiscal, 	
-		COALESCE(o.id_ocorrencia_proceda, o.codigo_edi,0) as cod_ocorrencia, 	
-		to_char(c.data_digitacao,''DDMMYYYY'') as data_digitacao, 	
-		to_char(c.data_digitacao,''HHMI'') as hora_digitacao, 	
+		COALESCE(o.id_ocorrencia_proceda, o.codigo_edi,0) as cod_ocorrencia,
+		to_char(c.data_digitacao,''DDMMYYYY'') as data_digitacao, 
+		to_char(c.data_digitacao,''HHMI'') as hora_digitacao, 
 		to_char(COALESCE(nf.data_ocorrencia,c.data_digitacao), ''DDMMYYYY'') as data_ocorrencia,
 		to_char(COALESCE(nf.data_ocorrencia,c.data_digitacao), ''HHMI'') as hora_ocorrencia,
 		CASE 
@@ -41,7 +41,7 @@ BEGIN
 			WHEN COALESCE(codigo_edi,0) IN (1,2)	THEN ''ENTREGA REALIZADA. RECEBIDA POR: '' || 
 									COALESCE(TRIM(UPPER(c.nome_recebedor)),''Não Informado'') 		 
 						ELSE LEFT(o.ocorrencia,70) 
-		END::character(70) as observacao_livre, 	
+		END::character(70) as observacao_livre, 
 		COALESCE(obs.codigo_edi_obs,0)::integer as cod_observacao,
 		(''OCOREN'' || to_char(hora.data_tempo,''DDMMYY'')) as ident_000,
 		(''OCOREN'' || to_char(hora.data_tempo,''DDMMYYYY'')) as ident_320,
@@ -49,7 +49,7 @@ BEGIN
 		to_char(hora.data_tempo,''DDMMYY'') as data,
 		to_char(hora.data_tempo,''HH24MI'') as hora,
 		empresa.razao_social as transportadora,
-		empresa.cnpj as transportadora_cnpj,		
+		empresa.cnpj as transportadora_cnpj,	
 		f.razao_social as filial_emissora,
 		f.cnpj as filial_cnpj,
 		c.remetente_cnpj,
@@ -59,7 +59,8 @@ BEGIN
 		COALESCE(to_char(c.data_emissao, ''DDMMYYYY''),'''') as data_emissao,
 		(c.total_frete * 100)::integer as total_frete,
 		c.total_frete::text as total_frete2,
-		nf.chave_nfe
+		nf.chave_nfe,
+		trim(nf.numero_pedido_nf) as numero_pedido_nf
 	FROM 	
 		hora,
 		scr_conhecimento_notas_fiscais nf
@@ -128,7 +129,8 @@ BEGIN
 		COALESCE(to_char(con.data_emissao, ''DDMMYYYY''),'''') as data_emissao,
 		(con.total_frete * 100)::integer as total_frete,
 		con.total_frete::text as total_frete2,
-		nf.chave_nfe
+		nf.chave_nfe,
+		trim(nf.numero_pedido_nf) as numero_pedido_nf
 	FROM 	
 		hora,
 		scr_notas_fiscais_imp_ocorrencias nfo 			
@@ -183,6 +185,7 @@ BEGIN
 					t.data_ocorrencia,
 					t.hora_ocorrencia,
 					t.cod_observacao,
+					t.chave_nfe,
 					CASE 
 						WHEN t.cod_ocorrencia = 0 AND current_database() = ''softlog_assislog'' THEN 
 							''0200108'' ||  t.chave_nfe
@@ -196,7 +199,8 @@ BEGIN
 					COALESCE(t.data_emissao,'''') as data_emissao,
 					t.total_frete,
 					lpad(t.total_frete2,8,'' '') as total_frete2,
-					''''::text as link_rastreamento
+					''''::text as link_rastreamento,
+					t.numero_pedido_nf
 				FROM 
 					t					
 				ORDER BY
