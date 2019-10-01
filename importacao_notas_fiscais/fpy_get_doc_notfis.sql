@@ -1,26 +1,3 @@
-/*
-ROLLBACK;
-BEGIN;
-SELECT fp_set_session('pst_cod_empresa', '001');
-SELECT fp_set_session('pst_filial', '001');
-SELECT fp_set_session('pst_tipo_especifico_importacao','UPLOAD/XML');
-
---SELECT * FROM scr_notas_fiscais_imp WHERE id_nota_fiscal_imp = 68594
-
-INSERT INTO scr_doc_integracao (
-	doc_xml,
-	tipo_doc,
-	codigo_empresa,
-	codigo_filial	
-) VALUES (
-'')
-
-
-*/
-
---rollback;
---DROP FUNCTION fpy_get_doc_notfis(arquivo text)
-
 CREATE OR REPLACE FUNCTION fpy_get_doc_notfis(arquivo text)
   RETURNS json AS
 $BODY$
@@ -142,11 +119,15 @@ $BODY$
     
     reg_313 = DocParser.make_parser((3,15,7,1,1,1,1,3,8,8,15,15,7,15,7,5,1,
                                       1,15,15,7,1,15,15,15,15,1,12,12,1,2))
+    #Customizacao 360
+    reg_313_360 = DocParser.make_parser((3,15,7,1,1,1,1,3,8,8,15,15,7,15,7,5,1,
+                                      1,15,15,7,1,15,15,15,15,1,12,12,1,2,44,10))
+
     # Customizacao Santa Cruz
     reg_313_SC = DocParser.make_parser((3,15,7,1,1,1,1,3,8,8,15,15,7,15,7,5,
                             1,1,15,15,7,1,15,15,15,15,1,12,12,1,6,6,6,44,15,6))
 
-    # Customizacao AGV
+    #Customizacao AGV
     reg_313_AGV = DocParser.make_parser((3,15,7,1,1,1,1,3,8,8,15,15,7,15,7,5,1,
                                       1,15,15,7,1,15,15,15,15,1,12,12,1,2, 10, 44))
 
@@ -212,7 +193,7 @@ $BODY$
     i = -1 
     tamanho = 0
     for linha in linhas2:
-        #plpy.notice(linha)
+        plpy.notice(linha)
         if linha[0:3] == '313':
             tamanho = len(linha)
             plpy.notice('Tamanho %i' % tamanho)
@@ -220,7 +201,7 @@ $BODY$
             break
 
     i = -1    
-    for linha in linhas2:    
+    for linha in linhas2: 
         i = i + 1
         id_reg = linha[0:3]
 
@@ -233,11 +214,9 @@ $BODY$
         elif id_reg == '311':
             #plpy.notice('Tamanho %i'% tamanho)
             
-            if linha[3:11] in  ('07432517') or tamanho == 303:            
-                
+            if linha[3:11] in  ('07432517') or tamanho == 303:                            
                 emb_spss = True
-            else:
-                
+            else:                
                 emb_spss = False
 
             if tamanho in (346,347):
@@ -249,6 +228,11 @@ $BODY$
                 registros.append(reg_311_SPSS(linha))
             else:
                 registros.append(reg_311(linha))
+
+            if linha[3:11] in ('21902826'):
+                emb_360 = True
+            else:
+                emb_360 = False
 
         elif id_reg == '312':
             if emb_spss:                
@@ -272,8 +256,13 @@ $BODY$
                 registros.append(reg_313_SOFTLOG(linha))              
             elif len(linha) in (284,285):
                 registros.append(reg_313_VIDA_PURA(linha))                
-            elif len(linha) == 295:
-                registros.append(reg_313_AGV(linha))                
+
+            elif len(linha) == 295 and not emb_360:
+                registros.append(reg_313_AGV(linha))                                
+
+            elif len(linha) == 295 and emb_360:
+                registros.append(reg_313_360(linha))                
+
             elif len(linha) == 862:
                 plpy.notice(linha)
                 registros.append(reg_313_AGV2(linha))
@@ -503,6 +492,10 @@ $BODY$
             else:
                 n['nfe_chave_nfe'] = emit_cnpj + r[7].strip().zfill(3) + r[8].strip().zfill(9)
 
+
+            if emb_360:                
+                n['nfe_numero_pedido'] = r[32]
+            
             ##informacoes de remetente/destinatario
             n['nfe_emit_cnpj_cpf'] = emit_cnpj
             n['nfe_emit_cod_mun']  = emit_cod_mun

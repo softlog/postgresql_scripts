@@ -1495,7 +1495,7 @@ BEGIN
 			v_placa_reboque1, --59
 			v_placa_reboque2, --60
 			vCodInternoFrete, --(61)
-			COALESCE(v_peso_liquido,0.0000), --(62)
+			CASE WHEN v_is_tonelada THEN COALESCE(v_peso_liquido,0.0000) * 1000 ELSE v_peso_liquido END, --(62)
 			v_especie_mercadoria, --(63)
 			v_cod_vendedor, --(64)
 			v_cobrar_tx_coleta, --65
