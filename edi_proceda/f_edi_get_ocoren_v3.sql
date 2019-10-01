@@ -16,7 +16,6 @@ BEGIN
 	FROM 	parametros 
 	WHERE 	upper(cod_parametro) = 'PST_OPERACAO_POR_NOTA';	
 
-	RAISE NOTICE 'Operacao por Nota %',v_operacao_por_nota;
 	v_id = array_to_string(lst_conhecimentos,',');
 
 	str_sql = 'WITH hora AS (
@@ -102,8 +101,8 @@ BEGIN
 		COALESCE(o.id_ocorrencia_proceda,o.codigo_edi,0) as cod_ocorrencia, 	
 		to_char(nfo.data_registro,''DDMMYYYY'') as data_digitacao, 	
 		to_char(nfo.data_registro,''HHMI'') as hora_digitacao, 	
-		to_char(nfo.data_ocorrencia, ''DDMMYYYY'') as data_ocorrencia,
-		to_char(nfo.data_ocorrencia, ''HHMI'') as hora_ocorrencia,
+		to_char(COALESCE(nfo.data_ocorrencia,nfo.data_registro), ''DDMMYYYY'') as data_ocorrencia,
+		to_char(COALESCE(nfo.data_ocorrencia,nfo.data_registro), ''HHMI'') as hora_ocorrencia,
 		CASE 
 			WHEN nf.obs_ocorrencia IS NOT NULL 	THEN left(nfo.obs_ocorrencia,70)
 			WHEN nfo.obs_ocorrencia IS NOT NULL 	THEN left(nfo.obs_ocorrencia,70)
@@ -142,7 +141,7 @@ BEGIN
 		LEFT JOIN scr_ocorrencia_obs_edi obs	
 			ON nf.id_ocorrencia_obs = obs.codigo_edi_obs 
 		LEFT JOIN filial f 
-			ON f.codigo_empresa = COALESCE(c.empresa_responsavel,nf.empresa_emitente) AND f.codigo_filial = nf.filial_emitente
+			ON f.codigo_empresa = c.empresa_responsavel AND f.codigo_filial = nf.filial_emitente
 		LEFT JOIN empresa 
 			ON empresa.codigo_empresa = c.empresa_responsavel
 		LEFT JOIN scr_conhecimento con
@@ -156,7 +155,7 @@ BEGIN
 			WHEN ''' || v_operacao_por_nota || ''' = ''1'' THEN 
 				nfo.id_ocorrencia_nf IN (' || v_id || ')
 				--AND o.codigo_edi <> 0
-				AND CASE WHEN current_database() <> ''softlog_assislog'' 
+				AND CASE WHEN current_database() NOT IN (''softlog_assislog'') 
 					 THEN o.ocorrencia_coleta = 0 AND o.publica = 1
 					 ELSE 1=1
 				END					
@@ -302,4 +301,3 @@ END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
-
