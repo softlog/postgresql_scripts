@@ -11,16 +11,11 @@ DECLARE
 	v_id text;
 BEGIN
 
-	/*
-		Versão Rodando na Assislog. Compatilizar via parametro no embarcador.
-	*/
-
 	SELECT 	COALESCE(MAX(valor_parametro),'0')
 	INTO 	v_operacao_por_nota 
 	FROM 	parametros 
 	WHERE 	upper(cod_parametro) = 'PST_OPERACAO_POR_NOTA';	
 
-	RAISE NOTICE 'Operacao por Nota %',v_operacao_por_nota;
 	v_id = array_to_string(lst_conhecimentos,',');
 
 	str_sql = 'WITH hora AS (
@@ -28,7 +23,6 @@ BEGIN
 	),
 	t AS (		
 	SELECT 	
-		1::integer as id,
 		1::integer as operacao,	
 		c.id_conhecimento,
 		nf.id_conhecimento_notas_fiscais,
@@ -39,8 +33,8 @@ BEGIN
 		COALESCE(o.id_ocorrencia_proceda, o.codigo_edi,0) as cod_ocorrencia, 	
 		to_char(c.data_digitacao,''DDMMYYYY'') as data_digitacao, 	
 		to_char(c.data_digitacao,''HHMI'') as hora_digitacao, 	
-		to_char(COALESCE(nf.data_ocorrencia,c.data_digitacao), ''DDMMYYYY'') as data_ocorrencia,
-		to_char(COALESCE(nf.data_ocorrencia,c.data_digitacao), ''HHMI'') as hora_ocorrencia,
+		to_char(nf.data_ocorrencia, ''DDMMYYYY'') as data_ocorrencia, 	
+		TRIM(COALESCE(nf.hora_ocorrencia,'''')) as hora_ocorrencia, 	
 		CASE 
 			WHEN COALESCE(o.codigo_edi,0) = 0 	THEN ''PROCESSO DE TRANSPORTE INICIADO''
 			WHEN COALESCE(codigo_edi,0) IN (1,2)	THEN ''ENTREGA REALIZADA. RECEBIDA POR: '' || 
@@ -63,7 +57,7 @@ BEGIN
 		lpad(right(c.numero_ctrc_filial,7),15,''0'') as numero_conhecimento,
 		COALESCE(to_char(c.data_emissao, ''DDMMYYYY''),'''') as data_emissao,
 		(c.total_frete * 100)::integer as total_frete,
-		nf.chave_nfe
+		c.total_frete::text as total_frete2
 	FROM 	
 		hora,
 		scr_conhecimento_notas_fiscais nf
@@ -89,7 +83,6 @@ BEGIN
 		END 		
 	UNION
 	SELECT 	
-		nfo.id_ocorrencia_nf as id,
 		2::integer as operacao,
 		nf.id_nota_fiscal_imp as id_conhecimento,
 		nfo.id_ocorrencia_nf as id_conhecimento_notas_fiscais,
@@ -100,15 +93,15 @@ BEGIN
 		COALESCE(o.id_ocorrencia_proceda,o.codigo_edi,0) as cod_ocorrencia, 	
 		to_char(nfo.data_registro,''DDMMYYYY'') as data_digitacao, 	
 		to_char(nfo.data_registro,''HHMI'') as hora_digitacao, 	
-		to_char(nfo.data_ocorrencia, ''DDMMYYYY'') as data_ocorrencia,
-		to_char(nfo.data_ocorrencia, ''HHMI'') as hora_ocorrencia,
+		to_char(COALESCE(nfo.data_ocorrencia,nfo.data_registro), ''DDMMYYYY'') as data_ocorrencia,
+		to_char(COALESCE(nfo.data_ocorrencia,nfo.data_registro), ''HHMI'') as hora_ocorrencia,
 		CASE 
-			WHEN COALESCE(o.codigo_edi,0) = 0 	THEN ''PROCESSO DE TRANSPORTE INICIADO''
 			WHEN nf.obs_ocorrencia IS NOT NULL 	THEN left(nfo.obs_ocorrencia,70)
-			WHEN nfo.obs_ocorrencia IS NOT NULL 	THEN left(nfo.obs_ocorrencia,70)			
+			WHEN nfo.obs_ocorrencia IS NOT NULL 	THEN left(nfo.obs_ocorrencia,70)
+			WHEN COALESCE(o.codigo_edi,0) = 0 	THEN ''PROCESSO DE TRANSPORTE INICIADO''
 			WHEN COALESCE(codigo_edi,0) IN (1,2)	THEN ''ENTREGA REALIZADA. RECEBIDA POR: '' || 
 									COALESCE(TRIM(UPPER(nf.nome_recebedor)),''Não Informado'') 		 
-						ELSE LEFT(o.ocorrencia,70)
+						ELSE LEFT(o.ocorrencia,70) 
 		END::character(70) as observacao_livre, 	
 		COALESCE(obs.codigo_edi_obs,0)::integer as cod_observacao,
 		(''OCOREN'' || to_char(hora.data_tempo,''DDMMYY'')) as ident_000,
@@ -126,7 +119,7 @@ BEGIN
 		lpad(right(con.numero_ctrc_filial,7),15,''0'') as numero_conhecimento,
 		COALESCE(to_char(con.data_emissao, ''DDMMYYYY''),'''') as data_emissao,
 		(con.total_frete * 100)::integer as total_frete,
-		nf.chave_nfe
+		con.total_frete::text as total_frete2
 	FROM 	
 		hora,
 		scr_notas_fiscais_imp_ocorrencias nfo 			
@@ -134,14 +127,14 @@ BEGIN
 			ON nf.id_nota_fiscal_imp = nfo.id_nota_fiscal_imp
 		LEFT JOIN cliente c
 			ON c.codigo_cliente = nf.remetente_id
-		LEFT JOIN scr_ocorrencia_edi o	
+		LEFT JOIN scr_ocorrencia_edi 	o	
 			ON nfo.id_ocorrencia = o.codigo_edi 	
 		LEFT JOIN scr_ocorrencia_obs_edi obs	
 			ON nf.id_ocorrencia_obs = obs.codigo_edi_obs 
 		LEFT JOIN filial f 
-			ON f.codigo_empresa = COALESCE(c.empresa_responsavel,nf.empresa_emitente) AND f.codigo_filial = nf.filial_emitente
+			ON f.codigo_empresa = c.empresa_responsavel AND f.codigo_filial = nf.filial_emitente
 		LEFT JOIN empresa 
-			ON empresa.codigo_empresa = COALESCE(c.empresa_responsavel,nf.empresa_emitente)
+			ON empresa.codigo_empresa = c.empresa_responsavel
 		LEFT JOIN scr_conhecimento con
 			ON con.id_conhecimento = nf.id_conhecimento
 	WHERE 		
@@ -152,9 +145,9 @@ BEGIN
 		CASE 
 			WHEN ''' || v_operacao_por_nota || ''' = ''1'' THEN 
 				nfo.id_ocorrencia_nf IN (' || v_id || ')
-				--AND CASE WHEN current_database() <> ''softlog_assislog'' THEN o.codigo_edi <> 0 ELSE true END 
-				--AND o.ocorrencia_coleta = 0
-				--AND CASE WHEN current_database() <> ''softlog_assislog'' THEN o.publica = 1 ELSE true END
+				--AND o.codigo_edi <> 0
+				AND o.ocorrencia_coleta = 0
+				AND o.publica = 1
 			ELSE
 				1=2
 		END 		
@@ -165,32 +158,26 @@ BEGIN
 	reg_342 AS (	
 		WITH temp AS (
 			SELECT  row_to_json(row,true) as registro, id_conhecimento FROM (
-				SELECT 	
-					t.id,
+				SELECT 			
 					t.id_conhecimento,
 					t.ident,					
 					t.filial_cnpj as filial_cnpj,
 					t.remetente_cnpj,
 					t.serie_nota_fiscal,
-					lpad(trim(t.serie_nota_fiscal),3,''0'') as serie_nota_fiscal_z,
 					t.numero_nota_fiscal,
 					t.numero_nota_fiscal_9,
 					t.cod_ocorrencia,
 					t.data_ocorrencia,
 					t.hora_ocorrencia,
 					t.cod_observacao,
-					CASE 
-						WHEN t.cod_ocorrencia = 0 THEN 
-							''0200108'' ||  t.chave_nfe
-						ELSE 
-							COALESCE(t.observacao_livre,'''') 
-					END::text as observacao_livre,
+					COALESCE(t.observacao_livre,'''') as observacao_livre,		
 					left(COALESCE(t.observacao_livre,''''),70) as observacao_livre_2,			
 					t.espaco,
 					t.numero_conhecimento,
-					t.data_emissao,
+					lpad(ltrim(t.numero_conhecimento,''0''),15,'' '') as numero_conhecimento2,
+					COALESCE(t.data_emissao,'''') as data_emissao,
 					t.total_frete,
-					''''::text as link_rastreamento
+					lpad(t.total_frete2,8,'' '') as total_frete2
 				FROM 
 					t					
 				ORDER BY
@@ -295,5 +282,3 @@ END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
-
-
