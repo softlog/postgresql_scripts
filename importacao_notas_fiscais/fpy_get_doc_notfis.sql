@@ -478,7 +478,7 @@ $BODY$
                 n['chave_cte'] = r[32]
             elif len(r) == 36:
                 n['nfe_chave_nfe'] = r[33]
-            elif len(r) == 33:
+            elif len(r) == 33 and not emb_360:
                 n['nfe_chave_nfe'] = r[32]                        
             elif len(r) == 32 or len(r) == 45:
                 n['nfe_chave_nfe'] = r[31]
@@ -494,7 +494,7 @@ $BODY$
 
 
             if emb_360:                
-                n['nfe_numero_pedido'] = r[32]
+                n['nfe_numero_pedido'] = r[32].strip()
             
             ##informacoes de remetente/destinatario
             n['nfe_emit_cnpj_cpf'] = emit_cnpj
