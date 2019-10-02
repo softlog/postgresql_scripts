@@ -114,6 +114,9 @@ $BODY$
     
     reg_312 = DocParser.make_parser((3,40,14,15,40,20,35,9,9,9,4,35,1,1,5))
 
+    #Customizacao 360 Imprimir
+    reg_312_360 = DocParser.make_parser((3,40,14,15,100,20,35,9,9,9,4,35,1,1,5))
+
     # Customizacao SIMPRESS
     reg_312_SPSS = DocParser.make_parser((3,35,14,15,65,19,30,8,9,2,4,35,1))
     
@@ -239,7 +242,10 @@ $BODY$
                 registros.append(reg_312_SPSS(linha))
             elif emb_softlog:  
                 registros.append(reg_312_SPSS(linha))
+            elif emb_360:
+                registros.append(reg_312_360(linha))
             else:
+                #plpython.notice(linha)
                 registros.append(reg_312(linha))
 
         elif id_reg == '313':
@@ -264,7 +270,7 @@ $BODY$
                 registros.append(reg_313_360(linha))                
 
             elif len(linha) == 862:
-                plpy.notice(linha)
+                #plpy.notice(linha)
                 registros.append(reg_313_AGV2(linha))
             elif len(linha) == 283:
                  emb_pratti = True
@@ -422,7 +428,7 @@ $BODY$
                 for nf in lst_notas:
 
                     #plpy.notice('Pagador = ' + r[2])
-                    plpy.notice('Chave ', r[11])
+                    #plpy.notice('Chave ', r[11])
                     
                     nf['nfe_pagador_cnpj_cpf'] = r[2]   
                     nf['chave_cte'] = r[11]             
