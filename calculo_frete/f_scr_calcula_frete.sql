@@ -45,7 +45,6 @@ DECLARE
 	
 BEGIN
 	--Calculo do Frete por meio de tabelas 
-
 	--Verifica se é frete combinado
 	vTabelaFrete = (parametros->>'tabela_frete')::text;
 
