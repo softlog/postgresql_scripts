@@ -182,7 +182,7 @@ BEGIN
  		),
 		destinatario AS (
 			SELECT 
-				ent.id_destinatario, 
+				ent.destinatario_id, 
 				id_bairro 
 			FROM 
 				ent 
@@ -193,7 +193,7 @@ BEGIN
 		rb AS (
 			SELECT 
 				destinatario.id_bairro,
-				f_scr_retorna_regioes_origem_destino(id_origem, destinatario.id_bairro,ent.tabela_frete) as regioes_bairro
+				f_scr_retorna_regioes_origem_destino_bairros(ent.calculado_de_id_cidade, destinatario.id_bairro,ent.tabela_frete) as regioes_bairro
 			FROM 
 				ent, destinatario
 		),
