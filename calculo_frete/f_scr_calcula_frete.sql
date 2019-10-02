@@ -1,4 +1,3 @@
--- Versao Seven Original
 -- Function: public.f_scr_calcula_frete(json, refcursor, refcursor)
 
 -- DROP FUNCTION public.f_scr_calcula_frete(json, refcursor, refcursor);
@@ -49,10 +48,10 @@ DECLARE
 BEGIN
 	--Calculo do Frete por meio de tabelas 
 
-	--Verifica se � frete combinado
+	--Verifica se e  frete combinado
 	vTabelaFrete = (parametros->>'tabela_frete')::text;
 
-	--Verifica se h� problemas entre as taxas.
+	--Verifica se ha problemas entre as taxas.
 	vEntregaExpresso 	= (parametros->>'entrega_expresso')::text::integer::boolean;
 	vEntregaEmergencia 	= (parametros->>'entrega_emergencia')::text::integer::boolean;
 		
@@ -306,6 +305,7 @@ BEGIN
 				0::integer as km_rodados,		
 				ent.imposto_incluso,		
 				nc.id_natureza_carga,
+				nc.densidade as densidade_nc,
 
 				ent.data_coleta,		
 				CASE 	WHEN ent.data_coleta IS NOT NULL 
@@ -398,12 +398,12 @@ BEGIN
 						END 
 				END as total_valor,
 				------------------------------------------------------------------------------------------------------------------------------
-				-- Obs.: f_get_peso e utilizada para determinar a base do peso, cubado ou n�o, para calculo do frete
+				-- Obs.: f_get_peso e utilizada para determinar a base do peso, cubado ou nao, para calculo do frete
 				------------------------------------------------------------------------------------------------------------------------------
 				-- Definicao do valor do peso (cubado ou nao) utilizado para calculo de pedagio
-				CASE WHEN f_get_peso(tp,tc,densidade) % tc.fracao = 0 	OR tc.fracao  =  1
-						THEN f_get_peso(tp,tc,densidade)/tc.fracao 
-						ELSE ((f_get_peso(tp,tc,densidade) - (f_get_peso(tp,tc,densidade) % tc.fracao)) + tc.fracao)/tc.fracao
+				CASE WHEN f_get_peso(tp,tc,COALESCE(densidade_nc,densidade)) % tc.fracao = 0 	OR tc.fracao  =  1
+						THEN f_get_peso(tp,tc,COALESCE(densidade_nc,densidade))/tc.fracao 
+						ELSE ((f_get_peso(tp,tc,COALESCE(densidade_nc,densidade)) - (f_get_peso(tp,tc,COALESCE(densidade_nc,densidade)) % tc.fracao)) + tc.fracao)/tc.fracao
 				END as unidade_pedagio,
 				------------------------------------------------------------------------------------------------------------------------------
 				-- Definicao do valor do peso (nao cubado) utilizado para calculo do pedagio sobre o peso nao cubado.
@@ -413,9 +413,9 @@ BEGIN
 				END as unidade_pedagio_peso_bruto,
 				------------------------------------------------------------------------------------------------------------------------------
 				-- Definicao do valor do peso (nao cubado ou cubado) utilizao
-				CASE WHEN f_get_peso(tp,tc,densidade) % tc.fracao = 0 OR tc.fracao = 1
-						THEN  f_get_peso(tp,tc,densidade)
-						ELSE  (f_get_peso(tp,tc,densidade) - (f_get_peso(tp,tc,densidade) % tc.fracao)) + tc.fracao
+				CASE WHEN f_get_peso(tp,tc,COALESCE(densidade_nc,densidade)) % tc.fracao = 0 OR tc.fracao = 1
+						THEN  f_get_peso(tp,tc,COALESCE(densidade_nc,densidade))
+						ELSE  (f_get_peso(tp,tc,COALESCE(densidade_nc,densidade)) - (f_get_peso(tp,tc,COALESCE(densidade_nc,densidade)) % tc.fracao)) + tc.fracao
 				END as total_peso,
 				------------------------------------------------------------------------------------------------------------------------------
 				
@@ -424,7 +424,7 @@ BEGIN
 				
 				p.total_frete_origem,
 
-				CASE WHEN tp <> f_get_peso(tp,tc,densidade) THEN true ELSE false END as peso_cubado,
+				CASE WHEN tp <> f_get_peso(tp,tc,COALESCE(densidade_nc,densidade)) THEN true ELSE false END as peso_cubado,
 
 
 				-- Dados vindos da tabela scr_tabelas_frete				
@@ -470,7 +470,7 @@ BEGIN
 				-- Dados vindos da tabela scr_tabelas_origem_destino
 				tod.id_origem,
 				tod.id_destino,
-				tod.densidade,
+				COALESCE(densidade_nc,tod.densidade) as densidade,
 				tod.ida_volta,
 				tod.cumulativa,
 				tod.tipo_rota,
@@ -532,7 +532,7 @@ BEGIN
 
 
 
-				(f_get_peso(tp,tc,densidade) <= COALESCE(NULLIF(tod.limite_peso_isento,0.00),t.limite_peso_isento))   AS dentro_limite_peso,
+				(f_get_peso(tp,tc,COALESCE(densidade_nc,densidade)) <= COALESCE(NULLIF(tod.limite_peso_isento,0.00),t.limite_peso_isento))   AS dentro_limite_peso,
 
 				CASE 	WHEN COALESCE(tod.calcular_a_partir_de, t.calcular_a_partir_de) = 1 
 						THEN 
@@ -619,7 +619,7 @@ BEGIN
 							true
 					END
 				
-				--Filtra taxas de coleta normal de acordo com o status na regi�o de origem				
+				--Filtra taxas de coleta normal de acordo com o status na regiao de origem				
 				AND 	CASE WHEN tcf.id_tipo_calculo IN (25) 	THEN COALESCE(p.satelite_coleta, false) AND (coleta_normal OR NOT tcf.cond_ctrc::boolean)
 										ELSE true 
 					END									
@@ -633,7 +633,7 @@ BEGIN
 										ELSE true 
 					END
 
-				--Filtra taxas de entrega normal de acordo com o status na regi�o de origem
+				--Filtra taxas de entrega normal de acordo com o status na regiao de origem
 				AND 	CASE WHEN tcf.id_tipo_calculo IN (30) 	THEN COALESCE(p.satelite_entrega, false) AND (entrega_normal OR NOT tcf.cond_ctrc::boolean)
 										ELSE true 
 					END
@@ -646,7 +646,7 @@ BEGIN
 				AND 	CASE WHEN tcf.id_tipo_calculo IN (36) 	THEN COALESCE(p.fluvial_coleta) AND (entrega_normal OR NOT tcf.cond_ctrc::boolean)
 										ELSE true 
 					END				
-				--Filtra Ad Valorem de acordo com a configura��o das cidades.			
+				--Filtra Ad Valorem de acordo com a configuracao das cidades.			
 					
 				AND 	CASE WHEN tcf.id_tipo_calculo IN (19,20)THEN 	(COALESCE(p.satelite_entrega, false) 
 											OR COALESCE(p.capital_polo_entrega, false)
@@ -669,7 +669,7 @@ BEGIN
 						WHEN tcf.id_tipo_calculo = 37  AND (coleta_expresso OR NOT tcf.cond_ctrc::boolean)	
 						THEN 
 							CASE 	WHEN interior_coleta 	THEN false ELSE true END
-						WHEN tcf.id_tipo_calculo = 37 	--Se n�o tem nem entrega ou coleta expresso, n�o calcula.			
+						WHEN tcf.id_tipo_calculo = 37 	--Se nao tem nem entrega ou coleta expresso, nao calcula.			
 						THEN false ELSE	true
 					END
 					
@@ -692,7 +692,7 @@ BEGIN
 				AND 
 					CASE 	WHEN tcf.id_tipo_calculo IN (77,44)  AND (NOT p.entrega_dificuldade OR NOT tcf.cond_ctrc::boolean) THEN false ELSE true END	
 					
-				--Verifica taxa de exclusividade de ve�culo
+				--Verifica taxa de exclusividade de veiculo
 				AND 
 					CASE 	WHEN tcf.id_tipo_calculo = 45 THEN 
 							CASE WHEN NOT (p.entrega_exclusiva OR p.coleta_exclusiva OR NOT tcf.cond_ctrc::boolean) THEN  false ELSE true END	
@@ -749,7 +749,7 @@ BEGIN
 				AND tcf.id_tipo_calculo <> 13
 								
 		),
-		--- Verifica se aplica isen��o
+		--- Verifica se aplica isencao
 		isencao AS (
 			SELECT 
 	-- 			A = tem_limite_valor, B = tem_limite_peso, C = dentro_limite_valor, D = dentro_limite_peso
@@ -793,7 +793,7 @@ BEGIN
 			GROUP BY percentual_reentrega, percentual_devolucao
 		),
 				
-		---Faz descarte das faixas de regras de calculos que n�o se aplicam no c�lculo do frete
+		---Faz descarte das faixas de regras de calculos que nao se aplicam no calculo do frete
 		parametros_faixa_calculo AS (
 		SELECT 
 			ptf.*,
@@ -816,7 +816,7 @@ BEGIN
 				WHEN ptf.id_tipo_calculo IN (5,47) THEN unidade_pedagio
 				WHEN ptf.id_tipo_calculo IN (75) THEN unidade_pedagio_peso_bruto
 				WHEN ptf.id_tipo_calculo IN (1,5,9,10,11,16,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,77,78) THEN total_peso
-				WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,54,55,70,71, 80) THEN 1 -- Sem par�metro, ent�o 1 por padr�o 
+				WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,54,55,70,71, 80) THEN 1 -- Sem parametro, entao 1 por padrao
 			END as quantidade_calculo			
 		FROM 
 			parametros_tabela_frete ptf, isencao, rota_prioritaria
@@ -849,10 +849,10 @@ BEGIN
 						WHEN ptf.id_tipo_calculo IN (54, 79) THEN COALESCE(ptf.hr_coleta,-1) >= ptf.medida_inicial
 						WHEN ptf.id_tipo_calculo IN (55) THEN COALESCE(ptf.hr_entrega,-1) >= ptf.medida_inicial						
 						WHEN ptf.id_tipo_calculo IN (1,9,10,11,16,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,53) THEN ptf.total_peso >= ptf.medida_inicial
-						WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,70,71,77,78, 80) THEN true -- Sem par�metro, ent�o 1 por padr�o 
+						WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,70,71,77,78, 80) THEN true -- Sem parametro, entao 1 por padrao 
 					END 
 					
-				-- Se a medida final for diferente de 0, verifica se est� dentro da faixa, ou se tem valor para excedido
+				-- Se a medida final for diferente de 0, verifica se esta dentro da faixa, ou se tem valor para excedido
 				ELSE	
 					CASE	WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,74) THEN 
 							ptf.total_nf >= ptf.medida_inicial 
@@ -1256,7 +1256,7 @@ BEGIN
 				NULL::integer as id_conhecimento_cf,
 				1::integer as id_conhecimento,
 				58::integer as id_tipo_calculo,
-				'Adicional Devolu��o'::character(50) as descricao,
+				'Adicional Devolucao'::character(50) as descricao,
 				0.00::integer as excedente,
 				percentual_devolucao::numeric(12,2) as quantidade,
 				total_valor_pagar::numeric(12,6) as valor_item,
@@ -1304,7 +1304,7 @@ BEGIN
 			vTotalFrete = vTotalFrete + vResultadoFrete.valor_pagar;
 		END LOOP;
 
-		--Se n�o foi identificada nenhuma faixa de calculo al�m da do imposto.
+		--Se nao foi identificada nenhuma faixa de calculo alem da do imposto.
 		IF v_qt_cf = 0 THEN 
 
 			SELECT 
