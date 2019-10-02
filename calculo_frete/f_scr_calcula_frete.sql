@@ -153,6 +153,11 @@ BEGIN
 								(parametros->>'calculado_ate_id_cidade')::text::integer,
 								(parametros->>'tabela_frete')::text
 								) as regioes,
+				f_scr_retorna_regioes_origem_destino_bairros(
+								(parametros->>'calculado_de_id_cidade')::text::integer,
+								(parametros->>'id_bairro_destino')::text::integer,
+								(parametros->>'tabela_frete')::text
+								) as regioes_bairros,
 				(parametros->>'escolta_horas_entrega')::text::integer as escolta_horas_entrega,
 				(parametros->>'coleta_escolta')::text::integer::boolean as coleta_escolta,
 				(parametros->>'coleta_expresso')::text::integer::boolean as coleta_expresso,
@@ -185,7 +190,9 @@ BEGIN
 				calculado_de_id_cidade,
 				calculado_ate_id_cidade,				
 				(ent.regioes->'id_regiao_origem')::text::integer as id_regiao_origem,
-				(ent.regioes->'id_regiao_destino')::text::integer as id_regiao_destino
+				(ent.regioes->'id_regiao_destino')::text::integer as id_regiao_destino,
+				(ent.regioes_bairros->'id_regiao_origem')::text::integer as id_regiao_origem_bairro,
+				(ent.regioes_bairros->'id_regiao_destino')::text::integer as id_regiao_destino_bairro
 			FROM 
 				ent
 	
@@ -224,6 +231,8 @@ BEGIN
 				ent_reg.calculado_ate_id_cidade as id_cidade_destino,
 				ent_reg.id_regiao_origem,
 				ent_reg.id_regiao_destino,
+				ent_reg.id_regiao_origem_bairro,
+				ent_reg.id_regiao_destino_bairro,
 				ent.id_tipo_veiculo,
 				ent.tipo_transporte,
 				ent.escolta_horas_entrega,
@@ -557,7 +566,9 @@ BEGIN
 						WHEN tod.ida_volta = 1 AND tod.tipo_rota = 2 THEN 
 							((tod.id_origem = p.id_regiao_origem AND tod.id_destino = p.id_regiao_destino) 
 								OR 
-							(tod.id_origem = p.id_regiao_destino AND tod.id_destino = p.id_regiao_origem))
+							(tod.id_origem = p.id_regiao_destino AND tod.id_destino = p.id_regiao_origem)
+								OR 
+							(tod.id_origem = p.id_regiao_origem_bairro AND tod.id_destino = p.id_regiao_destino_bairro))							
 							
 						WHEN tod.ida_volta = 0 AND tod.tipo_rota = 2 THEN
 							(tod.id_origem = p.id_regiao_origem AND tod.id_destino = p.id_regiao_destino)
