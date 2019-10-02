@@ -1,3 +1,4 @@
+-- Versao Seven Original
 -- Function: public.f_scr_calcula_frete(json, refcursor, refcursor)
 
 -- DROP FUNCTION public.f_scr_calcula_frete(json, refcursor, refcursor);
@@ -48,10 +49,10 @@ DECLARE
 BEGIN
 	--Calculo do Frete por meio de tabelas 
 
-	--Verifica se é frete combinado
+	--Verifica se ï¿½ frete combinado
 	vTabelaFrete = (parametros->>'tabela_frete')::text;
 
-	--Verifica se há problemas entre as taxas.
+	--Verifica se hï¿½ problemas entre as taxas.
 	vEntregaExpresso 	= (parametros->>'entrega_expresso')::text::integer::boolean;
 	vEntregaEmergencia 	= (parametros->>'entrega_emergencia')::text::integer::boolean;
 		
@@ -61,11 +62,11 @@ BEGIN
 	
 
 	IF (vColetaExpresso AND vColetaEmergencia) THEN 
-		vRetorno = ('{"codigo":20, "Mensagem":"Não é admitido taxa de Expresso e Emergência na origem. Selecione apenas uma."}')::json;
+		vRetorno = ('{"codigo":20, "Mensagem":"Nï¿½o ï¿½ admitido taxa de Expresso e Emergï¿½ncia na origem. Selecione apenas uma."}')::json;
 	END IF;
 
 	IF (vEntregaExpresso AND vEntregaEmergencia) THEN 
-		vRetorno = ('{"codigo":21, "Não é admitido taxa de Expresso + Emergência no destino. Selecione apenas uma."}')::json;
+		vRetorno = ('{"codigo":21, "Nï¿½o ï¿½ admitido taxa de Expresso + Emergï¿½ncia no destino. Selecione apenas uma."}')::json;
 	END IF; 
 
 	
@@ -373,7 +374,7 @@ BEGIN
 						END 
 				END as total_valor,
 				------------------------------------------------------------------------------------------------------------------------------
-				-- Obs.: f_get_peso e utilizada para determinar a base do peso, cubado ou não, para calculo do frete
+				-- Obs.: f_get_peso e utilizada para determinar a base do peso, cubado ou nï¿½o, para calculo do frete
 				------------------------------------------------------------------------------------------------------------------------------
 				-- Definicao do valor do peso (cubado ou nao) utilizado para calculo de pedagio
 				CASE WHEN f_get_peso(tp,tc,densidade) % tc.fracao = 0 	OR tc.fracao  =  1
@@ -592,7 +593,7 @@ BEGIN
 							true
 					END
 				
-				--Filtra taxas de coleta normal de acordo com o status na região de origem				
+				--Filtra taxas de coleta normal de acordo com o status na regiï¿½o de origem				
 				AND 	CASE WHEN tcf.id_tipo_calculo IN (25) 	THEN COALESCE(p.satelite_coleta, false) AND (coleta_normal OR NOT tcf.cond_ctrc::boolean)
 										ELSE true 
 					END									
@@ -606,7 +607,7 @@ BEGIN
 										ELSE true 
 					END
 
-				--Filtra taxas de entrega normal de acordo com o status na região de origem
+				--Filtra taxas de entrega normal de acordo com o status na regiï¿½o de origem
 				AND 	CASE WHEN tcf.id_tipo_calculo IN (30) 	THEN COALESCE(p.satelite_entrega, false) AND (entrega_normal OR NOT tcf.cond_ctrc::boolean)
 										ELSE true 
 					END
@@ -619,7 +620,7 @@ BEGIN
 				AND 	CASE WHEN tcf.id_tipo_calculo IN (36) 	THEN COALESCE(p.fluvial_coleta) AND (entrega_normal OR NOT tcf.cond_ctrc::boolean)
 										ELSE true 
 					END				
-				--Filtra Ad Valorem de acordo com a configuração das cidades.			
+				--Filtra Ad Valorem de acordo com a configuraï¿½ï¿½o das cidades.			
 					
 				AND 	CASE WHEN tcf.id_tipo_calculo IN (19,20)THEN 	(COALESCE(p.satelite_entrega, false) 
 											OR COALESCE(p.capital_polo_entrega, false)
@@ -642,7 +643,7 @@ BEGIN
 						WHEN tcf.id_tipo_calculo = 37  AND (coleta_expresso OR NOT tcf.cond_ctrc::boolean)	
 						THEN 
 							CASE 	WHEN interior_coleta 	THEN false ELSE true END
-						WHEN tcf.id_tipo_calculo = 37 	--Se não tem nem entrega ou coleta expresso, não calcula.			
+						WHEN tcf.id_tipo_calculo = 37 	--Se nï¿½o tem nem entrega ou coleta expresso, nï¿½o calcula.			
 						THEN false ELSE	true
 					END
 					
@@ -665,7 +666,7 @@ BEGIN
 				AND 
 					CASE 	WHEN tcf.id_tipo_calculo IN (77,44)  AND (NOT p.entrega_dificuldade OR NOT tcf.cond_ctrc::boolean) THEN false ELSE true END	
 					
-				--Verifica taxa de exclusividade de veículo
+				--Verifica taxa de exclusividade de veï¿½culo
 				AND 
 					CASE 	WHEN tcf.id_tipo_calculo = 45 THEN 
 							CASE WHEN NOT (p.entrega_exclusiva OR p.coleta_exclusiva OR NOT tcf.cond_ctrc::boolean) THEN  false ELSE true END	
@@ -722,7 +723,7 @@ BEGIN
 				AND tcf.id_tipo_calculo <> 13
 								
 		),
-		--- Verifica se aplica isenção
+		--- Verifica se aplica isenï¿½ï¿½o
 		isencao AS (
 			SELECT 
 	-- 			A = tem_limite_valor, B = tem_limite_peso, C = dentro_limite_valor, D = dentro_limite_peso
@@ -766,7 +767,7 @@ BEGIN
 			GROUP BY percentual_reentrega, percentual_devolucao
 		),
 				
-		---Faz descarte das faixas de regras de calculos que não se aplicam no cálculo do frete
+		---Faz descarte das faixas de regras de calculos que nï¿½o se aplicam no cï¿½lculo do frete
 		parametros_faixa_calculo AS (
 		SELECT 
 			ptf.*,
@@ -789,7 +790,7 @@ BEGIN
 				WHEN ptf.id_tipo_calculo IN (5,47) THEN unidade_pedagio
 				WHEN ptf.id_tipo_calculo IN (75) THEN unidade_pedagio_peso_bruto
 				WHEN ptf.id_tipo_calculo IN (1,5,9,10,11,16,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,77,78) THEN total_peso
-				WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,54,55,70,71, 80) THEN 1 -- Sem parâmetro, então 1 por padrão 
+				WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,54,55,70,71, 80) THEN 1 -- Sem parï¿½metro, entï¿½o 1 por padrï¿½o 
 			END as quantidade_calculo			
 		FROM 
 			parametros_tabela_frete ptf, isencao, rota_prioritaria
@@ -798,7 +799,7 @@ BEGIN
 			-- Se for cumulativa adiciona aos componentes de frete.			
 			AND (ptf.tipo_rota = rota_prioritaria.tipo_rota OR ptf.cumulativa = 1)
 			AND
-				-- Se medida inicial e final for 0, então ignora filtro de medida				
+				-- Se medida inicial e final for 0, entï¿½o ignora filtro de medida				
 			CASE	WHEN ptf.medida_inicial = 0 AND ptf.medida_final = 0 	THEN 
 					true
 				-- Se medida final for 0, filtra trazendo somente se o valor da medida for maior ou igual a medida inicial
@@ -807,7 +808,7 @@ BEGIN
 						WHEN ptf.id_tipo_calculo IN (13) THEN false --total_peso_cubado					
 						WHEN ptf.id_tipo_calculo IN (8)  THEN ptf.total_unidades >= ptf.medida_inicial -- total_unidades
 						WHEN ptf.id_tipo_calculo IN (12) THEN ptf.km_entrega >= ptf.medida_inicial -- total_km
-						WHEN ptf.id_tipo_calculo IN (45) THEN-- Verifica se é coleta ou entrega
+						WHEN ptf.id_tipo_calculo IN (45) THEN-- Verifica se ï¿½ coleta ou entrega
 							CASE WHEN coleta_exclusiva 	THEN ptf.km_percorridos_coleta >= ptf.medida_inicial 
 							     WHEN entrega_exclusiva 	THEN ptf.km_percorridos_entrega >= ptf.medida_inicial 
 											ELSE false
@@ -822,10 +823,10 @@ BEGIN
 						WHEN ptf.id_tipo_calculo IN (54, 79) THEN COALESCE(ptf.hr_coleta,-1) >= ptf.medida_inicial
 						WHEN ptf.id_tipo_calculo IN (55) THEN COALESCE(ptf.hr_entrega,-1) >= ptf.medida_inicial						
 						WHEN ptf.id_tipo_calculo IN (1,9,10,11,16,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,53) THEN ptf.total_peso >= ptf.medida_inicial
-						WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,70,71,77,78, 80) THEN true -- Sem parâmetro, então 1 por padrão 
+						WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,70,71,77,78, 80) THEN true -- Sem parï¿½metro, entï¿½o 1 por padrï¿½o 
 					END 
 					
-				-- Se a medida final for diferente de 0, verifica se está dentro da faixa, ou se tem valor para excedido
+				-- Se a medida final for diferente de 0, verifica se estï¿½ dentro da faixa, ou se tem valor para excedido
 				ELSE	
 					CASE	WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,74) THEN 
 							ptf.total_nf >= ptf.medida_inicial 
@@ -1229,7 +1230,7 @@ BEGIN
 				NULL::integer as id_conhecimento_cf,
 				1::integer as id_conhecimento,
 				58::integer as id_tipo_calculo,
-				'Adicional Devolução'::character(50) as descricao,
+				'Adicional Devoluï¿½ï¿½o'::character(50) as descricao,
 				0.00::integer as excedente,
 				percentual_devolucao::numeric(12,2) as quantidade,
 				total_valor_pagar::numeric(12,6) as valor_item,
@@ -1277,7 +1278,7 @@ BEGIN
 			vTotalFrete = vTotalFrete + vResultadoFrete.valor_pagar;
 		END LOOP;
 
-		--Se não foi identificada nenhuma faixa de calculo além da do imposto.
+		--Se nï¿½o foi identificada nenhuma faixa de calculo alï¿½m da do imposto.
 		IF v_qt_cf = 0 THEN 
 
 			SELECT 
@@ -1296,13 +1297,13 @@ BEGIN
 				scr_tabelas.id_tabela_frete;
 			
 			
-			IF vTipoRota IS NULL THEN -- O conhecimento não existe
-				vRetorno = ('{"codigo":2, "Mensagem":"Tabela de Frete não existe!"}')::json;
+			IF vTipoRota IS NULL THEN -- O conhecimento nï¿½o existe
+				vRetorno = ('{"codigo":2, "Mensagem":"Tabela de Frete nï¿½o existe!"}')::json;
 				
-			ELSE -- Se o conhecimento existe, então verifica se tem tabela frete 
+			ELSE -- Se o conhecimento existe, entï¿½o verifica se tem tabela frete 
 				CASE 
 				
-				WHEN vTipoRota = 2 THEN -- Se a tabela tem origem e destino por região				
+				WHEN vTipoRota = 2 THEN -- Se a tabela tem origem e destino por regiï¿½o				
 					vRegioes = f_scr_retorna_regioes_origem_destino(
 								(parametros->>'calculado_de_id_cidade')::text::integer,
 								(parametros->>'calculado_ate_id_cidade')::text::integer,
@@ -1312,16 +1313,16 @@ BEGIN
 					vRegiaoOrigem = (vRegioes->'id_regiao_origem')::text::integer;
 					vRegiaoDestino = (vRegioes->'id_regiao_destino')::text::integer;
 								
-					IF vRegiaoOrigem = -1 THEN  -- Se região origem for -1, cidade origem não configurada
+					IF vRegiaoOrigem = -1 THEN  -- Se regiï¿½o origem for -1, cidade origem nï¿½o configurada
 					
-						vRetorno = ('{"codigo":3, "Mensagem":"Cidade sem região de origem definida na tabela!"}')::json;
+						vRetorno = ('{"codigo":3, "Mensagem":"Cidade sem regiï¿½o de origem definida na tabela!"}')::json;
 			
 					ELSE --
-						IF vRegiaoDestino = -1 THEN  -- Verifica se a cidade destino está em alguma região
-							vRetorno = ('{"codigo":4, "Mensagem":"Cidade sem região de destino definida na tabela!"}')::json;
+						IF vRegiaoDestino = -1 THEN  -- Verifica se a cidade destino estï¿½ em alguma regiï¿½o
+							vRetorno = ('{"codigo":4, "Mensagem":"Cidade sem regiï¿½o de destino definida na tabela!"}')::json;
 							
 						ELSE
-							vRetorno = ('{"codigo":16, "Mensagem":"Não foi identificada nenhuma faixa de cálculo de componentes de frete!"}')::json;
+							vRetorno = ('{"codigo":16, "Mensagem":"Nï¿½o foi identificada nenhuma faixa de cï¿½lculo de componentes de frete!"}')::json;
 							
 						END IF;
 					END IF;
@@ -1344,14 +1345,14 @@ BEGIN
 						AND scr_tabelas_origem_destino.id_tabela_frete = vIdTabelaFrete;
 
 					IF vQuantRotasCidade = 0 THEN 
-						vRetorno = ('{"codigo":5, "Mensagem":"Não foi encontrado Origem/Destino das cidades do conhecimento!"}')::json;
+						vRetorno = ('{"codigo":5, "Mensagem":"Nï¿½o foi encontrado Origem/Destino das cidades do conhecimento!"}')::json;
 					
 					ELSE
-						vRetorno = ('{"codigo":16, "Mensagem":"Não foi identificada nenhuma faixa de cálculo de componentes de frete!"}')::json;
+						vRetorno = ('{"codigo":16, "Mensagem":"Nï¿½o foi identificada nenhuma faixa de cï¿½lculo de componentes de frete!"}')::json;
 					
 					END IF;
 				ELSE 
-					vRetorno = ('{"codigo":16, "Mensagem":"Não foi identificada nenhuma faixa de cálculo de componentes de frete!"}')::json;
+					vRetorno = ('{"codigo":16, "Mensagem":"Nï¿½o foi identificada nenhuma faixa de cï¿½lculo de componentes de frete!"}')::json;
 				END CASE;									
 			END IF;			
 			
@@ -1397,7 +1398,7 @@ BEGIN
 				v_tipo_combinado = NULL;
 		END CASE;
 	
-		-- Deleta se o valor é 0.00
+		-- Deleta se o valor ï¿½ 0.00
 		OPEN cf FOR 
 		SELECT 	
 			NULL::integer as id_conhecimento_cf,
