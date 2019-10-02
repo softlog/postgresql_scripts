@@ -62,11 +62,11 @@ BEGIN
 	
 
 	IF (vColetaExpresso AND vColetaEmergencia) THEN 
-		vRetorno = ('{"codigo":20, "Mensagem":"N�o � admitido taxa de Expresso e Emerg�ncia na origem. Selecione apenas uma."}')::json;
+		vRetorno = ('{"codigo":20, "Mensagem":"NAO e admitido taxa de Expresso e Emergencia na origem. Selecione apenas uma."}')::json;
 	END IF;
 
 	IF (vEntregaExpresso AND vEntregaEmergencia) THEN 
-		vRetorno = ('{"codigo":21, "N�o � admitido taxa de Expresso + Emerg�ncia no destino. Selecione apenas uma."}')::json;
+		vRetorno = ('{"codigo":21, "Nao e admitido taxa de Expresso + Emergencia no destino. Selecione apenas uma."}')::json;
 	END IF; 
 
 	
@@ -132,7 +132,7 @@ BEGIN
 		 "vl_tonelada":0.00000000,
 		 "vl_percentual_nf":0.00000000,
 		 "vl_frete_peso":0.00}'::json as parametros)				
-		--Extracao dos dados de uma estrutura JSON que contem os parametros de entrada para o calculo do frete
+		--Extracao dos dados de uma estrutura JSON que contem os parametros de entrada para o calculo do frete		
 		,ent AS (
 			SELECT 
 				(parametros->>'calculado_ate_id_cidade')::text::integer as calculado_ate_id_cidade,
@@ -181,17 +181,38 @@ BEGIN
 			 	COALESCE((parametros->>'destinatario_id')::text::integer,0)::integer as destinatario_id
 		--FROM json
  		),
+		destinatario AS (
+			SELECT 
+				ent.id_destinatario, 
+				id_bairro 
+			FROM 
+				ent 
+				LEFT JOIN cliente 
+					ON cliente.codigo_cliente = ent.destinatario_id
+				
+		),
+		rb AS (
+			SELECT 
+				destinatario.id_bairro,
+				f_scr_retorna_regioes_origem_destino(id_origem, destinatario.id_bairro,ent.tabela_frete) as regioes_bairro
+			FROM 
+				ent, destinatario
+		),
  		--Extracao dos dados de uma estrutura JSON que contem o retorno da funcao que determina qual a regiao de origem e destino
 		ent_reg AS (
 			SELECT 
 				calculado_de_id_cidade,
 				calculado_ate_id_cidade,				
 				(ent.regioes->'id_regiao_origem')::text::integer as id_regiao_origem,
-				(ent.regioes->'id_regiao_destino')::text::integer as id_regiao_destino
+				(ent.regioes->'id_regiao_destino')::text::integer as id_regiao_destino,
+				(rb.regioes_bairro->'id_regiao_origem')::text::integer as id_regiao_origem_bairro,
+				(rb.regioes_bairro->'id_regiao_destino')::text::integer as id_regiao_destino_bairro,
+				rb.id_bairro				
 			FROM 
-				ent
+				ent, rb
 	
 		),
+
 		--Busca distancia da cidade de entrega
 		dist_cid_dest AS (
 			SELECT 
@@ -236,7 +257,10 @@ BEGIN
 				ent_reg.calculado_ate_id_cidade as id_cidade_destino,
 				ent_reg.id_regiao_origem,
 				ent_reg.id_regiao_destino,
-				ent.id_tipo_veiculo,
+				ent_reg.id_regiao_origem_bairro,
+				ent_reg.id_regiao_destino_bairro,
+				ent_reg.id_bairro,
+				ent.id_tipo_veiculo,				
 				ent.tipo_transporte,
 				ent.escolta_horas_entrega,
 				ent.coleta_escolta,
@@ -574,7 +598,9 @@ BEGIN
 						WHEN tod.ida_volta = 1 AND tod.tipo_rota = 2 THEN 
 							((tod.id_origem = p.id_regiao_origem AND tod.id_destino = p.id_regiao_destino) 
 								OR 
-							(tod.id_origem = p.id_regiao_destino AND tod.id_destino = p.id_regiao_origem))
+							(tod.id_origem = p.id_regiao_destino AND tod.id_destino = p.id_regiao_origem)
+							        OR
+							 (tod.id_origem = p.id_regiao_origem_bairro AND tod.id_destino = p.id_regiao_destino_bairro))
 							
 						WHEN tod.ida_volta = 0 AND tod.tipo_rota = 2 THEN
 							(tod.id_origem = p.id_regiao_origem AND tod.id_destino = p.id_regiao_destino)
@@ -1297,13 +1323,13 @@ BEGIN
 				scr_tabelas.id_tabela_frete;
 			
 			
-			IF vTipoRota IS NULL THEN -- O conhecimento n�o existe
-				vRetorno = ('{"codigo":2, "Mensagem":"Tabela de Frete n�o existe!"}')::json;
+			IF vTipoRota IS NULL THEN -- O conhecimento nao existe
+				vRetorno = ('{"codigo":2, "Mensagem":"Tabela de Frete nao existe!"}')::json;
 				
-			ELSE -- Se o conhecimento existe, ent�o verifica se tem tabela frete 
+			ELSE -- Se o conhecimento existe, entao verifica se tem tabela frete 
 				CASE 
 				
-				WHEN vTipoRota = 2 THEN -- Se a tabela tem origem e destino por regi�o				
+				WHEN vTipoRota = 2 THEN -- Se a tabela tem origem e destino por regiao
 					vRegioes = f_scr_retorna_regioes_origem_destino(
 								(parametros->>'calculado_de_id_cidade')::text::integer,
 								(parametros->>'calculado_ate_id_cidade')::text::integer,
@@ -1313,16 +1339,16 @@ BEGIN
 					vRegiaoOrigem = (vRegioes->'id_regiao_origem')::text::integer;
 					vRegiaoDestino = (vRegioes->'id_regiao_destino')::text::integer;
 								
-					IF vRegiaoOrigem = -1 THEN  -- Se regi�o origem for -1, cidade origem n�o configurada
+					IF vRegiaoOrigem = -1 THEN  -- Se regiao origem for -1, cidade origem nao configurada
 					
-						vRetorno = ('{"codigo":3, "Mensagem":"Cidade sem regi�o de origem definida na tabela!"}')::json;
+						vRetorno = ('{"codigo":3, "Mensagem":"Cidade sem regiao de origem definida na tabela!"}')::json;
 			
 					ELSE --
-						IF vRegiaoDestino = -1 THEN  -- Verifica se a cidade destino est� em alguma regi�o
-							vRetorno = ('{"codigo":4, "Mensagem":"Cidade sem regi�o de destino definida na tabela!"}')::json;
+						IF vRegiaoDestino = -1 THEN  -- Verifica se a cidade destino esta em alguma regiao
+							vRetorno = ('{"codigo":4, "Mensagem":"Cidade sem regiao de destino definida na tabela!"}')::json;
 							
 						ELSE
-							vRetorno = ('{"codigo":16, "Mensagem":"N�o foi identificada nenhuma faixa de c�lculo de componentes de frete!"}')::json;
+							vRetorno = ('{"codigo":16, "Mensagem":"Nao foi identificada nenhuma faixa de calculo de componentes de frete!"}')::json;
 							
 						END IF;
 					END IF;
@@ -1345,14 +1371,14 @@ BEGIN
 						AND scr_tabelas_origem_destino.id_tabela_frete = vIdTabelaFrete;
 
 					IF vQuantRotasCidade = 0 THEN 
-						vRetorno = ('{"codigo":5, "Mensagem":"N�o foi encontrado Origem/Destino das cidades do conhecimento!"}')::json;
+						vRetorno = ('{"codigo":5, "Mensagem":"Nao foi encontrado Origem/Destino das cidades do conhecimento!"}')::json;
 					
 					ELSE
-						vRetorno = ('{"codigo":16, "Mensagem":"N�o foi identificada nenhuma faixa de c�lculo de componentes de frete!"}')::json;
+						vRetorno = ('{"codigo":16, "Mensagem":"Nao foi identificada nenhuma faixa de calculo de componentes de frete!"}')::json;
 					
 					END IF;
 				ELSE 
-					vRetorno = ('{"codigo":16, "Mensagem":"N�o foi identificada nenhuma faixa de c�lculo de componentes de frete!"}')::json;
+					vRetorno = ('{"codigo":16, "Mensagem":"Nao foi identificada nenhuma faixa de calculo de componentes de frete!"}')::json;
 				END CASE;									
 			END IF;			
 			
