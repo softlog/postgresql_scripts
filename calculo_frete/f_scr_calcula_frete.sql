@@ -1,8 +1,9 @@
--- Function: public.f_scr_calcula_frete(json, refcursor, refcursor)
--- DROP FUNCTION public.f_scr_calcula_frete(json, refcursor, refcursor);
+-- Function: public.f_scr_calcula_frete(json, refcursor, refcursor, refcursor)
+-- DROP FUNCTION public.f_scr_calcula_frete(json, refcursor, refcursor, refcursor);
 CREATE OR REPLACE FUNCTION public.f_scr_calcula_frete(
     parametros json,
     cf refcursor,
+    imposto refcursor,
     msg refcursor)
   RETURNS SETOF refcursor AS
 $BODY$
@@ -41,7 +42,6 @@ DECLARE
 	v_valor_total_comb	numeric;
 	v_valor_pagar_comb	numeric;
 	v_qt_cf			integer;
-	dados_icms		json;
 	
 BEGIN
 	--Calculo do Frete por meio de tabelas 
@@ -75,7 +75,10 @@ BEGIN
 
 		OPEN cf FOR SELECT 1;
 		
-		RETURN NEXT cf;	
+		RETURN NEXT cf;
+
+		OPEN imposto FOR SELECT 1;
+		RETURN NEXT imposto;
 
 		RETURN ;
 	END IF;
@@ -83,54 +86,54 @@ BEGIN
 	IF RIGHT(trim(vTabelaFrete),10) <> '9999999999' AND  vTabelaFrete IS NOT NULL THEN 
 
 		OPEN cf FOR				
- 		WITH
+		WITH
 		-- Entrada dos parametros da estrutura Json 
-      		json AS (
-     		SELECT 
-		'{"tabela_frete":"0010010000009",
-		 "calculado_de_id_cidade":3324,
-		 "calculado_ate_id_cidade":3292,
-		 "total_frete_origem":0.00,
-		 "natureza_carga":"MEDICAMENTOS/HIGIENE/PERFUMARIA",
-		 "qtd_nf":1,
-		 "peso":0.000,
-		 "qtd_volumes":2,
-		 "volume_cubico":0.0000,
-		 "valor_nota_fiscal":869.13,
-		 "valor_total_produtos":869.13,
-		 "aliquota":12.00,
-		 "perc_desconto":0.00,
-		 "isento_imposto":0,
-		 "imposto_incluso":1,
-		 "perc_credito_icms_st":0.00,
-		 "escolta_horas_entrega":0,
-		 "coleta_escolta":0,
-		 "coleta_expresso":0,
-		 "coleta_emergencia":0,
-		 "coleta_normal":0,
-		 "entrega_escolta":0,
-		 "entrega_expresso":0,
-		 "entrega_emergencia":0,
-		 "entrega_normal":0,
-		 "taxa_dce":0,
-		 "taxa_exclusivo":0,
-		 "coleta_dificuldade":0,
-		 "entrega_dificuldade":0,
-		 "entrega_exclusiva":0,
-		 "coleta_exclusiva":0,
-		 "modo_calculo":1,
-		 "perc_desc_calculo":0.00,
-		 "id_tipo_veiculo":null,
-		 "data_coleta":"2017-07-31T00:00:00",
-		 "data_entrega":null,
-		 "tipo_carga":null,
-		 "tipo_transporte":1,
-		 "vl_combinado":0.00,
-		 "vl_tonelada":0.00000000,
-		 "vl_percentual_nf":0.00000000,
-		 "vl_frete_peso":0.00}'::json as parametros)				
+--      		json AS (
+--     		SELECT 
+--   			'
+-- 			{
+-- 				"tabela_frete" : "0010010000257",
+-- 				"calculado_de_id_cidade" : 5355,
+-- 				"calculado_ate_id_cidade" : 5077,
+-- 				"total_frete_origem" : 0.00,
+-- 				"natureza_carga" : "DIVERSOS",
+-- 				"qtd_nf" : 1,
+-- 				"peso" : 788.170,
+-- 				"qtd_volumes" : 84,
+-- 				"volume_cubico" : 1.160000,
+-- 				"valor_nota_fiscal" : 6982.08,
+-- 				"valor_total_produtos" : 6982.08,
+-- 				"aliquota" : 12.00,
+-- 				"perc_desconto" : 0.00,
+-- 				"isento_imposto" : 0,
+-- 				"imposto_incluso" : 0,
+-- 				"perc_credito_icms_st" : 0.00,
+-- 				"escolta_horas_entrega" : 0,
+-- 				"coleta_escolta" : 0,
+-- 				"coleta_expresso" : 0,
+-- 				"coleta_emergencia" : 0,
+-- 				"coleta_normal" : 0,
+-- 				"entrega_escolta" : 0,
+-- 				"entrega_expresso" : 0,
+-- 				"entrega_emergencia" : 0,
+-- 				"entrega_normal" : 0,
+-- 				"taxa_dce" : 0,
+-- 				"taxa_exclusivo" : 0,
+-- 				"coleta_dificuldade" : 0,
+-- 				"entrega_dificuldade" : 0,
+-- 				"entrega_exclusiva" : 0,
+-- 				"coleta_exclusiva" : 0,
+-- 				"modo_calculo" : 1,
+-- 				"perc_desc_calculo" : 0.00,
+-- 				"id_tipo_veiculo" : 1,
+-- 				"vl_frete_peso" : 143.24,
+-- 				"tipo_carga" : 1,
+-- 				"tipo_transporte" : 1
+-- 			}
+--  		'::json as parametros
+--   		),
 		--Extracao dos dados de uma estrutura JSON que contem os parametros de entrada para o calculo do frete
-		,ent AS (
+		ent AS (
 			SELECT 
 				(parametros->>'calculado_ate_id_cidade')::text::integer as calculado_ate_id_cidade,
 				(parametros->>'calculado_de_id_cidade')::text::integer as calculado_de_id_cidade,
@@ -173,9 +176,7 @@ BEGIN
 				COALESCE((parametros->>'data_coleta')::text::timestamp,NULL)::timestamp as data_coleta,			 	
 			 	COALESCE((parametros->>'data_entrega')::text::timestamp,NULL)::timestamp as data_entrega,
 			 	COALESCE((parametros->>'tipo_carga')::text::integer,0)::integer as tipo_carga,
-			 	COALESCE((parametros->>'tipo_transporte')::text::integer,0)::integer as tipo_transporte,
-			 	COALESCE((parametros->>'remetente_id')::text::integer,0)::integer as remetente_id,
-			 	COALESCE((parametros->>'destinatario_id')::text::integer,0)::integer as destinatario_id
+			 	COALESCE((parametros->>'tipo_transporte')::text::integer,0)::integer as tipo_transporte
 		--FROM json
  		),
  		--Extracao dos dados de uma estrutura JSON que contem o retorno da funcao que determina qual a regiao de origem e destino
@@ -188,16 +189,6 @@ BEGIN
 			FROM 
 				ent
 	
-		),
-		--Busca distancia da cidade de entrega
-		dist_cid_dest AS (
-			SELECT 
-				distancia_cidade_polo as km_entrega
-			FROM 
-				ent_reg
-				LEFT JOIN regiao_cidades 
-					ON ent_reg.id_regiao_destino = regiao_cidades.id_regiao
-					AND ent_reg.calculado_ate_id_cidade = regiao_cidades.id_cidade
 		),
 		--Definicao do Conjunto de dados contendo os totais dos valores utilizados no calculo
 		totais AS (		
@@ -249,8 +240,7 @@ BEGIN
 				ent.coleta_dificuldade,
 				ent.entrega_dificuldade,
 				ent.entrega_exclusiva,				
-				ent.coleta_exclusiva,	
-				dist_cid_dest.km_entrega,										
+				ent.coleta_exclusiva,											
 				
 				reg.capital::boolean as capital_polo_coleta, 
 				reg.cidade_satelite::boolean as satelite_coleta,  
@@ -262,7 +252,7 @@ BEGIN
 				dest.cidade_satelite::boolean as satelite_entrega,  
 				dest.interior_redespacho::boolean as interior_entrega, 
 				dest.percurso_fluvial::boolean as fluvial_entrega,			
-				dest.distancia_cidade_polo as km_percorridos_entrega,
+				dest.distancia_cidade_polo	as km_percorridos_entrega,
 				
 				
 				totais.qtde_nf,
@@ -282,7 +272,7 @@ BEGIN
 
 				ent.data_coleta,		
 				CASE 	WHEN ent.data_coleta IS NOT NULL 
-					THEN to_char(ent.data_coleta,'HH24MI')::integer 
+					THEN to_char(ent.data_coleta,'HH24MM')::integer 
 					ELSE NULL 
 				END::integer as hr_coleta,
 				
@@ -294,20 +284,16 @@ BEGIN
 				
 				ent.data_entrega,				
 				CASE 	WHEN ent.data_entrega IS NOT NULL 
-					THEN to_char(ent.data_entrega,'HH24MI') 
+					THEN to_char(ent.data_entrega,'HH24MM')::integer 
 					ELSE NULL 
-				END::numeric as hr_entrega,
+				END::integer as hr_entrega,
 				
 				CASE 	WHEN ent.data_entrega IS NOT NULL 
 					THEN extract('dow' from ent.data_entrega) + 1
 					ELSE NULL 
-				END::numeric as dia_entrega,
-				ent.destinatario_id
+				END::integer as dia_entrega
 
-				
-
-			FROM 		
-				dist_cid_dest,
+			FROM 					
 				totais,
 				ent				
 				LEFT JOIN scr_natureza_carga nc 
@@ -471,7 +457,6 @@ BEGIN
 				p.data_entrega,				
 				p.dia_entrega,
 				p.hr_entrega,
-				p.km_entrega,
 
 				--Divide o valor variavel pelo fator de divisao
 				tc.valor_variavel/ttc.dividir_por as valor_unitario,
@@ -485,8 +470,8 @@ BEGIN
 				tc.valor_variavel_excedido/ttc.dividir_por as valor_variavel_excedido,
 				tc.valor_fixo_excedido,	
 				tc.fracao,
-				CASE WHEN tc.adicional_frete > 0 THEN tc.adicional_frete/100 ELSE 0.00 END::numeric(12,4) as adicional_frete,
-				CASE WHEN tc.adicional_frete > 0 THEN tc.valor_fixo ELSE 0.00 END::numeric(12,4) as adicional_frete_minimo,
+				CASE WHEN tc.adicional_frete > 0 THEN tc.adicional_frete/100 ELSE 0.00 END::numeric(12,2) as adicional_frete,
+
 				
 				
 				(CASE WHEN true IS NOT NULL THEN 1 ELSE t.isento_imposto END)::boolean as isento_imposto,
@@ -532,8 +517,9 @@ BEGIN
 					ON ttc.id_tipo_calculo = tcf.id_tipo_calculo
 				
 			WHERE 
+
 				t.numero_tabela_frete = p.numero_tabela_frete
-				AND t.ativa = 1				
+								
 				--FILTRA TIPO DE TRANSPORTE
 				AND 	CASE 
 						WHEN tc.tipo_transporte IS NULL THEN true -- Se estiver nulo na tabela, seleciona
@@ -581,11 +567,9 @@ BEGIN
 								OR 
 							(tod.id_origem = p.id_cidade_destino AND tod.id_destino = p.id_cidade_origem))							
 							
-						WHEN tod.ida_volta = 0 AND tod.tipo_rota = 1 THEN 
+						WHEN NOT tod.ida_volta = 0 AND tod.tipo_rota = 1 THEN 
 							(tod.id_origem = p.id_cidade_origem AND tod.id_destino = p.id_cidade_destino)
-
-						WHEN tod.tipo_rota = 0 THEN 
-							tod.id_destino = p.destinatario_id
+						
 						ELSE
 							true
 					END
@@ -616,7 +600,8 @@ BEGIN
 					END
 				AND 	CASE WHEN tcf.id_tipo_calculo IN (36) 	THEN COALESCE(p.fluvial_coleta) AND (entrega_normal OR NOT tcf.cond_ctrc::boolean)
 										ELSE true 
-					END				
+					END
+				
 				--Filtra Ad Valorem de acordo com a configuração das cidades.			
 					
 				AND 	CASE WHEN tcf.id_tipo_calculo IN (19,20)THEN 	(COALESCE(p.satelite_entrega, false) 
@@ -661,7 +646,7 @@ BEGIN
 				AND 
 					CASE 	WHEN tcf.id_tipo_calculo = 43 AND (NOT p.coleta_dificuldade OR NOT tcf.cond_ctrc::boolean) THEN false ELSE true END
 				AND 
-					CASE 	WHEN tcf.id_tipo_calculo IN (77,44)  AND (NOT p.entrega_dificuldade OR NOT tcf.cond_ctrc::boolean) THEN false ELSE true END	
+					CASE 	WHEN tcf.id_tipo_calculo = 44 AND (NOT p.entrega_dificuldade OR NOT tcf.cond_ctrc::boolean) THEN false ELSE true END	
 					
 				--Verifica taxa de exclusividade de veículo
 				AND 
@@ -678,9 +663,9 @@ BEGIN
 						ELSE
 							true
 					END
-				--Filtra Coleta por horario				
+				--Filtra Coleta por horario
 				AND
-					CASE 	WHEN tcf.id_tipo_calculo IN (54,79) THEN 							
+					CASE 	WHEN tcf.id_tipo_calculo = 54 THEN 							
 							CASE WHEN dia_coleta IS NOT NULL THEN
 								CASE 	WHEN dia_coleta = 1 AND tc.s1 = 1 THEN true
 									WHEN dia_coleta = 2 AND tc.s2 = 1 THEN true
@@ -719,7 +704,7 @@ BEGIN
 				--Descarta frete peso do tipo m3, codigo 13
 				AND tcf.id_tipo_calculo <> 13
 								
-		),
+		),		
 		--- Verifica se aplica isenção
 		isencao AS (
 			SELECT 
@@ -772,21 +757,21 @@ BEGIN
 			isencao.aplica_isencao,
 			CASE	WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,53,74) AND calcular_a_partir_de = 2 THEN total_nf
 				WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,53,74) AND calcular_a_partir_de IN(1,3) 	THEN total_valor
-				--WHEN ptf.id_tipo_calculo IN (13) THEN null --total_peso_cubad				
-				WHEN ptf.id_tipo_calculo IN (8)  THEN total_unidades -- total_unidades
-				WHEN ptf.id_tipo_calculo IN (12,46) THEN km_entrega -- total_km
+				--WHEN ptf.id_tipo_calculo IN (13) THEN null --total_peso_cubado					
+				WHEN ptf.id_tipo_calculo IN (8)  THEN total_unidades -- total_unidades					
+				WHEN ptf.id_tipo_calculo IN (12,46) THEN null -- total_km
 				WHEN ptf.id_tipo_calculo IN (45) THEN 
 					CASE 	WHEN coleta_exclusiva THEN  km_percorridos_coleta --total km 					
 						WHEN entrega_exclusiva THEN km_percorridos_entrega --total km 					
 						ELSE null
 					END					
 				--WHEN ptf.id_tipo_calculo IN (12,45,46) THEN null --total_dias 					
-				WHEN ptf.id_tipo_calculo IN (2,3,79) THEN total_valor 			
+				WHEN ptf.id_tipo_calculo IN (2,3) THEN total_valor 			
 				WHEN ptf.id_tipo_calculo IN (6) THEN null --total_eixo 					
 				WHEN ptf.id_tipo_calculo IN (14,40) THEN null --total_horas 
 				WHEN ptf.id_tipo_calculo IN (5,47) THEN unidade_pedagio
 				WHEN ptf.id_tipo_calculo IN (75) THEN unidade_pedagio_peso_bruto
-				WHEN ptf.id_tipo_calculo IN (1,5,9,10,11,16,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,77,78) THEN total_peso
+				WHEN ptf.id_tipo_calculo IN (1,5,9,10,11,16,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39) THEN total_peso
 				WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,54,55,70,71, 80) THEN 1 -- Sem parâmetro, então 1 por padrão 
 			END as quantidade_calculo			
 		FROM 
@@ -804,7 +789,7 @@ BEGIN
 					CASE	WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,74) THEN ptf.total_nf >= ptf.medida_inicial
 						WHEN ptf.id_tipo_calculo IN (13) THEN false --total_peso_cubado					
 						WHEN ptf.id_tipo_calculo IN (8)  THEN ptf.total_unidades >= ptf.medida_inicial -- total_unidades
-						WHEN ptf.id_tipo_calculo IN (12) THEN ptf.km_entrega >= ptf.medida_inicial -- total_km
+						WHEN ptf.id_tipo_calculo IN (12) 	THEN true -- total_km										
 						WHEN ptf.id_tipo_calculo IN (45) THEN-- Verifica se é coleta ou entrega
 							CASE WHEN coleta_exclusiva 	THEN ptf.km_percorridos_coleta >= ptf.medida_inicial 
 							     WHEN entrega_exclusiva 	THEN ptf.km_percorridos_entrega >= ptf.medida_inicial 
@@ -817,10 +802,10 @@ BEGIN
 						WHEN ptf.id_tipo_calculo IN (5,47) THEN ptf.unidade_pedagio >= ptf.medida_inicial
 						WHEN ptf.id_tipo_calculo IN (14,40) THEN true --total_horas 
 						WHEN ptf.id_tipo_calculo IN (75) THEN ptf.unidade_pedagio_peso_bruto >= ptf.medida_inicial
-						WHEN ptf.id_tipo_calculo IN (54, 79) THEN COALESCE(ptf.hr_coleta,-1) >= ptf.medida_inicial
+						WHEN ptf.id_tipo_calculo IN (54) THEN COALESCE(ptf.hr_coleta,-1) >= ptf.medida_inicial
 						WHEN ptf.id_tipo_calculo IN (55) THEN COALESCE(ptf.hr_entrega,-1) >= ptf.medida_inicial						
 						WHEN ptf.id_tipo_calculo IN (1,9,10,11,16,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,53) THEN ptf.total_peso >= ptf.medida_inicial
-						WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,70,71,77,78, 80) THEN true -- Sem parâmetro, então 1 por padrão 
+						WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,54,55,70,71, 80) THEN true -- Sem parâmetro, então 1 por padrão 
 					END 
 					
 				-- Se a medida final for diferente de 0, verifica se está dentro da faixa, ou se tem valor para excedido
@@ -839,11 +824,7 @@ BEGIN
 							OR ptf.valor_variavel_excedido > 0 
 							OR ptf.valor_fixo_excedido > 0)
 
-						WHEN ptf.id_tipo_calculo IN (12, 46) THEN 							
-							ptf.km_entrega >= ptf.medida_inicial 
-							AND (ptf.km_entrega <= ptf.medida_final 
-							OR ptf.valor_variavel_excedido > 0 
-							OR ptf.valor_fixo_excedido > 0)					
+						WHEN ptf.id_tipo_calculo IN (12, 46) THEN true -- 					
 						
 						WHEN ptf.id_tipo_calculo IN (45) THEN 
 							CASE 	WHEN coleta_exclusiva THEN 
@@ -884,7 +865,7 @@ BEGIN
 						
 						WHEN ptf.id_tipo_calculo IN (14,40) THEN true --total_horas 
 
-						WHEN ptf.id_tipo_calculo IN (54, 79) THEN 
+						WHEN ptf.id_tipo_calculo IN (54) THEN 
 							ptf.hr_coleta >= ptf.medida_inicial 
 							AND (ptf.hr_coleta <= ptf.medida_final 
 							OR ptf.valor_variavel_excedido > 0 
@@ -892,9 +873,9 @@ BEGIN
 
 						WHEN ptf.id_tipo_calculo IN (55) THEN 
 							ptf.hr_entrega >= ptf.medida_inicial 
- 							AND (ptf.hr_entrega <= ptf.medida_final 
- 							OR ptf.valor_variavel_excedido > 0 
- 							OR ptf.valor_fixo_excedido > 0)		
+							AND (ptf.hr_entrega <= ptf.medida_final 
+							OR ptf.valor_variavel_excedido > 0 
+							OR ptf.valor_fixo_excedido > 0)		
 							
 						
 						WHEN ptf.id_tipo_calculo IN (1,9,10,11,16,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,53) THEN 
@@ -903,7 +884,7 @@ BEGIN
 							OR ptf.valor_variavel_excedido > 0 
 							OR ptf.valor_fixo_excedido > 0)			
 								
-						WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,70,71,77, 78, 80) THEN 
+						WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,54,55,70,71, 80) THEN 
 							true 
 					END 								
 					
@@ -972,9 +953,6 @@ BEGIN
 			parametros_faixa_calculo pfc
 		WHERE
 			pfc.tipo_transporte = pfc.tipo_transporte_selecionado
-			--Tipo de Calculo TDE sobre Percentual do Frete nao calcula aqui
-			AND pfc.id_tipo_calculo <> 77 
-			AND pfc.id_tipo_calculo <> 78
 			AND pfc.id_tipo_calculo <> 80
 			
 		), 
@@ -1116,17 +1094,7 @@ BEGIN
 			WITH 
 			a AS (
 				
-				SELECT	
-					adicional_frete as adicional, 
-					adicional_frete_minimo as adicional_minimo,
-					parametros_faixa_calculo.id_tipo_calculo,
-					scr_tabelas_tipo_calculo.descricao 
-				FROM 	
-					parametros_faixa_calculo
-					LEFT JOIN scr_tabelas_tipo_calculo 
-						ON parametros_faixa_calculo.id_tipo_calculo = scr_tabelas_tipo_calculo.id_tipo_calculo 
-				WHERE 	
-					parametros_faixa_calculo.id_tipo_calculo IN (56,77,78,80)
+				SELECT	MAX(adicional_frete) as adicional FROM parametros_faixa_calculo 
 				
 			), 			
 			v AS
@@ -1137,21 +1105,18 @@ BEGIN
 			(
 				SELECT 
 					adicional,
-					id_tipo_calculo,
-					descricao,
 					total_valor_pagar,
-					adicional_minimo,
-					f_maior(CASE 	WHEN adicional > 0 AND total_valor_pagar > 0 
+					CASE 	WHEN adicional > 0 AND total_valor_pagar > 0 
 						THEN total_valor_pagar * adicional
 						ELSE 0.00
-					END, adicional_minimo) as valor_adicional
+					END as valor_adicional
 				FROM a,v
 			)
 			SELECT 
 				NULL::integer as id_conhecimento_cf,
 				1::integer as id_conhecimento,
-				id_tipo_calculo as id_tipo_calculo,
-				descricao,
+				56::integer as id_tipo_calculo,
+				'Adicional Coleta/Entrega'::character(50) as descricao,
 				0.00::integer as excedente,
 				adicional::numeric(12,2) as quantidade,
 				total_valor_pagar::numeric(12,6) as valor_item,
@@ -1352,10 +1317,38 @@ BEGIN
 					vRetorno = ('{"codigo":16, "Mensagem":"Não foi identificada nenhuma faixa de cálculo de componentes de frete!"}')::json;
 				END CASE;									
 			END IF;			
+
 			
 		ELSE
+
+			PERFORM f_scr_calcula_icms(
+				vTotalFrete,
+				(parametros->>'aliquota')::text::numeric,
+				(parametros->>'perc_desconto')::text::numeric,
+				(parametros->>'isento_imposto')::text::integer,
+				(parametros->>'imposto_incluso')::text::integer,
+				(parametros->>'perc_credito_icms_st')::text::numeric,				
+				imposto,
+				msg2
+			);
+
+
+			BEGIN 
+				CLOSE "msg2";
+			EXCEPTION 
+				WHEN  	invalid_cursor_name THEN 
+				WHEN    null_value_not_allowed THEN 				
+			END;
+		
+
+			RETURN NEXT imposto;
+
+			--f_scr_calcula_icms(500.00,12.00,0,0,0,'imposto','msg');
+			--vImposto = vResultadoImposto->'base_calculo';
+			--vBaseCalculo = vResultadoImposto->'imposto';
 			MOVE BACKWARD ALL FROM cf;
 			vRetorno = ('{"codigo":0, "Mensagem":"Frete Calculado"}')::json;			
+						
 		END IF;
 		
 		
@@ -1446,13 +1439,40 @@ BEGIN
 			LEFT JOIN scr_tabelas t ON t.id_tabela_frete = tod.id_tabela_frete
 			LEFT JOIN scr_tabelas_tipo_calculo ttc ON tcf.id_tipo_calculo = ttc.id_tipo_calculo
 		WHERE
-			numero_tabela_frete = vTabelaFrete
-		ORDER BY 
-			ttc.id_tipo_calculo;
+			numero_tabela_frete = vTabelaFrete;
 		
 		
 		RETURN NEXT cf;
-		vRetorno = ('{"codigo":0, "Mensagem":"Frete Calculado"}')::json;	
+
+		IF v_valor_pagar_comb IS NOT NULL THEN 
+			PERFORM f_scr_calcula_icms(
+				COALESCE(v_valor_pagar_comb,0.00),
+				(parametros->>'aliquota')::text::numeric,
+				(parametros->>'perc_desconto')::text::numeric,
+				(parametros->>'isento_imposto')::text::integer,
+				(parametros->>'imposto_incluso')::text::integer,
+				(parametros->>'perc_credito_icms_st')::text::numeric,				
+				imposto,
+				msg2
+			);
+		ELSE
+			PERFORM f_scr_calcula_icms(0.00, 0.00, 0.00,0,0,0,imposto,msg2);
+		END IF;
+
+		BEGIN 
+			CLOSE "msg2";
+		EXCEPTION 
+			WHEN  	invalid_cursor_name THEN 
+			WHEN    null_value_not_allowed THEN 				
+		END;
+		
+		
+		RETURN NEXT imposto;
+
+-- 		
+
+ 		vRetorno = ('{"codigo":0, "mensagem":"Frete Calculado"}')::json;
+
  		OPEN msg FOR SELECT vRetorno as msg;
  		
 		RETURN NEXT msg;
@@ -1465,4 +1485,3 @@ $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100
   ROWS 1000;
-
