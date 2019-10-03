@@ -1304,6 +1304,7 @@ BEGIN
 			vTotalFrete = vTotalFrete + vResultadoFrete.valor_pagar;
 		END LOOP;
 
+		--RAISE NOTICE 'Total Frete %', vTotalFrete;
 		--Se nao foi identificada nenhuma faixa de calculo alem da do imposto.
 		IF v_qt_cf = 0 THEN 
 
@@ -1330,6 +1331,7 @@ BEGIN
 				CASE 
 				
 				WHEN vTipoRota = 2 THEN -- Se a tabela tem origem e destino por regiao
+					
 					vRegioes = f_scr_retorna_regioes_origem_destino(
 								(parametros->>'calculado_de_id_cidade')::text::integer,
 								(parametros->>'calculado_ate_id_cidade')::text::integer,
@@ -1340,12 +1342,12 @@ BEGIN
 					vRegiaoDestino = (vRegioes->'id_regiao_destino')::text::integer;
 								
 					IF vRegiaoOrigem = -1 THEN  -- Se regiao origem for -1, cidade origem nao configurada
-					
-						vRetorno = ('{"codigo":3, "Mensagem":"Cidade sem regiao de origem definida na tabela!"}')::json;
+												
+						vRetorno = ('{"codigo":3, "Mensagem":"Origem/Destino nao encontrado."}')::json;
 			
 					ELSE --
 						IF vRegiaoDestino = -1 THEN  -- Verifica se a cidade destino esta em alguma regiao
-							vRetorno = ('{"codigo":4, "Mensagem":"Cidade sem regiao de destino definida na tabela!"}')::json;
+							vRetorno = ('{"codigo":4, "Mensagem":"Origem/destino nao encontrado."}')::json;
 							
 						ELSE
 							vRetorno = ('{"codigo":16, "Mensagem":"Nao foi identificada nenhuma faixa de calculo de componentes de frete!"}')::json;
