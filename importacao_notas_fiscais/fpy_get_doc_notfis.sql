@@ -167,6 +167,8 @@ $BODY$
     reg_318 = DocParser.make_parser((3,40,14,15,40,20,35,9,9,9,35,11))
     reg_318_zap = DocParser.make_parser((3,126,44))
 
+    reg_319 = DocParser.make_parser((3,20,7,7,7,7,7,7,40,4,20,44))
+
     #a = open(filename,'r',encoding='utf-8')
     #linhas = a.readlines()
     #a.close()
@@ -295,6 +297,11 @@ $BODY$
         elif id_reg == '318':
             ##plpy.notice(str(len(linha)))
             registros.append(reg_318_zap(linha))
+
+        elif id_reg == '319':
+            ##plpy.notice(str(len(linha)))
+            registros.append(reg_319(linha))
+
 
     #Ler o conteudo dos registros parseados
     i = 0
@@ -489,8 +496,15 @@ $BODY$
             elif len(r) == 32 or len(r) == 45:
                 n['nfe_chave_nfe'] = r[31]
                 n['nfe_numero_pedido'] = r[1][:7]
+
+                if n['nfe_chave_nfe'][20:22] == '57':
+                    n['chave_cte'] = r[31]
+                    
                 try:
-                    n['chave_cte'] = r[44]
+                    n['chave_cte'] = n['nfe_chave_nfe']
+                    n['nfe_pagador_cnpj_cpf'] = n['nfe_chave_nfe'][6:20]
+                    n['nfe_chave_nfe'] = None
+                    
                 except:
                     pass
             elif emb_pratti:
@@ -566,6 +580,17 @@ $BODY$
             except:
                 print(traceback.format_exc())         
              
+            try:
+                proximo_id = registros[i+1][0]
+
+                if proximo_id == '319':
+                    if len(registros[i+1]) == 12:                        
+                        #plpy.notice(registros[i+1][2])
+                        if valida_chave_nfe(registros[i+1][11]):                        
+                            n['nfe_chave_nfe'] = registros[i+1][11]
+            except:
+                print(traceback.format_exc())         
+
                  
             nfs.append(n)
             lst_notas.append(n)
