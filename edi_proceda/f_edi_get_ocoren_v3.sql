@@ -143,9 +143,9 @@ BEGIN
 		LEFT JOIN scr_ocorrencia_obs_edi obs	
 			ON nf.id_ocorrencia_obs = obs.codigo_edi_obs 
 		LEFT JOIN filial f 
-			ON f.codigo_empresa = c.empresa_responsavel AND f.codigo_filial = nf.filial_emitente
+			ON f.codigo_empresa = COALESCE(c.empresa_responsavel,nf.empresa_emitente) AND f.codigo_filial = nf.filial_emitente
 		LEFT JOIN empresa 
-			ON empresa.codigo_empresa = c.empresa_responsavel
+			ON empresa.codigo_empresa = COALESCE(c.empresa_responsavel,nf.empresa_emitente)
 		LEFT JOIN scr_conhecimento con
 			ON con.id_conhecimento = nf.id_conhecimento
 	WHERE 		

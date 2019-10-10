@@ -198,10 +198,10 @@ $BODY$
     i = -1 
     tamanho = 0
     for linha in linhas2:
-        plpy.notice(linha)
+        #plpy.notice(linha)
         if linha[0:3] == '313':
             tamanho = len(linha)
-            plpy.notice('Tamanho %i' % tamanho)
+            #plpy.notice('Tamanho %i' % tamanho)
             #plpy.notice(linha)
             break
 
@@ -252,6 +252,7 @@ $BODY$
 
         elif id_reg == '313':
             #plpy.notice('Funcionando aqui inicio')
+
             emb_pratti = False
             if emb_spss or len(linha) == 303:
                 emb_spss = True
@@ -483,7 +484,7 @@ $BODY$
             ##Chave da NFe
 
             n['nfe_pagador_cnpj_cpf'] = nfe_pagador_cnpj_cpf
-            #plpy.notice(str(len(r)))
+            plpy.notice(str(len(r)))
             if emb_spss:
                 n['nfe_chave_nfe'] = r[31]
             elif emb_softlog:
@@ -495,24 +496,24 @@ $BODY$
                 n['nfe_chave_nfe'] = r[32]                        
             elif len(r) == 32 or len(r) == 45:
                 n['nfe_chave_nfe'] = r[31]
+
                 n['nfe_numero_pedido'] = r[1][:7]
 
                 if n['nfe_chave_nfe'][20:22] == '57':
-                    n['chave_cte'] = r[31]
-                    
-                try:
-                    n['chave_cte'] = n['nfe_chave_nfe']
-                    n['nfe_pagador_cnpj_cpf'] = n['nfe_chave_nfe'][6:20]
-                    n['nfe_chave_nfe'] = None
-                    
-                except:
-                    pass
+                    n['chave_cte'] = r[31]                    
+                    try:
+                        n['chave_cte'] = n['nfe_chave_nfe']
+                        n['nfe_pagador_cnpj_cpf'] = n['nfe_chave_nfe'][6:20]
+                        n['nfe_chave_nfe'] = None
+                    except:
+                        pass
+		        
             elif emb_pratti:
                 n['nfe_chave_nfe'] = r[30]            
             else:
                 n['nfe_chave_nfe'] = emit_cnpj + r[7].strip().zfill(3) + r[8].strip().zfill(9)
 
-
+            #plpy.notice(n['nfe_chave_nfe'])
             if emb_360:                
                 n['nfe_numero_pedido'] = r[32].strip()
             
