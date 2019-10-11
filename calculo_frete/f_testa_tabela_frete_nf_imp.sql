@@ -55,13 +55,14 @@ BEGIN
 				dt_agenda_entrega,												
 				nf.tipo_transporte,
 				COALESCE(nf.vl_frete_peso, 0.00)::numeric as vl_frete_peso,
-				pf.id_tipo_veiculo,
+				COALESCE(nf.id_tipo_veiculo, pf.id_tipo_veiculo) as id_tipo_veiculo,
 				c.total_peso as peso_agregado_nf,
 				c.total_volume_cubico as volume_cubico_agregado_nf,
 				c.qt_entregas as total_entregas,
 				pf.tipo_carga::integer as tipo_carga, 
 				nf.destinatario_id,
-				nf.remetente_id
+				nf.remetente_id,
+				nf.km_rodado
 			FROM 
 				scr_notas_fiscais_imp nf
 				LEFT JOIN cliente r 

@@ -177,7 +177,8 @@ BEGIN
 			 	COALESCE((parametros->>'tipo_carga')::text::integer,0)::integer as tipo_carga,
 			 	COALESCE((parametros->>'tipo_transporte')::text::integer,0)::integer as tipo_transporte,
 			 	COALESCE((parametros->>'remetente_id')::text::integer,0)::integer as remetente_id,
-			 	COALESCE((parametros->>'destinatario_id')::text::integer,0)::integer as destinatario_id
+			 	COALESCE((parametros->>'destinatario_id')::text::integer,0)::integer as destinatario_id,
+			 	COALESCE((parametros->>'km_rodado')::text::integer,0)::integer as km_rodados	 	
 		--FROM json
  		),
 		destinatario AS (
@@ -275,9 +276,11 @@ BEGIN
 				ent.coleta_dificuldade,
 				ent.entrega_dificuldade,
 				ent.entrega_exclusiva,				
-				ent.coleta_exclusiva,	
-				dist_cid_dest.km_entrega,										
-				
+				ent.coleta_exclusiva,
+				CASE 	WHEN COALESCE(ent.km_rodados,0) > 0 
+					THEN ent.km_rodados
+					ELSE dist_cid_dest.km_entrega
+				END as km_entrega,														
 				reg.capital::boolean as capital_polo_coleta, 
 				reg.cidade_satelite::boolean as satelite_coleta,  
 				reg.interior_redespacho::boolean as interior_coleta, 
@@ -302,7 +305,7 @@ BEGIN
 
 				ent.total_frete_origem,
 				0::integer as diarias,
-				0::integer as km_rodados,		
+				ent.km_rodados,		
 				ent.imposto_incluso,		
 				nc.id_natureza_carga,
 				nc.densidade as densidade_nc,
@@ -329,7 +332,8 @@ BEGIN
 					THEN extract('dow' from ent.data_entrega) + 1
 					ELSE NULL 
 				END::numeric as dia_entrega,
-				ent.destinatario_id
+				ent.destinatario_id,
+				ent.remetente_id
 
 				
 
@@ -615,6 +619,9 @@ BEGIN
 
 						WHEN tod.tipo_rota = 0 THEN 
 							tod.id_destino = p.destinatario_id
+							
+						WHEN tod.tipo_rota = -1 THEN 
+							tod.id_origem = p.remetente_id
 						ELSE
 							true
 					END
@@ -832,7 +839,7 @@ BEGIN
 				WHEN 	ptf.medida_final = 0 THEN
 					CASE	WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,74) THEN ptf.total_nf >= ptf.medida_inicial
 						WHEN ptf.id_tipo_calculo IN (13) THEN false --total_peso_cubado					
-						WHEN ptf.id_tipo_calculo IN (8)  THEN ptf.total_unidades >= ptf.medida_inicial -- total_unidades
+						WHEN ptf.id_tipo_calculo IN (8, 46)  THEN ptf.total_unidades >= ptf.medida_inicial -- total_unidades
 						WHEN ptf.id_tipo_calculo IN (12) THEN ptf.km_entrega >= ptf.medida_inicial -- total_km
 						WHEN ptf.id_tipo_calculo IN (45) THEN-- Verifica se � coleta ou entrega
 							CASE WHEN coleta_exclusiva 	THEN ptf.km_percorridos_coleta >= ptf.medida_inicial 
@@ -1426,7 +1433,7 @@ BEGIN
 				v_tipo_combinado = NULL;
 		END CASE;
 	
-		-- Deleta se o valor � 0.00
+		-- Deleta se o valor e 0.00
 		OPEN cf FOR 
 		SELECT 	
 			NULL::integer as id_conhecimento_cf,

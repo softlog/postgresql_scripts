@@ -1,0 +1,1 @@
+ALTER FOREIGN TABLE v_bairros_cep ADD COLUMN faixas_cep TEXT;
