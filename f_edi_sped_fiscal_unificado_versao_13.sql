@@ -2114,7 +2114,7 @@ BEGIN
 		WITH temp AS (
 			SELECT (row_to_json(row,true))::json as json, id_conhecimento FROM (
 				SELECT 
-					'D190' AS reg,					
+					'D190' AS reg,			
 					trim(cst) as cst_icms,
 					trim(cfop) as cfop,
 					aliquota as aliq_icms,
