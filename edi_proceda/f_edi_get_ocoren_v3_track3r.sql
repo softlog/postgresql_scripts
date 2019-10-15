@@ -36,12 +36,7 @@ BEGIN
 		to_char(c.data_digitacao,''HHMI'') as hora_digitacao, 
 		to_char(COALESCE(nf.data_ocorrencia,c.data_digitacao), ''DDMMYYYY'') as data_ocorrencia,
 		to_char(COALESCE(nf.data_ocorrencia,c.data_digitacao), ''HHMI'') as hora_ocorrencia,
-		CASE 
-			WHEN COALESCE(o.codigo_edi,0) = 0 	THEN ''PROCESSO DE TRANSPORTE INICIADO''
-			WHEN COALESCE(codigo_edi,0) IN (1,2)	THEN ''ENTREGA REALIZADA. RECEBIDA POR: '' || 
-									COALESCE(TRIM(UPPER(c.nome_recebedor)),''Não Informado'') 		 
-						ELSE LEFT(o.ocorrencia,70) 
-		END::character(70) as observacao_livre, 
+		''''::character(70) as observacao_livre,
 		COALESCE(obs.codigo_edi_obs,0)::integer as cod_observacao,
 		(''OCOREN'' || to_char(hora.data_tempo,''DDMMYY'')) as ident_000,
 		(''OCOREN'' || to_char(hora.data_tempo,''DDMMYYYY'')) as ident_320,
@@ -104,14 +99,7 @@ BEGIN
 		to_char(nfo.data_registro,''HHMI'') as hora_digitacao, 	
 		to_char(COALESCE(nfo.data_ocorrencia,nfo.data_registro), ''DDMMYYYY'') as data_ocorrencia,
 		to_char(COALESCE(nfo.data_ocorrencia,nfo.data_registro), ''HHMI'') as hora_ocorrencia,
-		CASE 
-			WHEN nf.obs_ocorrencia IS NOT NULL 	THEN left(nfo.obs_ocorrencia,70)
-			WHEN nfo.obs_ocorrencia IS NOT NULL 	THEN left(nfo.obs_ocorrencia,70)
-			WHEN COALESCE(o.codigo_edi,0) = 0 	THEN ''PROCESSO DE TRANSPORTE INICIADO''
-			WHEN COALESCE(codigo_edi,0) IN (1,2)	THEN ''ENTREGA REALIZADA. RECEBIDA POR: '' || 
-									COALESCE(TRIM(UPPER(nf.nome_recebedor)),''Não Informado'') 		 
-						ELSE LEFT(o.ocorrencia,70) 
-		END::character(70) as observacao_livre, 	
+		''''::character(70) as observacao_livre, 	
 		COALESCE(obs.codigo_edi_obs,0)::integer as cod_observacao,
 		(''OCOREN'' || to_char(hora.data_tempo,''DDMMYY'')) as ident_000,
 		(''OCOREN'' || to_char(hora.data_tempo,''DDMMYYYY'')) as ident_320,
