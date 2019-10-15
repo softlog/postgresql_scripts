@@ -198,11 +198,11 @@ CREATE OR REPLACE VIEW public.v_mgr_notas_fiscais AS
     p.utiliza_cod_interno_frete,
     nf.id_tipo_veiculo,
     ttv.tipo_veiculo,
-    ttv.capacidade_peso_final,
-    NULL::integer AS id_setor,
-    NULL::character varying(35) AS setor,
-    NULL::integer AS id_regiao,
-    NULL::character varying(35) AS regiao,
+    ttv.capacidade_peso_final,    
+    CASE WHEN current_database() = 'softlog_medilog' THEN NULL ELSE v_rs.id_setor END id_setor,
+    CASE WHEN current_database() = 'softlog_medilog' THEN NULL ELSE v_rs.setor END::character varying(35) setor,
+    CASE WHEN current_database() = 'softlog_medilog' THEN NULL ELSE v_rs.id_regiao END id_regiao,
+    CASE WHEN current_database() = 'softlog_medilog' THEN NULL ELSE v_rs.regiao END::character varying(35) regiao,    
     nf.vl_combinado,
     nf.vl_tonelada,
     nf.vl_percentual_nf,
@@ -283,6 +283,7 @@ CREATE OR REPLACE VIEW public.v_mgr_notas_fiscais AS
      LEFT JOIN scr_ocorrencia_edi o ON o.codigo_edi = nf.id_ocorrencia
      LEFT JOIN scr_tabelas_tipo_veiculo ttv ON ttv.id_tipo_veiculo = nf.id_tipo_veiculo
      LEFT JOIN scr_pre_fatura_entregas pfe ON pfe.id_pre_fatura_entrega = nf.id_pre_fatura_entrega
-     LEFT JOIN scr_pre_faturas pf ON pf.id_pre_fatura = pfe.id_pre_fatura;
+     LEFT JOIN scr_pre_faturas pf ON pf.id_pre_fatura = pfe.id_pre_fatura
+     LEFT JOIN v_regiao_setores v_rs ON current_database() <> 'softlog_medilog' AND v_rs.id_cidade = d.id_cidade::integer;
 
 
