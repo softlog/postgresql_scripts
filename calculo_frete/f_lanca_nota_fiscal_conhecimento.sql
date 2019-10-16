@@ -174,7 +174,8 @@ BEGIN
 			odometro_inicial, --(72)			
 			expedidor_cnpj, --73			
 			total_frete_origem, --74
-			km_rodado
+			km_rodado, --75
+			qtd_ajudantes --76
 			
 			
 -- 			redespachador_id
@@ -319,7 +320,8 @@ BEGIN
 			nf.odometro_inicial, --(72)				
 			nf.expedidor_cnpj, --73
 			nf.total_frete_origem, --74
-			nf.km_rodado --75
+			nf.km_rodado,--75
+			nf.qtd_ajudantes --76
 			
 		FROM 			
 			v_mgr_notas_fiscais nf

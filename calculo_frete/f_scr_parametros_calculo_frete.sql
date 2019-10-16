@@ -65,7 +65,8 @@ BEGIN
 				COALESCE(c.vl_frete_peso, 0.00)::numeric as vl_frete_peso,
 				destinatario_id,
 				c.remetente_id,
-				c.km_rodado
+				c.km_rodado,
+				c.qtd_ajudantes
 			FROM 				
 				scr_conhecimento c
 				LEFT JOIN scr_conhecimento_notas_fiscais nf
@@ -130,7 +131,8 @@ BEGIN
 				pf.tipo_carga,
 				c.destinatario_id,
 				c.remetente_id,
-				c.km_rodado
+				c.km_rodado,
+				c.qtd_ajudantes
 			
 		) row 
 	) SELECT parametros INTO vParametros FROM t1;

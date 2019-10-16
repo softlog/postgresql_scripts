@@ -256,7 +256,8 @@ CREATE OR REPLACE VIEW public.v_mgr_notas_fiscais AS
     nf.odometro_inicial,
     nf.data_viagem,
     nf.total_frete_origem,     
-    nf.km_rodado
+    nf.km_rodado,
+    nf.qtd_ajudantes
    FROM scr_notas_fiscais_imp nf
      LEFT JOIN cliente r ON r.codigo_cliente = nf.remetente_id
      LEFT JOIN v_regime_especial_combinado conf_re ON conf_re.codigo_cliente = r.codigo_cliente

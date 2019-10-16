@@ -159,6 +159,7 @@ select_cmd = 'SELECT scr_conhecimento.id_conhecimento
 	,numero_averbacao
 	,tipo_veiculo
 	,km_rodado
+	,scr_conhecimento.qtd_ajudantes
 FROM scr_conhecimento
 WHERE 1=2',
 
@@ -321,7 +322,8 @@ cursor_schema = translate('ID_CONHECIMENTO I
 	RECEBEDOR_CNPJ C(14),
 	NUMERO_AVERBACAO C(50),
 	TIPO_VEICULO I,
-	KM_RODADO I',chr(13)||chr(10)||chr(9),'')	
+	KM_RODADO I,
+	QTD_AJUDANTES I',chr(13)||chr(10)||chr(9),'')
 , 
 update_name_list = translate('
 	ID_CONHECIMENTO scr_conhecimento.ID_CONHECIMENTO
@@ -473,7 +475,8 @@ update_name_list = translate('
 	,RECEBEDOR_CNPJ scr_conhecimento.recebedor_cnpj
 	,NUMERO_AVERBACAO scr_conhecimento.numero_averbacao
 	,TIPO_VEICULO scr_conhecimento.tipo_veiculo
-	,KM_RODADO scr_conhecimento.km_rodado',chr(13)||chr(10)||chr(9),'')
+	,KM_RODADO scr_conhecimento.km_rodado
+	,QTD_AJUDANTES scr_conhecimento.qtd_ajudantes',chr(13)||chr(10)||chr(9),'')
 , updatable_field_list = '
 	ID_CONHECIMENTO
 	,EMPRESA_EMITENTE
@@ -624,7 +627,8 @@ update_name_list = translate('
 	,RECEBEDOR_CNPJ
 	,NUMERO_AVERBACAO
 	,TIPO_VEICULO
-	,KM_RODADO'
+	,KM_RODADO
+	,QTD_AJUDANTES'
 FROM
 	conf_formulario
 WHERE

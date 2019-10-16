@@ -47,7 +47,8 @@ BEGIN
 				1::integer as modo_calculo,
 				0.00::numeric(5,2) as perc_desc_calculo,
 				c.tipo_veiculo as id_tipo_veiculo,
-				c.km_rodado
+				c.km_rodado,
+				c.qtd_ajudantes
 			FROM 
 				scr_cotacao_tabela_frete c				
 			WHERE 

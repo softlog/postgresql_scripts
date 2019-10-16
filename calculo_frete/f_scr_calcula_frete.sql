@@ -178,7 +178,8 @@ BEGIN
 			 	COALESCE((parametros->>'tipo_transporte')::text::integer,0)::integer as tipo_transporte,
 			 	COALESCE((parametros->>'remetente_id')::text::integer,0)::integer as remetente_id,
 			 	COALESCE((parametros->>'destinatario_id')::text::integer,0)::integer as destinatario_id,
-			 	COALESCE((parametros->>'km_rodado')::text::integer,0)::integer as km_rodados	 	
+			 	COALESCE((parametros->>'km_rodado')::text::integer,0)::integer as km_rodados,
+			 	COALESCE((parametros->>'qtd_ajudantes')::text::integer,0)::integer as qtd_ajudantes	
 		--FROM json
  		),
 		destinatario AS (
@@ -280,7 +281,8 @@ BEGIN
 				CASE 	WHEN COALESCE(ent.km_rodados,0) > 0 
 					THEN ent.km_rodados
 					ELSE dist_cid_dest.km_entrega
-				END as km_entrega,														
+				END as km_entrega,	
+				ent.qtd_ajudantes,													
 				reg.capital::boolean as capital_polo_coleta, 
 				reg.cidade_satelite::boolean as satelite_coleta,  
 				reg.interior_redespacho::boolean as interior_coleta, 
@@ -503,6 +505,7 @@ BEGIN
 				p.dia_entrega,
 				p.hr_entrega,
 				p.km_entrega,
+				p.qtd_ajudantes,
 
 				--Divide o valor variavel pelo fator de divisao
 				tc.valor_variavel/ttc.dividir_por as valor_unitario,
@@ -821,9 +824,10 @@ BEGIN
 				WHEN ptf.id_tipo_calculo IN (6) THEN null --total_eixo 					
 				WHEN ptf.id_tipo_calculo IN (14,40) THEN null --total_horas 
 				WHEN ptf.id_tipo_calculo IN (5,47) THEN unidade_pedagio
+				WHEN ptf.id_tipo_calculo IN (200) THEN qtd_ajudantes
 				WHEN ptf.id_tipo_calculo IN (75) THEN unidade_pedagio_peso_bruto
-				WHEN ptf.id_tipo_calculo IN (1,5,9,10,11,16,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,77,78) THEN total_peso
-				WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,54,55,70,71, 80,200) THEN 1 -- Sem parametro, entao 1 por padrao
+				WHEN ptf.id_tipo_calculo IN (1,5,9,10,11,16,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,77,78) THEN total_peso				
+				WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,54,55,70,71, 80) THEN 1 -- Sem parametro, entao 1 por padrao
 			END as quantidade_calculo			
 		FROM 
 			parametros_tabela_frete ptf, isencao, rota_prioritaria
@@ -855,8 +859,9 @@ BEGIN
 						WHEN ptf.id_tipo_calculo IN (75) THEN ptf.unidade_pedagio_peso_bruto >= ptf.medida_inicial
 						WHEN ptf.id_tipo_calculo IN (54, 79) THEN COALESCE(ptf.hr_coleta,-1) >= ptf.medida_inicial
 						WHEN ptf.id_tipo_calculo IN (55) THEN COALESCE(ptf.hr_entrega,-1) >= ptf.medida_inicial						
+						WHEN ptf.id_tipo_calculo IN (200) THEN COALESCE(ptf.qtd_ajudantes,-1) >= ptf.medida_inicial						
 						WHEN ptf.id_tipo_calculo IN (1,9,10,11,16,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,53) THEN ptf.total_peso >= ptf.medida_inicial
-						WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,70,71,77,78, 80,200) THEN true -- Sem parametro, entao 1 por padrao 
+						WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,70,71,77,78, 80) THEN true -- Sem parametro, entao 1 por padrao 
 					END 
 					
 				-- Se a medida final for diferente de 0, verifica se esta dentro da faixa, ou se tem valor para excedido
@@ -931,7 +936,12 @@ BEGIN
  							AND (ptf.hr_entrega <= ptf.medida_final 
  							OR ptf.valor_variavel_excedido > 0 
  							OR ptf.valor_fixo_excedido > 0)		
-							
+
+						WHEN ptf.id_tipo_calculo IN (200) THEN 
+							ptf.qtd_ajudantes >= ptf.medida_inicial 
+ 							AND (ptf.qtd_ajudantes <= ptf.medida_final 
+ 							OR ptf.valor_variavel_excedido > 0 
+ 							OR ptf.valor_fixo_excedido > 0)		
 						
 						WHEN ptf.id_tipo_calculo IN (1,9,10,11,16,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,53) THEN 
 							ptf.total_peso >= ptf.medida_inicial 
@@ -939,7 +949,7 @@ BEGIN
 							OR ptf.valor_variavel_excedido > 0 
 							OR ptf.valor_fixo_excedido > 0)			
 								
-						WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,70,71,77, 78, 80, 200) THEN 
+						WHEN ptf.id_tipo_calculo IN (4,17,18,41,42,43,44,48,49,50,52,70,71,77, 78, 80) THEN 
 							true 
 					END 								
 					

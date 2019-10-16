@@ -62,7 +62,8 @@ BEGIN
 				pf.tipo_carga::integer as tipo_carga, 
 				nf.destinatario_id,
 				nf.remetente_id,
-				nf.km_rodado
+				nf.km_rodado,
+				nf.qtd_ajudantes
 			FROM 
 				scr_notas_fiscais_imp nf
 				LEFT JOIN cliente r 
