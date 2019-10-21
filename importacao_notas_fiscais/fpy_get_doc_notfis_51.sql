@@ -354,4 +354,4 @@ $BODY$
   LANGUAGE plpython3u VOLATILE;
 
 
-ALTER FUNCTION fpy_get_doc_notfis(arquivo text) OWNER TO softlog_assislog;
+--ALTER FUNCTION fpy_get_doc_notfis(arquivo text) OWNER TO softlog_assislog;

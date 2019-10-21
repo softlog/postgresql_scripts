@@ -314,11 +314,22 @@ $BODY$
         if id == '506':
             nfs[grupo]['nfe_valor'] = r[9][:-2] + '.' + r[9][-2:]
 
+            
+            nfs[grupo]['nfe_peso_presumido'] = r[2][:-3] + '.' + r[2][-3:]
+            nfs[grupo]['nfe_peso_liquido'] = r[3][:-3] + '.' + r[3][-3:]
+            nfs[grupo]['nfe_volume_presumido'] = r[1][:-2] 
+
+            ## Informacoes dos Itens de Produto
+            nfs[grupo]['nfe_volume_produtos'] = r[1][:-2] 
+            nfs[grupo]['nfe_peso_produtos'] = r[2][:-3] + '.' + r[2][-3:]
+            nfs[grupo]['nfe_unidade'] = 'UN'
+
+
             nfs[grupo]['nfe_valor_bc'] = '0.00'
             nfs[grupo]['nfe_valor_icms'] = '0.00'
             nfs[grupo]['nfe_valor_bc_st'] = '0.00'
             nfs[grupo]['nfe_valor_icms_st'] = '0.00'
-            nfs[grupo]['nfe_valor_produtos'] = r[13][:-2] + '.' + r[13][-2:]
+            nfs[grupo]['nfe_valor_produtos'] = r[9][:-2] + '.' + r[9][-2:]
 
         if id == '507':
                     
