@@ -285,6 +285,6 @@ CREATE OR REPLACE VIEW public.v_mgr_notas_fiscais AS
      LEFT JOIN scr_tabelas_tipo_veiculo ttv ON ttv.id_tipo_veiculo = nf.id_tipo_veiculo
      LEFT JOIN scr_pre_fatura_entregas pfe ON pfe.id_pre_fatura_entrega = nf.id_pre_fatura_entrega
      LEFT JOIN scr_pre_faturas pf ON pf.id_pre_fatura = pfe.id_pre_fatura
-     LEFT JOIN v_regiao_setores v_rs ON current_database() <> 'softlog_medilog' AND v_rs.id_cidade = d.id_cidade::integer;
+     LEFT JOIN v_regiao_setores v_rs ON current_database() NOT IN ('softlog_medilog','softlog_transribeiro') AND v_rs.id_cidade = d.id_cidade::integer;
 
 
