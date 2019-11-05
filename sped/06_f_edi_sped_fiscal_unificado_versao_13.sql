@@ -224,7 +224,7 @@ BEGIN
 			AND c.tipo_documento = 1 
 			AND c.cstat IN ('101','102','135')  
 	UNION 
-	--Documentos Inutilizados que não estão no sistema
+	--Documentos Inutilizados que nÃ£o estÃ£o no sistema
 	SELECT 	
 			1::integer as ind_oper, 	
 			0::integer as ind_emit, 	
@@ -623,7 +623,7 @@ BEGIN
 			COALESCE(i.vl_cofins,0.00) as vl_cofins, 
 			COALESCE(i.vl_total,0.00) as vl_total, 
 			COALESCE(i.vl_frete,0.00) as vl_frete, 			
-			--Se tiver produto compartilhado por softwares de terceiros, uso o código do terceiro
+			--Se tiver produto compartilhado por softwares de terceiros, uso o cÃ³digo do terceiro
 			COALESCE(ecf_i.codigo_produto::integer, i.id_produto) as id_produto,
 			COALESCE(ecf_i.id_produto_softlog,i.id_produto) as id_produto_softlog,
 			nfe.vl_para_rateio,
@@ -844,7 +844,7 @@ BEGIN
 			COALESCE(ci.valor_cofins,0.00) as vl_cofins, 
 			COALESCE(ci.vl_total,0.00) as vl_total, 
 			COALESCE(ci.observacao,'') as observacao, 
-			--Se tiver produto compartilhado por softwares de terceiros, uso o código do terceiro
+			--Se tiver produto compartilhado por softwares de terceiros, uso o cÃ³digo do terceiro
 			COALESCE(ecf_i.codigo_produto::integer, ci.id_produto) as id_produto,
 			COALESCE(ecf_i.id_produto_softlog,ci.id_produto) as id_produto_softlog,
 			c.vl_para_rateio,
@@ -1193,9 +1193,9 @@ BEGIN
 		
 	)
 	-------------------------------------------------------------------------------------------------
-	--- Dados para o Bloco H - Inventário                                                          --	
+	--- Dados para o Bloco H - InventÃ¡rio                                                          --	
 	-------------------------------------------------------------------------------------------------
-	--- Relação para trazer inventario                                                             --
+	--- RelaÃ§Ã£o para trazer inventario                                                             --
 	-------------------------------------------------------------------------------------------------
 	,inf_inventario AS (
 		SELECT 
@@ -1209,7 +1209,7 @@ BEGIN
 			
 	)
 	-------------------------------------------------------------------------------------------------
-	--- Processamento do Estoque na data do Inventário                                
+	--- Processamento do Estoque na data do InventÃ¡rio                                
 	-------------------------------------------------------------------------------------------------
 	,estoque_atual AS (
 		SELECT 
@@ -2265,7 +2265,7 @@ BEGIN
 					vl_outras_despesas::numeric(12,2) as vl_da,					
 					vl_base_calculo as vl_bc_icms,
 					vl_icms as vl_icms,					
-					--Estudar o caso de Substituição Tributário 					
+					--Estudar o caso de SubstituiÃ§Ã£o TributÃ¡rio 					
 					COALESCE(0.00,vl_base_calculo_st)::numeric(12,2) as vl_bc_icms_st,
 					COALESCE(0.00,vl_icms_st)::numeric(12,2) as vl_icms_st,					
 					totais.vl_pis::numeric(12,2) as vl_pis,
@@ -2401,7 +2401,7 @@ BEGIN
 					aliquota_icms as aliq_icms,
 					valor_icms as vl_icms,				
 			
-					--Estudar o caso de Substituição Tributário 
+					--Estudar o caso de SubstituiÃ§Ã£o TributÃ¡rio 
 					-- para o Lucro Real
 					COALESCE(0.00,valor_base_icms_st) as vl_bc_icms_st,
 					COALESCE(0.00, aliquota_icms_st) as aliq_st,
@@ -2455,7 +2455,7 @@ BEGIN
 -- 					aliquota_icms as aliq_icms,
 -- 					valor_icms as vl_icms,				
 -- 			
--- 					--Estudar o caso de Substituição Tributário 
+-- 					--Estudar o caso de SubstituiÃ§Ã£o TributÃ¡rio 
 -- 					-- para o Lucro Real
 -- 					COALESCE(0.00,valor_base_icms_st) as vl_bc_icms_st,
 -- 					COALESCE(0.00, aliquota_icms_st) as aliq_st,
@@ -2517,7 +2517,7 @@ BEGIN
 						vl_base_calculo as vl_bc_icms,
 						vl_icms as vl_icms,
 						
-						--Estudar o caso de Substituição Tributário 
+						--Estudar o caso de SubstituiÃ§Ã£o TributÃ¡rio 
 						-- para o Lucro Real
 						COALESCE(0.00,vl_base_calculo_st) as vl_bc_icms_st,
 						COALESCE(0.00,vl_icms_st) as vl_icms_st,					
@@ -2556,7 +2556,7 @@ BEGIN
 						vl_outras_despesas as vl_out_da,
 						vl_base_calculo as vl_bc_icms,
 						vl_icms as vl_icms,					
-						--Estudar o caso de Substituição Tributário 
+						--Estudar o caso de SubstituiÃ§Ã£o TributÃ¡rio 
 						-- para o Lucro Real
 						vl_base_calculo_st as vl_bc_icms_st,
 						vl_icms_st as vl_icms_st,					
@@ -2593,7 +2593,7 @@ BEGIN
 						vl_out_da,
 						vl_bc_icms,
 						vl_icms,					
-						--Estudar o caso de Substituição Tributário 
+						--Estudar o caso de SubstituiÃ§Ã£o TributÃ¡rio 
 						-- para o Lucro Real
 						vl_bc_icms_st,
 						vl_icms_st,					
@@ -2801,7 +2801,7 @@ BEGIN
 					'0000' as reg,
 					reg_0001.reg_0001,
 					reg_c001.reg_c001,
-					--Bloco Existente a partir da versão 013.
+					--Bloco Existente a partir da versÃ£o 013.
 					CASE 	WHEN sped_fiscal.versao::integer < 13 
 						THEN NULL
 						ELSE reg_b001.reg_b001
@@ -2810,7 +2810,7 @@ BEGIN
 					reg_e001.reg_e001,
 					reg_g001.reg_g001,
 					reg_h001.reg_h001,
-					--Bloco Existente a partir da versão 010.
+					--Bloco Existente a partir da versÃ£o 010.
 					CASE 	WHEN sped_fiscal.versao::integer < 10 
 						THEN NULL
 						ELSE reg_k001.reg_k001
@@ -2977,10 +2977,15 @@ BEGIN
 					cod_ibge as cod_mun,
 					''::text as im,
 					''::text as suframa,
-					perfil_empresa as ind_perfil,
+					CASE 
+						WHEN perfil_empresa = '1' THEN 'A' 
+						WHEN perfil_empresa = '2' THEN 'B'
+						WHEN perfil_empresa = '3' THEN 'C'
+						ELSE perfil_empresa
+					END as ind_perfil,
 					'1' as ind_ativ,
 					reg_0001.reg_0001,
-					--Bloco Existente a partir da versão 013.
+					--Bloco Existente a partir da versÃ£o 013.
 					CASE 	WHEN sped_fiscal.versao::integer < 13 
 						THEN NULL
 						ELSE reg_b001.reg_b001
@@ -2990,7 +2995,7 @@ BEGIN
 					reg_e001.reg_e001,
 					reg_g001.reg_g001,
 					reg_h001.reg_h001,					
-					--Bloco Existente a partir da versão 010.
+					--Bloco Existente a partir da versÃ£o 010.
 					CASE 	WHEN sped_fiscal.versao::integer < 10 
 						THEN NULL
 						ELSE reg_k001.reg_k001
@@ -3033,3 +3038,14 @@ END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
+
+
+-- ALTER FUNCTION f_edi_sped_fiscal(
+    -- p_inicio date,
+    -- p_fim date,
+    -- p_empresa text,
+    -- p_filial text,
+    -- p_cod_fin text,
+    -- p_inventario integer,
+    -- blocos json)
+ -- OWNER TO softlog_ses
