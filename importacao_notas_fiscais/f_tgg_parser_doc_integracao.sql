@@ -1,5 +1,7 @@
 -- Function: public.f_tgg_parser_doc_integracao()
-
+--SELECT * FROM com_nf WHERE modelo_doc_fiscal = '65'
+--UPDATE scr_doc_integracao SET id_doc_integracao = id_doc_integracao WHERE id_doc_integracao = 2293
+--SELECT * FROM scr_doc_integracao LIMIT 1
 -- DROP FUNCTION public.f_tgg_parser_doc_integracao();
 
 CREATE OR REPLACE FUNCTION f_tgg_parser_doc_integracao()
@@ -14,6 +16,8 @@ DECLARE
 	v_qt integer;
 	v_participantes json;
 	participante json;
+	v_produtos json;
+	v_produto integer;	
 	v_notas_fiscais json;	
 	t integer;
 	i integer;
@@ -88,6 +92,8 @@ BEGIN
 		END IF;
 	END IF;
 
+
+	
 
 	--Verifica se eh Doria Online
 	IF NEW.tipo_doc = 2 THEN
@@ -274,6 +280,36 @@ BEGIN
 		
 	END IF;
 
+	IF NEW.tipo_doc IN (20) THEN
+
+
+		
+		log = log || ' XML NFc';		
+		r = fp_set_session('pst_tipo_especifico_importacao',LEFT(log,50));
+		v_dados = fpy_parse_xml_nfc(NEW.doc_xml);
+			--RAISE NOTICE 'Dados: %s', v_dados;						
+
+		v_nf = f_insere_nf_saida((v_dados->>'dados_nota')::json);
+
+
+		--SELECT * FROM scr_doc_integracao LIMIT 1
+		PERFORM fp_set_session('pst_cod_empresa',NEW.codigo_empresa);
+		PERFORM fp_set_session('pst_filial', NEW.codigo_filial);
+
+		IF v_nf = 0 THEN 
+			RETURN NEW;
+		END IF;
+		
+		--RAISE NOTICE '%', v_dados;
+		v_produtos = (v_dados->>'produtos')::json;
+		t = json_array_length(v_produtos)-1;
+		
+		FOR i IN 0..t LOOP	
+			--RAISE NOTICE 'Participante %', v_participantes::text;
+			v_produto = f_insere_nf_itens_saida(v_nf, (v_produtos->>i)::json);	
+		END LOOP;			
+		
+	END IF;
 	
 	r = fp_set_session('pst_tipo_especifico_importacao',log_original);
 	
