@@ -390,12 +390,12 @@ BEGIN
 
 	--Dados de Integracao Softlog
 	v_pagador_cnpj_cpf	= dadosNf->>'nfe_pagador_cnpj_cpf';
-	v_id_doc_parceiro	= COALESCE(((dadosNf->>'nfe_id_nota_fiscal_parceiro')::text)::integer,1);
-	v_id_rom_parceiro	= COALESCE(((dadosNf->>'nfe_id_romaneio_parceiro')::text)::integer,1);
-	v_id_nf_cte_parceiro	= COALESCE(((dadosNf->>'nfe_id_conhecimento_notas_fiscais')::text)::integer,1);
-	v_id_cte_parceiro	= COALESCE(((dadosNf->>'nfe_id_conhecimento_parceiro')::text)::integer,1);
-	v_codigo_integracao 	= COALESCE(((dadosNf->>'nfe_codigo_integracao')::text)::integer,1);
-	v_codigo_parceiro	= COALESCE(((dadosNf->>'nfe_codigo_softlog_parceiro')::text)::integer,1);
+	v_id_doc_parceiro	= COALESCE(((dadosNf->>'nfe_id_nota_fiscal_parceiro')::text)::integer,NULL);
+	v_id_rom_parceiro	= COALESCE(((dadosNf->>'nfe_id_romaneio_parceiro')::text)::integer,NULL);
+	v_id_nf_cte_parceiro	= COALESCE(((dadosNf->>'nfe_id_conhecimento_notas_fiscais')::text)::integer,NULL);
+	v_id_cte_parceiro	= COALESCE(((dadosNf->>'nfe_id_conhecimento_parceiro')::text)::integer,NULL);
+	v_codigo_integracao 	= COALESCE(((dadosNf->>'nfe_codigo_integracao')::text)::integer,NULL);
+	v_codigo_parceiro	= COALESCE(((dadosNf->>'nfe_codigo_softlog_parceiro')::text)::integer,NULL);
 	
 	
 	v_chave_cte		= dadosNf->>'chave_cte';
