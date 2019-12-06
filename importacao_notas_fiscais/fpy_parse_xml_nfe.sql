@@ -11,12 +11,12 @@ import traceback
 xml2 = xml.replace('version=1.0','version="1.0"')
 xml2 = xml2.replace('encoding=UTF-8','encoding="UTF-8"')
 xml2 = xml2.replace('</nfeProc>>','</nfeProc>')
-
+xml2 = xml2.replace("""<?xml version="1.0" encoding="utf-8" standalone="no"?><?xml version='1.0' encoding='UTF-8'?>""","""<?xml version='1.0' encoding='UTF-8'?>""")
              
 if xml2.find('<?xml version="1.0" encoding="utf-8"?><NFe') > -1:
     xml2 = xml2.replace('<?xml version="1.0" encoding="utf-8"?><NFe','<?xml version="1.0" encoding="utf-8"?><nfeProc><NFe')
     xml2 = xml2 + '</nfeProc>'
-
+    
 if xml2.find('nfeProc') == -1:
     
     if not (xml2.find('<nNF>') == -1):

@@ -289,12 +289,13 @@ BEGIN
 		v_dados = fpy_parse_xml_nfc(NEW.doc_xml);
 			--RAISE NOTICE 'Dados: %s', v_dados;						
 
-		v_nf = f_insere_nf_saida((v_dados->>'dados_nota')::json);
-
 
 		--SELECT * FROM scr_doc_integracao LIMIT 1
 		PERFORM fp_set_session('pst_cod_empresa',NEW.codigo_empresa);
 		PERFORM fp_set_session('pst_filial', NEW.codigo_filial);
+		
+		v_nf = f_insere_nf_saida((v_dados->>'dados_nota')::json);
+
 
 		IF v_nf = 0 THEN 
 			RETURN NEW;
@@ -310,6 +311,11 @@ BEGIN
 		END LOOP;			
 		
 	END IF;
+
+	IF NEW.tipo_doc IN (-20) THEN
+		UPDATE com_nf SET cstat = 135, status = 4, data_cancelamento = now() WHERE chave_eletronica = NEW.chave_doc;
+	END IF;
+
 	
 	r = fp_set_session('pst_tipo_especifico_importacao',log_original);
 	
@@ -318,3 +324,4 @@ END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
+--ALTER FUNCTIOn f_tgg_parser_doc_integracao() OWNER TO softlog_centroeste

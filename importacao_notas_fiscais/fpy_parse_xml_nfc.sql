@@ -295,8 +295,10 @@ if type(produtos) == type(OrderedDict()):
 
 lst_produtos = []
 i = 0
+
 for item in produtos:
     i + 1
+    pr = {}
     pr['item'] = i
     pr['produto_codigo'] = item['prod']['cProd']
     pr['produto_xprod'] = item['prod']['xProd']
@@ -308,8 +310,12 @@ for item in produtos:
     pr['produto_vl_total'] = item['prod']['vProd']
     pr['produto_un_trib'] = item['prod']['uTrib']
     pr['produto_qt_trib'] = item['prod']['qTrib']
-    pr['produto_vl_desc'] = item['prod']['vDesc']
-    pr['produto_tot_trib'] = item['imposto']['vTotTrib']
+    try:
+        pr['produto_vl_desc'] = item['prod']['vDesc']
+    except:
+        pr['produto_vl_desc'] = '0.00'
+        
+    pr['produto_tot_trib'] = item['imposto'].get('vTotTrib')
     lst_produtos.append(pr)
 
 

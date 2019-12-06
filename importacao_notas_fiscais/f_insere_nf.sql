@@ -1383,7 +1383,7 @@ BEGIN
 -----------------------------------------------------------------------------------------------------------------
 	SET datestyle = "ISO, DMY";
 
-	BEGIN 
+ 	BEGIN 
 		OPEN vCursor FOR 		
 		INSERT INTO scr_notas_fiscais_imp(
 			tipo_documento, --5
