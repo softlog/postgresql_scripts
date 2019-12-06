@@ -173,6 +173,17 @@ BEGIN
 	--RAISE NOTICE 'Dados Nf: %', dadosNf;
 	
 	v_chave_nfe 		= dadosNf->>'nfe_chave_nfe';
+
+	SELECT count(*)
+	INTO vExiste
+	FROM com_nf
+	WHERE chave_eletronica = v_chave_nfe;
+
+	IF COALESCE(vExiste,0) > 0 THEN 
+		RETURN 0;
+	END IF;
+
+	
 	v_modo_frete		= dadosNf->>'nfe_modo_frete';
 	v_emit_cnpj_cpf 	= dadosNf->>'nfe_emit_cnpj_cpf';
 	v_emit_cod_mun		= dadosNf->>'nfe_emit_cod_mun';
@@ -185,6 +196,10 @@ BEGIN
 	v_modelo		= dadosNf->>'nfe_modelo';
 	v_serie			= dadosNf->>'nfe_serie';	
 	v_cfop_predominante   	= dadosNf->>'nfe_cfop_predominante';	
+
+
+
+
 
 	BEGIN 
 		v_valor			= ((dadosNf->>'nfe_valor')::text)::numeric(12,2);

@@ -379,8 +379,8 @@ BEGIN
 		CLOSE vCursor;
 	
 	EXCEPTION WHEN OTHERS  THEN 
-	
-		RAISE NOTICE 'OCORREU UM ERRO';
+		raise notice '% %', SQLERRM, SQLSTATE;
+		
 	END;
 	
 	RAISE NOTICE 'Item NF Importado %',v_id;
