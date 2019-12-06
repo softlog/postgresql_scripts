@@ -26,6 +26,7 @@ DECLARE
 	v_cnpj_emitente text;
 	v_existe integer;	
 	v_tipo_documento integer;
+	v_id_conhecimento_notas_fiscais integer;
 BEGIN	
 	-- ULTIMA ALTERACAO: 03-04-2018
 	-- Inclusao dos campos com prefixo sap_ para integracao com o sistema da Milenio
@@ -34,9 +35,9 @@ BEGIN
 	vCteAmbiente		= COALESCE(fp_get_session('pst_tipo_ambiente'),'0')::integer;
 	vCteSerie		= COALESCE(fp_get_session('pst_cte_serie'),'0')::integer;
 	vUsarValorPresumido 	= COALESCE(fp_get_session('pst_usar_valor_presumido'),'0')::integer;
-	v_empresa		= COALESCE(fp_get_session('pst_cod_empresa'),'')::text;
-		
+	v_empresa		= COALESCE(fp_get_session('pst_cod_empresa'),'')::text;		
 	
+
 
 -- 	IF v_empresa IS NULL THEN 
 -- 		SELECT empresa_emitente 
@@ -44,6 +45,7 @@ BEGIN
 -- 		FROM v_mgr_notas_fiscais
 -- 		WHERE id_nota_fiscal_imp = pidnf;
 -- 	END IF;
+
 -- 	PERFORM fp_set_session('pst_cod_empresa',v_empresa);
 
 -- 	IF pidconhecimento <> 0 THEN 
@@ -55,8 +57,8 @@ BEGIN
 -- 	ELSE 
 -- 		
 -- 	END IF;
-	--vRegimeEspecial 	= fp_get_session('pst_regime_especial')::integer;
-
+--vRegimeEspecial 	= fp_get_session('pst_regime_especial')::integer;	
+	
 
 	--Codigo do Emitente do CTe no Regime Especial SP
 	IF p_cte_regime_especial IN (1,2,3,4) THEN
@@ -192,9 +194,10 @@ BEGIN
 			nf.empresa_emitente, --(4)
 			nf.filial_emitente, --(5)
 			CASE 
-				WHEN p_cte_regime_especial IN (2,3,4) THEN 1 --Cte em Regime Especial SP
+				WHEN p_cte_regime_especial IN (2,3,4) 			 THEN 1 --Cte em Regime Especial SP
+				WHEN p_cte_regime_especial IN (-2) 			 THEN 2 --Minuta Global
 				WHEN p_cte_regime_especial = 1 AND nf.tipo_documento = 1 THEN 1 --Cte em Regime Especial
-				WHEN p_cte_regime_especial = 1 AND nf.tipo_documento = 2 THEN 2 --Minuta em Regime Especial
+				WHEN p_cte_regime_especial = 1 AND nf.tipo_documento = 2 THEN 2 --Minuta em Regime Especial				
 				WHEN nf.regime_especial_sp = 1 				 THEN 3 --Minuta em Regime Especial
 				WHEN nf.regime_especial_mg = 1 				 THEN 3 --Minutas que compoe regime especial.
 				ELSE nf.tipo_documento 
@@ -224,14 +227,14 @@ BEGIN
 			END, --(11.1)
 			--DESTINATARIO
 			CASE	
-				WHEN p_cte_regime_especial IN (1,2,3,4)
+				WHEN p_cte_regime_especial IN (-2,1,2,3,4)
 				THEN v_codigo_emitente
 				WHEN p_cte_regime_especial = 1 AND tipo_transporte = 18
 				THEN v_codigo_emitente
 				ELSE nf.destinatario_id
 			END,			
 			CASE 	
-				WHEN p_cte_regime_especial IN (1,2,3,4)
+				WHEN p_cte_regime_especial IN (-2,1,2,3,4)
 				THEN v_cnpj_emitente			
 				WHEN p_cte_regime_especial = 1 AND tipo_transporte = 18
 				THEN v_cnpj_emitente
@@ -244,7 +247,7 @@ BEGIN
 			nf.redespachador_id, --(15)
 			nf.transportadora_cnpj, --(15.1)
 			nf.avista, --(16)
-			CASE 	WHEN p_cte_regime_especial IN (2,3) 
+			CASE 	WHEN p_cte_regime_especial IN (-2,2,3) 
 				THEN v_empresa || '0019999999' 
 				ELSE COALESCE(trim(cp.valor_parametro),nf.numero_tabela_frete)
 			END,--(17)
@@ -261,12 +264,12 @@ BEGIN
 			----------- ICMS ----------------
 			nf.cfop, --(29)
 			nf.imposto_incluso, --(30)
-			nf.tipo_imposto, --(31)
+			COALESCE(nf.tipo_imposto,2), --(31)
 			nf.aliquota,--(32)
 			nf.aliquota_st, --(34)
 			nf.perc_base_calculo, --(35)					
 			--p_id_conhecimento_principal, --(36)
-			CASE WHEN p_cte_regime_especial IN (2,3,4) THEN 1 ELSE nf.regime_especial_mg END, --(37)
+			CASE WHEN p_cte_regime_especial IN (-2,2,3,4) THEN 1 ELSE nf.regime_especial_mg END, --(37)
 			--Parametrizar isto por criterios a serem definidos
 			CASE 
 				WHEN nf.data_cte_re IS NOT NULL THEN nf.data_cte_re
@@ -314,7 +317,7 @@ BEGIN
 				WHEN nf.tipo_data = 2 THEN nf.data_emissao
 				ELSE nf.data_emissao
 			END::timestamp, --(68)
-			CASE WHEN p_cte_regime_especial IN (2,3,4) THEN 1 ELSE regime_especial_combinado END, --69
+			CASE WHEN p_cte_regime_especial IN (-2, 2,3,4) THEN 1 ELSE regime_especial_combinado END, --69
 			nf.flg_viagem_automatica, --70
 			nf.data_viagem, --(71)
 			nf.odometro_inicial, --(72)				
@@ -333,6 +336,7 @@ BEGIN
 						AND cp.id_tipo_parametro = 160
 		WHERE 
 			id_nota_fiscal_imp = pidnf
+			AND id_conhecimento IS NULL
 		LIMIT 1
 		RETURNING id_conhecimento, tipo_documento;
 
@@ -340,6 +344,10 @@ BEGIN
 		
 		CLOSE vCursor;		
 
+		IF vIdConhecimento IS NULL THEN 
+			RETURN 0;
+		END IF;
+		
 		PERFORM fp_set_session('tipo_documento_' || vIdConhecimento::text,v_tipo_documento::text);
 	ELSE 
 
@@ -349,8 +357,8 @@ BEGIN
 	END IF;
 
 	-- Insere a Nota Fiscal;
-	--OPEN vCursor FOR 
-	INSERT INTO scr_conhecimento_notas_fiscais (
+	OPEN vCursor FOR 
+	INSERT INTO scr_conhecimento_notas_fiscais (			
 			id_conhecimento,
 			data_nota_fiscal,
 			numero_nota_fiscal,
@@ -413,11 +421,22 @@ BEGIN
 			scr_notas_fiscais_imp			
 		WHERE
 			id_nota_fiscal_imp = pidnf
-		LIMIT 1;
-			
---		RETURNING qtd_volumes, peso;
+			AND id_conhecimento IS NULL
+		LIMIT 1			
+		RETURNING id_conhecimento_notas_fiscais ;
 
---	FETCH vCursor INTO vPeso, vVolume;
+		FETCH vCursor INTO v_id_conhecimento_notas_fiscais;
+
+		CLOSE vCursor;
+
+	IF v_id_conhecimento_notas_fiscais IS NULL THEN 
+		IF pidconhecimento = 0 THEN 
+			DELETE FROM scr_conhecimento WHERE id_conhecimento = vIdConhecimento;
+			vIdConhecimento = 0;
+		END IF;
+		
+		RETURN vIdConhecimento;
+	END IF;
 
 	--Se for minuta de frete
 	IF v_tipo_documento = 3 THEN 
