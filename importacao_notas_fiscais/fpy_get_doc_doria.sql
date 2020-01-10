@@ -46,13 +46,15 @@ $BODY$
     linhas = arquivo.strip('\n').split('\n')
     #Faz o parser de cada linha, de acordo com o seu tipo de registro
     registros = []
+    is_luchefarma = False
     for linha in linhas:
     
         #plpy.notice('Tamanho Linha ' + str(len(linha)))
         tem_chave = True
-        if len(linha) == 338:
+        if len(linha) == 338 or is_luchefarma:        
             #plpy.notice('Luchefarma')
             registros.append(reg_luchefarma(linha))	
+            is_luchefarma = True            
         elif len(linha) == 333:
             registros.append(reg_profarma(linha))
         elif len(linha) == 289:
@@ -62,8 +64,7 @@ $BODY$
             registros.append(reg_genericos(linha))	                        
         else:
             registros.append(reg(linha))
-            #plpy.notice('Normal')
-            
+            #plpy.notice('Normal')           
 	    
 
     #Ler o conteudo dos registros parseados
@@ -166,13 +167,27 @@ $BODY$
         ##informacoes relativas ao transporte
         n['nfe_modo_frete'] = '0'
 
-        n['nfe_peso_presumido'] = r[10][:-3] + '.' + r[10][-3:]
-        n['nfe_peso_liquido'] = r[10][:-3] + '.' + r[10][-3:]
-        n['nfe_volume_presumido'] = r[16][:-2] + '.' + r[16][-2:]
+        if is_luchefarma:
 
-        ## Informacoes dos Itens de Produto
-        n['nfe_volume_produtos'] = r[16][:-2] + '.' + r[16][-2:]
-        n['nfe_peso_produtos'] = r[10][:-3] + '.' + r[10][-3:]
+            n['nfe_peso_presumido'] = r[10][:-2] + '.' + r[10][-2:]
+            n['nfe_peso_liquido'] = r[10][:-2] + '.' + r[10][-2:]
+            n['nfe_volume_presumido'] = r[16][:-3] + '.' + r[16][-3:]
+
+            ## Informacoes dos Itens de Produto
+            n['nfe_volume_produtos'] = r[16][:-3] + '.' + r[16][-3:]
+            n['nfe_peso_produtos'] = r[10][:-2] + '.' + r[10][-2:]
+
+        else:
+
+            n['nfe_peso_presumido'] = r[10][:-3] + '.' + r[10][-3:]
+            n['nfe_peso_liquido'] = r[10][:-3] + '.' + r[10][-3:]
+            n['nfe_volume_presumido'] = r[16][:-2] + '.' + r[16][-2:]
+
+            ## Informacoes dos Itens de Produto
+            n['nfe_volume_produtos'] = r[16][:-2] + '.' + r[16][-2:]
+            n['nfe_peso_produtos'] = r[10][:-3] + '.' + r[10][-3:]
+        
+
         n['nfe_unidade'] = 'UN'
         try:
             n['nfe_numero_pedido'] = r[24]
