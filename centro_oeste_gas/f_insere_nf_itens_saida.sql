@@ -21,7 +21,7 @@ DECLARE
 	v_valor_produtos	numeric(12,2);
 	v_cfop_predominante	character(4);	
 	v_descricao_complementar text;
-	v_quantidade		integer;
+	v_quantidade		numeric;
 	v_vl_item		numeric(12,2);
 	v_vl_desconto		numeric(12,2);
 	v_movimentacao_fisica	integer;
@@ -32,8 +32,7 @@ DECLARE
 	v_inf 			text;
 
 	-- Variadas Processadas
-	v_id_produto 		integer;
-	
+	v_id_produto 		integer;	
 	
 
 	-- Variaveis de ambiente
@@ -76,38 +75,33 @@ BEGIN
 	
 
 	BEGIN 
-		v_valor			= ((dadosItens->>'produto_vl_total')::text)::numeric(12,2);
+		v_valor	= ((dadosItens->>'produto_vl_total')::text)::numeric(12,2);
 	EXCEPTION WHEN OTHERS THEN 
-		v_valor 		= 0.00;
+		v_valor = 0.00;
 	END;
 
 	BEGIN 
-		v_vl_item		= ((dadosItens->>'produto_vl_item')::text)::numeric(12,2);
+		v_vl_item = ((dadosItens->>'produto_vl_unit')::text)::numeric(12,2);
 	EXCEPTION WHEN OTHERS THEN 
-		v_vl_item		= 0.00;
+		v_vl_item = 0.00;
 	END;
 
 	BEGIN 
-		v_quantidade		= ((dadosItens->>'produto_qtd')::text)::integer;
+		v_quantidade = ((dadosItens->>'produto_qtd')::text)::numeric(12,4);
 	EXCEPTION WHEN OTHERS THEN 
-		v_quantidade		= 0.00;
+		v_quantidade = 0.00;
 	END;
 
 	
 
 	BEGIN 
-		v_desconto		= ((dadosItens->>'produto_vl_desc')::text)::numeric(12,2);
+		v_desconto = ((dadosItens->>'produto_vl_desc')::text)::numeric(12,2);
 	EXCEPTION WHEN OTHERS THEN 
-		v_desconto 		= 0.00;
+		v_desconto = 0.00;
 	END;
 
 
-	BEGIN 
-		v_desconto		= ((dadosItens->>'nfe_valor_desc')::text)::numeric(12,2);
-	EXCEPTION WHEN OTHERS THEN 
-		v_desconto		= 0.00;
-	END;
-
+	
 
 	BEGIN
 		v_valor_bc	= ((dadosItens->>'nfe_valor_bc')::text)::numeric(12,2);
@@ -133,12 +127,12 @@ BEGIN
 		v_valor_icms_st = 0.00;
 	END;
 	
-	v_unidade		= dadosItens->>'nfe_unidade';
+	
 
 	BEGIN 
-		v_valor_produtos	= ((dadosItens->>'nfe_valor_produtos')::text)::numeric(12,2);
+		v_valor_produtos = ((dadosItens->>'nfe_valor_produtos')::text)::numeric(12,2);
 	EXCEPTION WHEN OTHERS  THEN 
-		v_valor_produtos	= 0.00;
+		v_valor_produtos = 0.00;
 	END;
 
 
@@ -281,6 +275,9 @@ BEGIN
 	CLOSE vCursor;
 
 
+--SELECt * FROM com_nf WHERE id_nf = 37322
+
+--SELECT * FROM com_nf_itens WHERE id_nf = 37322
 
 -----------------------------------------------------------------------------------------------------------------
 --- 					GRAVACAO DOS DADOS  
@@ -329,7 +326,8 @@ BEGIN
 			comb_pmixcn, --37
 			pdevol, --38     
 			id_almoxarifado, --39
-			icms_orig --40
+			icms_orig, --40
+			codigo_prod_digisat --41
 		) VALUES (
 			p_id_nf,--1
 			v_id_produto,--2
@@ -370,7 +368,8 @@ BEGIN
 			NULL,--37
 			0.00,--38
 			-1,--39
-			0--40;
+			0,--40
+			v_codigo_produto --41
 		)
 		RETURNING id_nf_item;
 	
