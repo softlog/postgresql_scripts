@@ -1,4 +1,4 @@
--- Function: public.fpy_get_cte_30(integer)
+-- Function: public. SELECT * FROM fpy_get_cte_30(183)
 
 -- DROP FUNCTION public.fpy_get_cte_30(integer);
 
