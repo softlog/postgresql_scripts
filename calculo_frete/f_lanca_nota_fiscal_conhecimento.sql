@@ -55,7 +55,7 @@ BEGIN
 -- 		WHERE id_conhecimento = pidconhecimento
 -- 			AND id_nota_fiscal_imp = pidnf;
 -- 	ELSE 
--- 		
+-- 		SELECT * FROM scr_notas_fiscais_imp ORDER BY 1 LIMIT 10
 -- 	END IF;
 --vRegimeEspecial 	= fp_get_session('pst_regime_especial')::integer;	
 	
@@ -177,9 +177,21 @@ BEGIN
 			expedidor_cnpj, --73			
 			total_frete_origem, --74
 			km_rodado, --75
-			qtd_ajudantes --76
-			
-			
+			qtd_ajudantes, --76
+			coleta_escolta, --77
+			coleta_expresso, --78
+			coleta_emergencia, --79
+			coleta_normal, --80
+			entrega_escolta, --81
+			entrega_expresso, --82
+			entrega_emergencia, --83
+			entrega_normal, --84
+			taxa_dce, --85
+			taxa_exclusivo, --86
+			coleta_dificuldade, --87
+			entrega_dificuldade, --88
+			entrega_exclusiva, --89
+			coleta_exclusiva --90			
 -- 			redespachador_id
 -- 			flg_viagem, --(43)
 -- 			responsavel_seguro --(44)
@@ -324,7 +336,21 @@ BEGIN
 			nf.expedidor_cnpj, --73
 			nf.total_frete_origem, --74
 			nf.km_rodado,--75
-			nf.qtd_ajudantes --76
+			nf.qtd_ajudantes, --76
+			nf.coleta_escolta, --77
+			nf.coleta_expresso, --78
+			nf.coleta_emergencia, --79
+			nf.coleta_normal, --80
+			nf.entrega_escolta, --81
+			nf.entrega_expresso, --82
+			nf.entrega_emergencia, --83
+			nf.entrega_normal, --84
+			nf.taxa_dce, --85
+			nf.taxa_exclusivo, --86
+			nf.coleta_dificuldade, --87
+			nf.entrega_dificuldade, --88
+			nf.entrega_exclusiva, --89
+			nf.coleta_exclusiva --90
 			
 		FROM 			
 			v_mgr_notas_fiscais nf
@@ -341,9 +367,10 @@ BEGIN
 		RETURNING id_conhecimento, tipo_documento;
 
 		FETCH vCursor INTO vIdConhecimento, v_tipo_documento;
+
 		
 		CLOSE vCursor;		
-
+		RAISE NOTICE 'COnhecimento %',vIdConhecimento;
 		IF vIdConhecimento IS NULL THEN 
 			RETURN 0;
 		END IF;

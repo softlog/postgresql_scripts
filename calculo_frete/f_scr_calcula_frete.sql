@@ -843,9 +843,9 @@ BEGIN
 				WHEN 	ptf.medida_final = 0 THEN
 					CASE	WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,74) THEN ptf.total_nf >= ptf.medida_inicial
 						WHEN ptf.id_tipo_calculo IN (13) THEN false --total_peso_cubado					
-						WHEN ptf.id_tipo_calculo IN (8, 46)  THEN ptf.total_unidades >= ptf.medida_inicial -- total_unidades
-						WHEN ptf.id_tipo_calculo IN (12) THEN ptf.km_entrega >= ptf.medida_inicial -- total_km
-						WHEN ptf.id_tipo_calculo IN (45) THEN-- Verifica se � coleta ou entrega
+						WHEN ptf.id_tipo_calculo IN (8)  THEN ptf.total_unidades >= ptf.medida_inicial -- total_unidades
+						WHEN ptf.id_tipo_calculo IN (12, 46) THEN ptf.km_entrega >= ptf.medida_inicial -- total_km
+						WHEN ptf.id_tipo_calculo IN (45) THEN-- Verifica se eh coleta ou entrega
 							CASE WHEN coleta_exclusiva 	THEN ptf.km_percorridos_coleta >= ptf.medida_inicial 
 							     WHEN entrega_exclusiva 	THEN ptf.km_percorridos_entrega >= ptf.medida_inicial 
 											ELSE false
