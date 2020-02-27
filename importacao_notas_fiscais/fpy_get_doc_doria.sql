@@ -168,7 +168,7 @@ $BODY$
         n['nfe_modo_frete'] = '0'
 
         if is_luchefarma:
-
+            plpy.notice('Luchefarma ' + r[16])
             n['nfe_peso_presumido'] = r[10][:-2] + '.' + r[10][-2:]
             n['nfe_peso_liquido'] = r[10][:-2] + '.' + r[10][-2:]
             n['nfe_volume_presumido'] = r[16][:-3] + '.' + r[16][-3:]
@@ -209,3 +209,4 @@ $BODY$
   LANGUAGE plpython3u VOLATILE
   COST 100;
 
+--ALTER FUNCTION fpy_get_doc_doria(arquivo text) OWNER TO softlog_3glog

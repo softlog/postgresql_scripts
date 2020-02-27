@@ -122,6 +122,11 @@ $BODY$
     
     reg_313 = DocParser.make_parser((3,15,7,1,1,1,1,3,8,8,15,15,7,15,7,5,1,
                                       1,15,15,7,1,15,15,15,15,1,12,12,1,2))
+
+    # Customizacao Luchefarma
+    reg_313_luche = DocParser.make_parser((3,15,7,1,1,1,1,3,8,8,15,15,7,15,7,5,1,
+                                      1,15,15,7,1,15,15,15,15,1,10,15,17))
+
     #Customizacao 360
     reg_313_360 = DocParser.make_parser((3,15,7,1,1,1,1,3,8,8,15,15,7,15,7,5,1,
                                       1,15,15,7,1,15,15,15,15,1,12,12,1,2,44,10))
@@ -201,7 +206,7 @@ $BODY$
         #plpy.notice(linha)
         if linha[0:3] == '313':
             tamanho = len(linha)
-            #plpy.notice('Tamanho %i' % tamanho)
+            plpy.notice('Tamanho %i' % tamanho)
             #plpy.notice(linha)
             break
 
@@ -254,10 +259,14 @@ $BODY$
             #plpy.notice('Funcionando aqui inicio')
 
             emb_pratti = False
+            emb_luche = False
             if emb_spss or len(linha) == 303:
                 emb_spss = True
                 #plpy.notice('LEIAUTE SIMPRESS')
                 registros.append(reg_313_SPSS(linha))           
+            elif len(linha)== 256:
+                registros.append(reg_313_luche(linha))
+                emb_luche = True
             elif emb_softlog:     
                 #plpy.notice(reg_313_SOFTLOG(linha))
                 #plpy.notice(linha)           
@@ -413,8 +422,8 @@ $BODY$
             p['part_pais'] = ''
             p['part_fone'] = r[11].strip().upper()
             p['part_ie'] = r[3].strip().upper().replace('-','').replace('.','')
+            
             participantes.append(p)
-
 
             if p['part_cod_mun'].strip() == '':
                 try:
@@ -445,8 +454,7 @@ $BODY$
                 nfe_pagador_cnpj_cpf = r[2]
 
             p = dict()            
-
-                                        
+                                   
             p['part_cnpj_cpf'] = r[2].strip().upper()
             p['part_nome'] = r[1].strip().upper()
             p['part_logradouro'] = r[4].strip().upper()
@@ -460,11 +468,6 @@ $BODY$
             p['part_fone'] = r[10].strip().upper()
             p['part_ie'] = r[3].strip().upper().replace('-','').replace('.','')
             
-            
-
-            
-
-
             if p['part_cod_mun'].strip() == '':
                 try:
                     p['part_cod_mun'] = get_viacep(p['part_cep'])
@@ -509,7 +512,10 @@ $BODY$
                         pass
 		        
             elif emb_pratti:
-                n['nfe_chave_nfe'] = r[30]            
+                n['nfe_chave_nfe'] = r[30]                            
+            elif emb_luche:
+                n['nfe_chave_nfe'] = None
+                n['nfe_chave_cte'] = None
             else:
                 n['nfe_chave_nfe'] = emit_cnpj + r[7].strip().zfill(3) + r[8].strip().zfill(9)
 
@@ -538,7 +544,12 @@ $BODY$
             n['nfe_valor_icms'] = '0.00'
             n['nfe_valor_bc_st'] = '0.00'
             n['nfe_valor_icms_st'] = '0.00'
-            n['nfe_valor_produtos'] = r[13][:-2] + '.' + r[13][-2:]
+            
+            if emb_luche:
+                n['nfe_valor_produtos'] = r[28][:-2] + '.' + r[28][-2:]
+            else:
+                n['nfe_valor_produtos'] = r[13][:-2] + '.' + r[13][-2:]
+
             n['nfe_valor_frete'] = r[25][:-2] + '.' + r[25][-2:]
 
 

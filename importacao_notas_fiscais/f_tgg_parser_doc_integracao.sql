@@ -19,6 +19,7 @@ DECLARE
 	v_produtos json;
 	v_produto integer;	
 	v_notas_fiscais json;	
+	
 	t integer;
 	i integer;
 	var_aux text;
@@ -27,6 +28,7 @@ DECLARE
 	r boolean;
 	log text;
 	log_original text;
+	v_id_edi integer;
 	
 BEGIN
 
@@ -46,16 +48,20 @@ BEGIN
 	
 	--Verifica se eh EDI tipo NOTFIS
 	BEGIN 
+		
 		--RAISE NOTICE 'Verificando se eh NOTFIS';
 		var_aux = LEFT(NEW.doc_xml,3);
 		IF var_aux = '000' THEN 
 			IF position((chr(13) || chr(10) || '500') in NEW.doc_xml) > 0 THEN 
 				NEW.tipo_doc = 7;
+			ELSIF position((chr(13) || chr(10) || '340') in NEW.doc_xml) > 0 THEN 
+				NEW.tipo_doc = 30;
 			ELSE
 				NEW.tipo_doc = 4;
 			END IF;
 			identificar = False;
 		END IF;
+		
 	EXCEPTION WHEN others THEN
 		--RAISE NOTICE 'Ocorreu um erro';
 	END;
@@ -314,6 +320,23 @@ BEGIN
 
 	IF NEW.tipo_doc IN (-20) THEN
 		UPDATE com_nf SET cstat = 135, status = 4, data_cancelamento = now() WHERE chave_eletronica = NEW.chave_doc;
+	END IF;
+
+
+	IF NEW.tipo_doc IN (30) THEN
+
+		
+		v_dados = fpy_get_doc_ocoren(NEW.doc_xml);
+		--RAISE NOTICE 'Dados: %s', v_dados;						
+		
+		--RAISE NOTICE '%', v_dados;
+		v_notas_fiscais = (v_dados->>'ocorrencias')::json;
+		t = json_array_length(v_notas_fiscais)-1;
+		
+		FOR i IN 0..t LOOP				
+			v_id_edi = f_insere_ocorrencia_entrega((v_notas_fiscais->>i)::json);
+		END LOOP;			
+		
 	END IF;
 
 	
