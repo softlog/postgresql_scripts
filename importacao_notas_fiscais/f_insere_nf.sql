@@ -22,14 +22,16 @@ DECLARE
 	v_valor_bc_st		numeric(12,2);
 	v_valor_icms_st		numeric(12,2);
 	v_volume_presumido	numeric(12,4);
-	v_peso_presumido	numeric(20,4);
+	v_peso_presumido	numeric(12,4);
 	v_peso_liquido		numeric(20,4);	
 	v_volume_produtos	numeric(20,4);
 	v_peso_produtos		numeric(20,4);
+	v_peso_transportado 	numeric(12,4);
 	v_unidade		text;
 	v_especie_mercadoria	text;
 	v_valor_produtos	numeric(12,2);
 	v_cfop_predominante	character(4);	
+	
 	
 
 	v_placa_veiculo_eng	character(8);
@@ -158,6 +160,8 @@ DECLARE
 	v_viagem_automatica 	integer;
 	v_cidade_subcontrato_par integer;
 	v_valor_cte_origem	numeric(12,2);
+	vCodigoDescarte		text;
+	
 
 BEGIN	
 
@@ -736,6 +740,31 @@ BEGIN
 		vCodInternoFrete = fpy_extrai_valor(v_inf,TRIM(vTermo));
 	END IF;
 
+	-- Pega o código do pedido da NFE
+	vTermo = vParametros->>'IGNORAR_NFE';	
+	
+	IF vTermo IS NOT NULL THEN 
+		vCodigoDescarte = fpy_extrai_valor(v_inf,TRIM(vTermo));
+		IF vCodigoDescarte IS NOT NULL THEN 
+				INSERT INTO scr_notas_fiscais_nao_imp (
+					dados_parametros,
+					numero_nota_fiscal,
+					serie_nota_fiscal,
+					remetente_id,
+					observacao
+				) VALUES (
+					(dadosNf::jsonb || '{"forca_importacao":"1"}'::jsonb)::text,
+					v_numero_doc,
+					v_serie,					
+					vCodigoRemetente,
+					'NFe com codigo de descarte'
+				);			
+				RETURN 0;
+
+		END IF;
+	END IF;
+
+
 	-- Pega o volume cúbico da mercadoria se ala existir;
 	vTermo = NULL;
 	vTermo = vParametros->>'VOLUME_CUBICO';
@@ -1073,12 +1102,12 @@ BEGIN
 		
 	END IF;	
 
-	--RAISE NOTICE 'Cidade Consignatario %', vCidadeConsignatario;	
-	--RAISE NOTICE 'Cidade de Origem Remetente %', vCidadeRemetente;
-	--RAISE NOTICE 'Origem %', vCidadeOrigem;
-	--RAISE NOTICE 'Destino %', vCidadeDestino;
-	--RAISE NOTICE 'Origem Filial %', vOrigemFilial;
-	--RAISE NOTICE 'Tipo Documento Cliente %', vTipoDocumento;
+	RAISE NOTICE 'Cidade Consignatario %', vCidadeConsignatario;	
+	RAISE NOTICE 'Cidade de Origem Remetente %', vCidadeRemetente;
+	RAISE NOTICE 'Origem %', vCidadeOrigem;
+	RAISE NOTICE 'Destino %', vCidadeDestino;
+	RAISE NOTICE 'Origem Filial %', vOrigemFilial;
+	RAISE NOTICE 'Tipo Documento Cliente %', vTipoDocumento;
 ------------------------------------------------------------------------------------------------------------------
 --                                    Agente/redespacho destino padrão
 ------------------------------------------------------------------------------------------------------------------
@@ -1376,7 +1405,25 @@ BEGIN
 	--RAISE NOTICE 'Placa Veiculo Apos %', v_placa_veiculo;
 	--RAISE NOTICE 'Placa Reboque 1 Apos %', v_placa_reboque1;
 	--RAISE NOTICE 'Placa Reboque 2 Apos %', v_placa_reboque2;
+	--RAISE NOTICE 'Peso %', (COALESCE(v_peso_presumido,0.00) * 1000);
 
+	BEGIN
+		IF v_peso_liquido = 0 THEN 
+			IF v_is_tonelada THEN
+				v_peso_transportado = v_peso_produtos * 1000; 
+			ELSE 
+				v_peso_transportado = v_peso_produtos;
+			END IF;
+		ELSE
+			IF v_is_tonelada THEN 
+				v_peso_transportado = v_peso_liquido * 1000;
+			ELSE 
+				v_peso_transportado = v_peso_liquido ;
+			END IF;
+		END IF;
+	EXCEPTION WHEN OTHERS  THEN 
+		v_peso_transportado = 0.0000;		
+	END;
 	
 -----------------------------------------------------------------------------------------------------------------
 --- 					GRAVACAO DOS DADOS  
@@ -1517,11 +1564,7 @@ BEGIN
 			v_id_cte_parceiro, --81
 			v_codigo_integracao, --82
 			v_codigo_parceiro, --83
-			CASE 	WHEN v_peso_liquido = 0 THEN 
-					CASE WHEN v_is_tonelada THEN v_peso_produtos * 1000 ELSE v_peso_produtos END
-				ELSE 
-					CASE WHEN v_is_tonelada THEN v_peso_liquido * 1000 ELSE v_peso_liquido END
-			END, --84
+			v_peso_transportado, --84
 			v_viagem_automatica, --85
 			v_expedidor_cnpj, --86			
 			v_valor_cte_origem --87
@@ -1545,7 +1588,7 @@ BEGIN
 			v_numero_doc,
 			v_serie,					
 			vCodigoRemetente,
-			'Erro SQL ao inserir nota'
+			SQLERRM
 		);			
 		vIdNotaFiscalImp = 0;
 	END;

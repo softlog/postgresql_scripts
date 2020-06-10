@@ -1,0 +1,2 @@
+INSERT INTO cliente_tipo_parametros (id_tipo_parametro, nome_parametro, descricao_parametro)
+VALUES (111, 'TIPO_TRANSPORTE_IMPORTACAO_CTE','Tipo transporte importação CTe (1: Subcontrato, 2: Redespacho)');

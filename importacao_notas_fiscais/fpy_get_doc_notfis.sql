@@ -8,6 +8,72 @@ $BODY$
     from doc_parser import DocParser
     from time import sleep
 
+    def validar_cnpj(cnpj):
+        # defining some variables
+        lista_validacao_um = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4 , 3, 2]
+        lista_validacao_dois = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+
+        # cleaning the cnpj
+        cnpj = cnpj.replace( "-", "" )
+        cnpj = cnpj.replace( ".", "" )
+        cnpj = cnpj.replace( "/", "" )
+
+        # finding out the digits
+        verificadores = cnpj[-2:]
+
+        # verifying the lenght of the cnpj
+        if len( cnpj ) != 14:
+            return False
+
+        # calculating the first digit
+        soma = 0
+        id = 0
+        for numero in cnpj:
+
+            # to do not raise indexerrors
+            try:
+                lista_validacao_um[id]
+            except:
+                break
+
+            soma += int( numero ) * int( lista_validacao_um[id] )
+            id += 1
+
+        soma = soma % 11
+        if soma < 2:
+            digito_um = 0
+        else:
+            digito_um = 11 - soma
+
+        digito_um = str( digito_um ) # converting to string, for later comparison
+
+        # calculating the second digit
+        # suming the two lists
+        soma = 0
+        id = 0
+
+        # suming the two lists
+        for numero in cnpj:
+
+            # to do not raise indexerrors
+            try:
+                lista_validacao_dois[id]
+            except:
+                break
+
+            soma += int( numero ) * int( lista_validacao_dois[id] )
+            id += 1
+
+        # defining the digit
+        soma = soma % 11
+        if soma < 2:
+            digito_dois = 0
+        else:
+            digito_dois = 11 - soma
+
+        digito_dois = str( digito_dois )
+
+        return bool( verificadores == digito_um + digito_dois )
 
     def valida_cpf(cpf):
         """ If cpf in the Brazilian format is valid, it returns True, otherwise, it returns False. """
@@ -96,7 +162,8 @@ $BODY$
         else:
             #plpy.notice('Nao Encontrei Cep %s' % cep)
             return ''
-	
+
+    ##plpy.notice('Notfis 3.1')	
     participantes = []
     nfs = []
 
@@ -122,6 +189,9 @@ $BODY$
     
     reg_313 = DocParser.make_parser((3,15,7,1,1,1,1,3,8,8,15,15,7,15,7,5,1,
                                       1,15,15,7,1,15,15,15,15,1,12,12,1,2))
+
+    reg_313_boticario = DocParser.make_parser((3,15,7,1,1,1,1,3,9,8,15,15,7,15,7,5,1,
+                                      1,15,15,7,1,15,15,15,15,1,44,27))
 
     # Customizacao Luchefarma
     reg_313_luche = DocParser.make_parser((3,15,7,1,1,1,1,3,8,8,15,15,7,15,7,5,1,
@@ -206,7 +276,7 @@ $BODY$
         #plpy.notice(linha)
         if linha[0:3] == '313':
             tamanho = len(linha)
-            plpy.notice('Tamanho %i' % tamanho)
+            #plpy.notice('Tamanho %i' % tamanho)
             #plpy.notice(linha)
             break
 
@@ -222,7 +292,7 @@ $BODY$
             registros.append(reg_310(linha))
 
         elif id_reg == '311':
-            #plpy.notice('Tamanho %i'% tamanho)
+            
             
             if linha[3:11] in  ('07432517') or tamanho == 303:                            
                 emb_spss = True
@@ -273,8 +343,13 @@ $BODY$
                 emb_softlog = True
                 registros.append(reg_313_SOFTLOG(linha))              
             elif len(linha) in (284,285):
-                registros.append(reg_313_VIDA_PURA(linha))                
-
+                if valida_chave_nfe(linha[214:258]):
+                    registros.append(reg_313_boticario(linha))                
+                else:
+                    registros.append(reg_313_VIDA_PURA(linha))                
+            elif len(linha) == (286):
+                #plpy.notice('Boticario')
+                registros.append(reg_313_boticario(linha))                
             elif len(linha) == 295 and not emb_360:
                 registros.append(reg_313_AGV(linha))                                
 
@@ -402,10 +477,11 @@ $BODY$
             tipo_pessoa = r[12].strip().upper()
 
             dest_cnpj = r[2].strip().upper()
+            ##plpy.notice('TIPO peSSOA %s'% tipo_pessoa)
             if tipo_pessoa == '2':
                 dest_cnpj = dest_cnpj[-11:]
 
-            if valida_cpf(dest_cnpj[-11:]):
+            if valida_cpf(dest_cnpj[-11:]) and not validar_cnpj(dest_cnpj):
                 dest_cnpj = dest_cnpj[-11:]
 
                 
@@ -487,7 +563,7 @@ $BODY$
             ##Chave da NFe
 
             n['nfe_pagador_cnpj_cpf'] = nfe_pagador_cnpj_cpf
-            plpy.notice(str(len(r)))
+            #plpy.notice(str(len(r)))
             if emb_spss:
                 n['nfe_chave_nfe'] = r[31]
             elif emb_softlog:
@@ -495,6 +571,8 @@ $BODY$
                 n['chave_cte'] = r[32]
             elif len(r) == 36:
                 n['nfe_chave_nfe'] = r[33]
+            elif len(r) == 29:
+                n['nfe_chave_nfe'] = r[27]
             elif len(r) == 33 and not emb_360:
                 n['nfe_chave_nfe'] = r[32]                        
             elif len(r) == 32 or len(r) == 45:
@@ -619,4 +697,4 @@ $BODY$
 $BODY$
   LANGUAGE plpython3u VOLATILE;
 
---ALTER FUNCTION fpy_get_doc_notfis(arquivo text) OWNER TO softlog_3glog;
+--ALTER FUNCTION fpy_get_doc_notfis(arquivo text) OWNER TO softlog_seniorlog;

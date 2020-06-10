@@ -21,12 +21,14 @@ DECLARE
 	p_imposto_por_conta_cliente integer;
 	p_tipo_frete_padrao text; 
 	p_frequencia_faturamento text;
+	p_sem_cnpj_cpf integer;
 	
 	vIdCidade integer;
 	vUf character(2);
 	vDDD character(2);
 	vTipoCliente integer;
 	vClassificacaoFiscal character(30);
+	vEndereco text;
 
 	vCodigoCliente integer;
 	
@@ -35,6 +37,9 @@ DECLARE
 
 	vEmpresa text;
 	vFilial text;
+
+	vIE text;
+	vRazao text;
 	
 BEGIN	
 	
@@ -59,6 +64,7 @@ BEGIN
 	p_imposto_por_conta_cliente 	= ((dadosCliente->>'imposto_cliente')::Text)::integer;
 	p_tipo_frete_padrao 		= dadosCliente->>'frete_padrao';
 	p_frequencia_faturamento 	= dadosCliente->>'frequencia_faturamento';
+	p_sem_cnpj_cpf		 	= COALESCE(((dadosCliente->>'part_sem_cnpj_cpf')::text::integer),0);
 
 
 	IF trim(p_cod_mun) = '' THEN		
@@ -125,17 +131,19 @@ BEGIN
 		FROM parametros 
 		WHERE cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_FREQUENCIA_FATURAMENTO';
 	END IF;
+
+
 	
 	-- Verifica se o cliente ja existe
 	vCodigoCliente = 0;
 	OPEN vCursor FOR 
-			SELECT count(*)
+			SELECT count(*), max(endereco), max(inscricao_estadual), max(nome_cliente)			
 			FROM cliente
 			WHERE cnpj_cpf = p_cnpj_cpf;
 		
 	
 
-	FETCH vCursor INTO vExiste;
+	FETCH vCursor INTO vExiste, vEndereco, vIE, vRazao;
 
 	CLOSE vCursor;
 
@@ -192,19 +200,25 @@ BEGIN
 				vDDD = '';
 			END IF;
 
+
+			IF (p_sem_cnpj_cpf = 0) THEN
 						
-			IF fd_valida_cnpj_cpf(right(trim(p_cnpj_cpf),11)) = 1  AND fd_valida_cnpj_cpf(right(trim(p_cnpj_cpf),14)) = 0 THEN 
-				p_cnpj_cpf = right(trim(p_cnpj_cpf),11);
-			END IF;
+				IF fd_valida_cnpj_cpf(right(trim(p_cnpj_cpf),11)) = 1  AND fd_valida_cnpj_cpf(right(trim(p_cnpj_cpf),14)) = 0 THEN 
+					p_cnpj_cpf = right(trim(p_cnpj_cpf),11);
+				END IF;
+				
+				IF char_length(trim(p_cnpj_cpf)) = 11 THEN
+					vTipoCliente = 2;
+					vClassificacaoFiscal = 'NAO CONTRIBUINT';			
+				ELSE
+					vTipoCliente = 1;
+					vClassificacaoFiscal = 'COMERCIO';
+				END IF;
+			ELSE 
+				vTipoCliente = 4;
+				vClassificacaoFiscal = 'NAO CONTRIBUINT';
 			
-			IF char_length(trim(p_cnpj_cpf)) = 11 THEN
-				vTipoCliente = 2;
-				vClassificacaoFiscal = 'NAO CONTRIBUINT';			
-			ELSE
-				vTipoCliente = 1;
-				vClassificacaoFiscal = 'COMERCIO';
 			END IF;
-			
 	
 			OPEN vCursor FOR
 			INSERT INTO cliente (
@@ -268,11 +282,15 @@ BEGIN
 			CLOSE vCursor;			
 		END IF;	
 	ELSE
-		
-		IF char_length(trim(p_cnpj_cpf)) > 11 THEN 
-			RETURN vCodigoCliente;
-		END IF;
 
+		IF LEFT(trim(vEndereco),100) = fpy_limpa_caracteres(upper(COALESCE(LEFT(p_lgr,100),'')))
+			AND trim(vIE) = upper(COALESCE(left(p_ie,18),'')) 
+			AND trim(vRazao) = fpy_limpa_caracteres(upper(left(p_nome_cliente,50)))
+		THEN
+			--RAISE NOTICE 'Não mudou Endereco';
+			RETURN 0;
+		END IF;
+		
 		IF p_cod_mun IS NOT NULL THEN 
 			OPEN vCursor FOR SELECT id_cidade, uf, ddd_padrao FROM cidades WHERE trim(cod_ibge) = trim(p_cod_mun);
 		ELSE 
@@ -315,6 +333,8 @@ BEGIN
 			
 		OPEN vCursor FOR 
 		UPDATE cliente SET
+			nome_cliente  =  fpy_limpa_caracteres(upper(left(p_nome_cliente,50))), --2
+			nome_fantasia = fpy_limpa_caracteres(upper(left(p_nome_cliente,50))), --3
 			ddd = COALESCE(vDDD,''), --5
 			telefone = COALESCE(p_fone,''), --6				
 			endereco = fpy_limpa_caracteres(upper(COALESCE(LEFT(p_lgr,100),''))), --8

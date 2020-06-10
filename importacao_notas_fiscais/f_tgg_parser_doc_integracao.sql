@@ -1,6 +1,7 @@
 -- Function: public.f_tgg_parser_doc_integracao()
 --SELECT * FROM com_nf WHERE modelo_doc_fiscal = '65'
---UPDATE scr_doc_integracao SET id_doc_integracao = id_doc_integracao WHERE id_doc_integracao = 2293
+--UPDATE scr_doc_integracao SET id_doc_integracao = id_doc_integracao WHERE id_doc_integracao = 2991985
+--SELECT * FROM scr_doc_integracao ORDER BY 1 DESC LIMIT 100
 --SELECT * FROM scr_doc_integracao LIMIT 1
 -- DROP FUNCTION public.f_tgg_parser_doc_integracao();
 
@@ -39,6 +40,7 @@ BEGIN
 
 	IF NEW.tipo_doc = -2 THEN 
 		NEW.doc_xml = fpy_decode_base64(NEW.doc_xml);
+		RAISE NOTICE '%', NEW.doc_xml;
 		NEW.tipo_doc = 2;
 	END IF;
 
@@ -47,24 +49,31 @@ BEGIN
 	END IF;
 	
 	--Verifica se eh EDI tipo NOTFIS
-	BEGIN 
+	IF NEW.tipo_doc = 10 THEN 
 		
-		--RAISE NOTICE 'Verificando se eh NOTFIS';
-		var_aux = LEFT(NEW.doc_xml,3);
-		IF var_aux = '000' THEN 
-			IF position((chr(13) || chr(10) || '500') in NEW.doc_xml) > 0 THEN 
-				NEW.tipo_doc = 7;
-			ELSIF position((chr(13) || chr(10) || '340') in NEW.doc_xml) > 0 THEN 
-				NEW.tipo_doc = 30;
-			ELSE
-				NEW.tipo_doc = 4;
+		identificar = False;
+	END IF;
+	
+	IF identificar THEN 
+		BEGIN 
+			
+			--RAISE NOTICE 'Verificando se eh NOTFIS';
+			var_aux = LEFT(NEW.doc_xml,3);
+			IF var_aux = '000' THEN 
+				IF position((chr(13) || chr(10) || '500') in NEW.doc_xml) > 0 THEN 
+					NEW.tipo_doc = 7;
+				ELSIF position((chr(13) || chr(10) || '340') in NEW.doc_xml) > 0 THEN 
+					NEW.tipo_doc = 30;
+				ELSE
+					NEW.tipo_doc = 4;
+				END IF;
+				identificar = False;
 			END IF;
-			identificar = False;
-		END IF;
-		
-	EXCEPTION WHEN others THEN
-		--RAISE NOTICE 'Ocorreu um erro';
-	END;
+			
+		EXCEPTION WHEN others THEN
+			--RAISE NOTICE 'Ocorreu um erro';
+		END;
+	END IF;
 
 	--RAISE NOTICE 'Tipo Documento NOTFIS?: %', NEW.tipo_doc;
 	--Verifica se eh EDI DCenter
@@ -159,6 +168,7 @@ BEGIN
 				IF NEW.chave_doc IS NULL THEN 
 					--RAISE NOTICE 'Não grava o registro, sem chave';
 					r = fp_set_session('pst_tipo_especifico_importacao',log_original);
+					UPDATE scr_doc_integracao SET id_doc_integracao = id_doc_integracao WHERE chave_doc = NEW.chave_doc;
 					RETURN NULL;
 				END IF;
 				
@@ -173,6 +183,7 @@ BEGIN
 					--RAISE NOTICE 'Qt de Notas %', v_qt;
 
 					IF v_qt > 0 THEN 
+						UPDATE scr_doc_integracao SET id_doc_integracao = id_doc_integracao WHERE chave_doc = NEW.chave_doc;
 						r = fp_set_session('pst_tipo_especifico_importacao',log_original);
 						RETURN NULL;
 					END IF;
@@ -189,7 +200,9 @@ BEGIN
 					--RAISE NOTICE 'Qt de Notas %', v_qt;
 
 					IF v_qt > 0 THEN 
+						
 						r = fp_set_session('pst_tipo_especifico_importacao',log_original);
+						UPDATE scr_doc_integracao SET id_doc_integracao = id_doc_integracao WHERE chave_doc = NEW.chave_doc;
 						RETURN NULL;
 					END IF;
 					NEW.entrou_repetida = 1;
@@ -215,7 +228,8 @@ BEGIN
 	-- 6) Documento tipo EDI POLISHOP
 	-- 7) Documento tipo XML de CTe 
 	-- 8) Documento tipo Doria
-	IF NEW.tipo_doc IN (4, 5, 6, 7, 1, 8) THEN
+	-- 10) Planilha Excell a451
+	IF NEW.tipo_doc IN (4, 5, 6, 7, 1, 8, 10) THEN
 
 
 		IF NEW.tipo_doc = 1 THEN 
@@ -262,6 +276,14 @@ BEGIN
 		END IF;
 
 
+		IF NEW.tipo_doc = 10 THEN 		
+			log = log || ' A451';
+			r = fp_set_session('pst_tipo_especifico_importacao',LEFT(log,50));
+			v_dados = fpy_get_doc_a451(NEW.doc_xml);
+			--RAISE NOTICE 'Dados: %s', v_dados;			
+		END IF;
+		
+		
 		--RAISE NOTICE '%', v_dados;
 		v_participantes = (v_dados->>'participantes')::json;
 		t = json_array_length(v_participantes)-1;
@@ -347,4 +369,4 @@ END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
---ALTER FUNCTIOn f_tgg_parser_doc_integracao() OWNER TO softlog_centroeste
+--ALTER FUNCTIOn f_tgg_parser_doc_integracao() OWNER TO softlog_aeroprest

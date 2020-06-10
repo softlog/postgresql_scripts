@@ -38,6 +38,9 @@ $BODY$
 
     struct_5 = (6,8,40,40,20,30,2,14,16,8,10,12,12,12,12,8,10,12,2,14)
     reg_profarma_sem_chave = DocParser.make_parser(struct_5)
+
+    struct_6 = (6,8,40,40,20,30,2,14,16,8,10,12,12,12,12,8,10,12,4,14,9,3,8,6,9,9,44)
+    reg_util = DocParser.make_parser(struct_6)
     
     #a = open(filename,'r',encoding='utf-8')
     #linhas = a.readlines()
@@ -47,23 +50,33 @@ $BODY$
     #Faz o parser de cada linha, de acordo com o seu tipo de registro
     registros = []
     is_luchefarma = False
+    is_util = False
+    
     for linha in linhas:
     
-        #plpy.notice('Tamanho Linha ' + str(len(linha)))
+        plpy.notice('Tamanho Linha ' + str(len(linha)))
         tem_chave = True
         if len(linha) == 338 or is_luchefarma:        
-            #plpy.notice('Luchefarma')
+            plpy.notice('Luchefarma')
             registros.append(reg_luchefarma(linha))	
             is_luchefarma = True            
         elif len(linha) == 333:
             registros.append(reg_profarma(linha))
+
+        elif len(linha) == 379:
+            registros.append(reg_util(linha))
+            is_util = True
+            
         elif len(linha) == 289:
             registros.append(reg_profarma_sem_chave(linha))            
             tem_chave = False
+            
         elif len(linha) == 348 or linha[0:7] == 'VER0002':
             registros.append(reg_genericos(linha))	                        
-        else:
+            plpy.notice('VER0002')
+        else:            
             registros.append(reg(linha))
+            
             #plpy.notice('Normal')           
 	    
 
@@ -78,6 +91,8 @@ $BODY$
         
         if not tem_chave:
             n['nfe_chave_nfe'] = ''
+        elif is_util:
+            n['nfe_chave_nfe'] = r[len(r)-1]
         elif len(r) == 22:
             n['nfe_chave_nfe'] = r[21]
         elif len(r) == 21:
@@ -121,11 +136,9 @@ $BODY$
 
         destinatarios.append(p)        
 
-        if tem_chave:
-            emit_cnpj = n['nfe_chave_nfe'][6:20] 
-        else:
-            emit_cnpj = r[19]
-
+        
+        emit_cnpj = n['nfe_chave_nfe'][6:20] 
+        
         ##informacoes de remetente/destinatario
         n['nfe_emit_cnpj_cpf'] = emit_cnpj
         n['nfe_emit_cod_mun']  = ''
@@ -190,9 +203,13 @@ $BODY$
 
         n['nfe_unidade'] = 'UN'
         try:
-            n['nfe_numero_pedido'] = r[24]
+            if not is_util:
+                n['nfe_numero_pedido'] = r[24]            
+            else:
+                n['nfe_numero_pedido'] = r[len(r)-2]
         except:
             n['nfe_numero_pedido'] = None
+
 
         n['nfe_especie_mercadoria'] = 'DIVERSOS'
 
