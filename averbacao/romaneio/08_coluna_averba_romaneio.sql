@@ -1,0 +1,1 @@
+ALTER TABLE scr_romaneios ADD COLUMN averbar integer DEFAULT 0;

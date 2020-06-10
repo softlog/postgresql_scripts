@@ -1,0 +1,1 @@
+ALTER TABLE empresa_acesso_servicos ADD COLUMN averba_romaneio integer DEFAULT 0;

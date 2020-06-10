@@ -1,0 +1,1 @@
+ALTER TABLE msg_fila_averb_atm ADD COLUMN is_romaneio integer DEFAULT 0;
