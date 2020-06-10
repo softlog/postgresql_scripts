@@ -287,4 +287,4 @@ CREATE OR REPLACE VIEW public.v_mgr_notas_fiscais AS
      LEFT JOIN scr_pre_faturas pf ON pf.id_pre_fatura = pfe.id_pre_fatura
      LEFT JOIN v_regiao_setores v_rs ON current_database() NOT IN ('softlog_medilog','softlog_transribeiro') AND v_rs.id_cidade = d.id_cidade::integer;
 
-
+--ALTER VIEW v_mgr_notas_fiscais OWNER TO softlog_transribeiro

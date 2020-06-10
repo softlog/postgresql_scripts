@@ -31,6 +31,7 @@ BEGIN
 	WHERE 
 		t.numero_tabela_frete 	= vTabelaFrete
 		AND tod.tipo_rota 	= 2
+		AND rco.tipo_composicao = 1
 		AND rco.id_cidade 	= vIdCidadeOrigem;
 
 	-- Se não foi encontrado nenhuma região de origem da cidade de origem, então:
@@ -48,6 +49,7 @@ BEGIN
 				ON tod.id_destino = rcd.id_regiao
 		WHERE
 			t.numero_tabela_frete 	= vTabelaFrete
+			AND rcd.tipo_composicao = 1
 			AND tod.tipo_rota 	= 2
 			AND rcd.id_cidade	= vIdCidadeOrigem;
 
@@ -76,9 +78,11 @@ BEGIN
 				ON tod.id_destino = rco.id_regiao
 		WHERE 
 			t.numero_tabela_frete 	= vTabelaFrete
-			AND tod.tipo_rota 	= 2
+			AND tod.tipo_rota 	= 2			
 			AND tod.id_origem	= vIdRegiaoOrigem
-			AND rco.id_cidade 	= vIdCidadeDestino;
+			AND rco.id_cidade 	= vIdCidadeDestino
+			AND rco.tipo_composicao = 1;
+			
 
 
 		-- Se não foi encontrada numa região de destino da tabela, então:
@@ -100,7 +104,8 @@ BEGIN
 				t.numero_tabela_frete 	= vTabelaFrete
 				AND tod.tipo_rota 	= 2
 				AND tod.id_destino	= vIdRegiaoOrigem
-				AND rcd.id_cidade 	= vIdCidadeDestino;
+				AND rcd.id_cidade 	= vIdCidadeDestino
+				AND rcd.tipo_composicao = 1;
 			
 
 			-- Se a cidade de origem não está em nenhuma região origem ou destino da tabela, então:
@@ -120,3 +125,9 @@ $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
 
+--SELECT * FROM v_regiao_cidades WHERE tipo_composicao = 2
+
+ALTER FUNCTION f_scr_retorna_regioes_origem_destino(
+    vidcidadeorigem integer,
+    vidcidadedestino integer,
+    vtabelafrete text) OWNER TO softlog_dplog;
