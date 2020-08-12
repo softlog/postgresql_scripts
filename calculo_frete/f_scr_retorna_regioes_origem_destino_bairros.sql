@@ -73,7 +73,7 @@ BEGIN
 			scr_tabelas_origem_destino tod
 			LEFT JOIN scr_tabelas t 	
 				ON t.id_tabela_frete = tod.id_tabela_frete
-			LEFT JOIN regiao_bairros rbo	
+			LEFT JOIN v_regiao_bairros rbo	
 				ON tod.id_destino = rbo.id_regiao
 		WHERE 
 			t.numero_tabela_frete 	= vTabelaFrete
@@ -95,7 +95,7 @@ BEGIN
 				scr_tabelas_origem_destino tod
 				LEFT JOIN scr_tabelas t 	
 					ON t.id_tabela_frete = tod.id_tabela_frete
-				LEFT JOIN regiao_bairros rbd	
+				LEFT JOIN v_regiao_bairros rbd	
 					ON tod.id_origem = rbd.id_regiao
 			WHERE 
 				t.numero_tabela_frete 	= vTabelaFrete

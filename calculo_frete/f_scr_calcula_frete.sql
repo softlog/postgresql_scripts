@@ -1,5 +1,4 @@
 -- Function: public.f_scr_calcula_frete(json, refcursor, refcursor)
-
 -- DROP FUNCTION public.f_scr_calcula_frete(json, refcursor, refcursor);
 
 CREATE OR REPLACE FUNCTION public.f_scr_calcula_frete(
@@ -23,6 +22,7 @@ DECLARE
 	vCombinado 		integer;
 	vDensidade 		integer;
 	vTipoRota 		integer; 
+	vTipoRotaMin		integer;
 	vIdTabelaFrete 		integer;
 	vCidadeOrigem 		integer;
 	vCidadeDestino 		integer;
@@ -185,17 +185,23 @@ BEGIN
 		destinatario AS (
 			SELECT 
 				ent.destinatario_id, 
-				id_bairro 
+				id_bairro,
+				COALESCE(cp.valor_parametro::integer, 0)::integer as tem_descarga_vol				
 			FROM 
 				ent 
 				LEFT JOIN cliente 
 					ON cliente.codigo_cliente = ent.destinatario_id
+				LEFT JOIN cliente_parametros cp
+					ON cp.codigo_cliente = cliente.codigo_cliente
+							AND cp.id_tipo_parametro = 41
+			
 				
 		),
 		rb AS (
 			SELECT 
 				destinatario.id_bairro,
-				f_scr_retorna_regioes_origem_destino_bairros(ent.calculado_de_id_cidade, destinatario.id_bairro,ent.tabela_frete) as regioes_bairro
+				f_scr_retorna_regioes_origem_destino_bairros(ent.calculado_de_id_cidade, destinatario.id_bairro,ent.tabela_frete) as regioes_bairro,
+				tem_descarga_vol
 			FROM 
 				ent, destinatario
 		),
@@ -208,17 +214,34 @@ BEGIN
 				(ent.regioes->'id_regiao_destino')::text::integer as id_regiao_destino,
 				(rb.regioes_bairro->'id_regiao_origem')::text::integer as id_regiao_origem_bairro,
 				(rb.regioes_bairro->'id_regiao_destino')::text::integer as id_regiao_destino_bairro,
+				tem_descarga_vol,
 				rb.id_bairro				
 			FROM 
 				ent, rb
 	
 		),
-
+		ent_reg_session AS (
+			SELECT 
+				CASE 
+					WHEN 
+						(id_regiao_origem = -1 OR id_regiao_destino = -1) 
+							AND 
+						(id_regiao_origem_bairro = -1 OR id_regiao_destino_bairro = -1)
+					THEN 
+						fp_set_get_session('regioes','-1') 
+					ELSE 
+						fp_set_get_session('regioes','1') 
+				END::text as validacao   
+			FROM 
+				ent_reg				
+		),
 		--Busca distancia da cidade de entrega
 		dist_cid_dest AS (
 			SELECT 
-				distancia_cidade_polo as km_entrega
+				distancia_cidade_polo as km_entrega,
+				ent_reg_session.validacao				
 			FROM 
+				ent_reg_session,
 				ent_reg
 				LEFT JOIN regiao_cidades 
 					ON ent_reg.id_regiao_destino = regiao_cidades.id_regiao
@@ -261,6 +284,7 @@ BEGIN
 				ent_reg.id_regiao_origem_bairro,
 				ent_reg.id_regiao_destino_bairro,
 				ent_reg.id_bairro,
+				ent_reg.tem_descarga_vol,
 				ent.id_tipo_veiculo,				
 				ent.tipo_transporte,
 				ent.escolta_horas_entrega,
@@ -310,8 +334,7 @@ BEGIN
 				ent.km_rodados,		
 				ent.imposto_incluso,		
 				nc.id_natureza_carga,
-				nc.densidade as densidade_nc,
-
+				CASE WHEN nc.densidade = 0 THEN NULL ELSE nc.densidade END as densidade_nc,
 				ent.data_coleta,		
 				CASE 	WHEN ent.data_coleta IS NOT NULL 
 					THEN to_char(ent.data_coleta,'HH24MI')::integer 
@@ -479,7 +502,7 @@ BEGIN
 				COALESCE(densidade_nc,tod.densidade) as densidade,
 				tod.ida_volta,
 				tod.cumulativa,
-				tod.tipo_rota,
+				
 
 				p.coleta_exclusiva,
 				p.id_regiao_origem,
@@ -551,7 +574,9 @@ BEGIN
 					ELSE 
 						(p.total_valor_produtos <= COALESCE(NULLIF(tod.limite_valor_isento,0.00),t.limite_valor_isento))
 				END AS dentro_limite_valor,
-				p.tem_pre_calculo				
+				p.tem_pre_calculo,
+				tod.tipo_rota
+				
 			FROM 
 				parametros p
 				LEFT JOIN scr_tabelas t
@@ -564,6 +589,11 @@ BEGIN
 					ON tcf.id_cf = tc.id_cf				
 				LEFT JOIN scr_tabelas_tipo_calculo as ttc
 					ON ttc.id_tipo_calculo = tcf.id_tipo_calculo
+				LEFT JOIN regiao origem
+					ON origem.id_regiao = tod.id_origem 
+				LEFT JOIN regiao destino
+					ON destino.id_regiao = tod.id_destino 
+					
 				
 			WHERE 
 				t.numero_tabela_frete = p.numero_tabela_frete
@@ -643,7 +673,7 @@ BEGIN
 										ELSE true 
 					END
 
-				--Filtra taxas de entrega normal de acordo com o status na regiao de origem
+				--Filtra taxas de entrega normal de acordo com o status na regiao de destino
 				AND 	CASE WHEN tcf.id_tipo_calculo IN (30) 	THEN COALESCE(p.satelite_entrega, false) AND (entrega_normal OR NOT tcf.cond_ctrc::boolean)
 										ELSE true 
 					END
@@ -653,7 +683,7 @@ BEGIN
 				AND 	CASE WHEN tcf.id_tipo_calculo IN (29) 	THEN COALESCE(p.capital_polo_entrega, false) AND (entrega_normal OR NOT tcf.cond_ctrc::boolean)
 										ELSE true 
 					END
-				AND 	CASE WHEN tcf.id_tipo_calculo IN (36) 	THEN COALESCE(p.fluvial_coleta) AND (entrega_normal OR NOT tcf.cond_ctrc::boolean)
+				AND 	CASE WHEN tcf.id_tipo_calculo IN (36) 	THEN COALESCE(p.fluvial_entrega) AND (entrega_normal OR NOT tcf.cond_ctrc::boolean)
 										ELSE true 
 					END				
 				--Filtra Ad Valorem de acordo com a configuracao das cidades.			
@@ -670,6 +700,19 @@ BEGIN
 				AND 	CASE WHEN tcf.id_tipo_calculo IN (23) 	THEN COALESCE(p.fluvial_entrega,false) 
 										ELSE true 
 					END
+				--Filtra taxas de volumes de acordo com o status na regiao de destino
+				AND 	CASE WHEN tcf.id_tipo_calculo IN (87) 	THEN COALESCE(p.satelite_entrega, false) 
+										ELSE true 
+					END
+				AND 	CASE WHEN tcf.id_tipo_calculo IN (88) 	THEN COALESCE(p.interior_entrega, false) 
+										ELSE true 
+					END
+				AND 	CASE WHEN tcf.id_tipo_calculo IN (86) 	THEN COALESCE(p.capital_polo_entrega, false) 
+										ELSE true 
+					END
+				AND 	CASE WHEN tcf.id_tipo_calculo IN (89) 	THEN COALESCE(p.fluvial_entrega) 
+										ELSE true 
+					END				
 
 				--Verifica se tem taxa expresso
 				AND 
@@ -709,7 +752,14 @@ BEGIN
 						ELSE
 							true
 					END 
-					
+				--Verifica se tem taxa de descarga
+				AND 
+					CASE 	WHEN tcf.id_tipo_calculo = 85 THEN 
+							tem_descarga_vol = 1
+						ELSE
+							true
+					END 
+						
 				--Verifica se tem pre-calculo de frete peso
 				AND 
 					CASE	WHEN p.tem_pre_calculo AND tcf.id_tipo_calculo = 1 THEN
@@ -812,7 +862,7 @@ BEGIN
 			CASE	WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,53,74) AND calcular_a_partir_de = 2 THEN total_nf
 				WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,53,74) AND calcular_a_partir_de IN(1,3) 	THEN total_valor
 				--WHEN ptf.id_tipo_calculo IN (13) THEN null --total_peso_cubad				
-				WHEN ptf.id_tipo_calculo IN (8)  THEN total_unidades -- total_unidades
+				WHEN ptf.id_tipo_calculo IN (8, 85, 86, 87, 88, 89)  THEN total_unidades -- total_unidades
 				WHEN ptf.id_tipo_calculo IN (12,46) THEN km_entrega -- total_km
 				WHEN ptf.id_tipo_calculo IN (45) THEN 
 					CASE 	WHEN coleta_exclusiva THEN  km_percorridos_coleta --total km 					
@@ -843,7 +893,7 @@ BEGIN
 				WHEN 	ptf.medida_final = 0 THEN
 					CASE	WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,74) THEN ptf.total_nf >= ptf.medida_inicial
 						WHEN ptf.id_tipo_calculo IN (13) THEN false --total_peso_cubado					
-						WHEN ptf.id_tipo_calculo IN (8)  THEN ptf.total_unidades >= ptf.medida_inicial -- total_unidades
+						WHEN ptf.id_tipo_calculo IN (8, 85, 86, 87, 88, 89)  THEN ptf.total_unidades >= ptf.medida_inicial -- total_unidades
 						WHEN ptf.id_tipo_calculo IN (12, 46) THEN ptf.km_entrega >= ptf.medida_inicial -- total_km
 						WHEN ptf.id_tipo_calculo IN (45) THEN-- Verifica se eh coleta ou entrega
 							CASE WHEN coleta_exclusiva 	THEN ptf.km_percorridos_coleta >= ptf.medida_inicial 
@@ -874,7 +924,7 @@ BEGIN
 									
 						WHEN ptf.id_tipo_calculo IN (13) THEN false --total_peso_cubado					
 						
-						WHEN ptf.id_tipo_calculo IN (8)  THEN 
+						WHEN ptf.id_tipo_calculo IN (8, 85, 86, 87, 88, 89)  THEN 
 							ptf.total_unidades >= ptf.medida_inicial 
 							AND (ptf.total_unidades <= ptf.medida_final 
 							OR ptf.valor_variavel_excedido > 0 
@@ -1327,9 +1377,11 @@ BEGIN
 
 			SELECT 
 				MAX(tipo_rota) as tipo_rota,
+				MIN(tipo_rota) as tipo_rota,
 				scr_tabelas.id_tabela_frete	
 			INTO 
 				vTipoRota, 
+				vTipoRotaMin,
 				vIdTabelaFrete			
 			FROM	
 				scr_tabelas
@@ -1345,34 +1397,47 @@ BEGIN
 				vRetorno = ('{"codigo":2, "Mensagem":"Tabela de Frete nao existe!"}')::json;
 				
 			ELSE -- Se o conhecimento existe, entao verifica se tem tabela frete 
-				CASE 
 				
-				WHEN vTipoRota = 2 THEN -- Se a tabela tem origem e destino por regiao
-					
-					vRegioes = f_scr_retorna_regioes_origem_destino(
-								(parametros->>'calculado_de_id_cidade')::text::integer,
-								(parametros->>'calculado_ate_id_cidade')::text::integer,
-								(parametros->>'tabela_frete')::text
-								);
+				RAISE NOTICE 'Mensagem Regioes %', fp_get_session('regioes');
+				RAISE NOTICE 'Parametros %',parametros;
+				IF vTipoRota = 2 THEN -- Se a tabela tem origem e destino por regiao
 
-					vRegiaoOrigem = (vRegioes->'id_regiao_origem')::text::integer;
-					vRegiaoDestino = (vRegioes->'id_regiao_destino')::text::integer;
-								
-					IF vRegiaoOrigem = -1 THEN  -- Se regiao origem for -1, cidade origem nao configurada
-												
+
+					IF fp_get_session('regioes') = '-1' THEN 
 						vRetorno = ('{"codigo":3, "Mensagem":"Origem/Destino nao encontrado."}')::json;
-			
-					ELSE --
-						IF vRegiaoDestino = -1 THEN  -- Verifica se a cidade destino esta em alguma regiao
-							vRetorno = ('{"codigo":4, "Mensagem":"Origem/destino nao encontrado."}')::json;
-							
-						ELSE
-							vRetorno = ('{"codigo":16, "Mensagem":"Nao foi identificada nenhuma faixa de calculo de componentes de frete!"}')::json;
-							
-						END IF;
+					ELSE 
+						vRetorno = ('{"codigo":16, "Mensagem":"Nao foi identificada nenhuma faixa de calculo de componentes de frete!"}')::json;
 					END IF;
+
+
+					
+					/*
+
+						vRegioes = f_scr_retorna_regioes_origem_destino(
+									(parametros->>'calculado_de_id_cidade')::text::integer,
+									(parametros->>'calculado_ate_id_cidade')::text::integer,
+									(parametros->>'tabela_frete')::text
+									);
+
+						vRegiaoOrigem = (vRegioes->'id_regiao_origem')::text::integer;
+						vRegiaoDestino = (vRegioes->'id_regiao_destino')::text::integer;
+									
+						IF vRegiaoOrigem = -1 THEN  -- Se regiao origem for -1, cidade origem nao configurada
+													
+							vRetorno = ('{"codigo":3, "Mensagem":"Origem/Destino nao encontrado."}')::json;
 				
-				WHEN vTipoRota = 1 THEN 
+						ELSE --
+							IF vRegiaoDestino = -1 THEN  -- Verifica se a cidade destino esta em alguma regiao
+								vRetorno = ('{"codigo":4, "Mensagem":"Origem/destino nao encontrado."}')::json;								
+							ELSE
+								vRetorno = ('{"codigo":16, "Mensagem":"Nao foi identificada nenhuma faixa de calculo de componentes de frete!"}')::json;
+							END IF;
+						END IF;
+						
+					*/
+				END IF;
+				
+				IF vTipoRotaMin = 1 THEN 
 
 					SELECT count(*) as quantidade
 					INTO vQuantRotasCidade
@@ -1390,15 +1455,18 @@ BEGIN
 						AND scr_tabelas_origem_destino.id_tabela_frete = vIdTabelaFrete;
 
 					IF vQuantRotasCidade = 0 THEN 
-						vRetorno = ('{"codigo":5, "Mensagem":"Nao foi encontrado Origem/Destino das cidades do conhecimento!"}')::json;
-					
+						vRetorno = ('{"codigo":3, "Mensagem":"Origem/Destino nao encontrado."}')::json;					
 					ELSE
-						vRetorno = ('{"codigo":16, "Mensagem":"Nao foi identificada nenhuma faixa de calculo de componentes de frete!"}')::json;
-					
+						IF fp_get_session('regioes') = '-1' THEN 
+							vRetorno = ('{"codigo":16, "Mensagem":"Nao foi identificada nenhuma faixa de calculo! Verique Rotas/Faixas"}')::json;					
+						ELSE
+							vRetorno = ('{"codigo":17, "Mensagem":"Nao foi identificada nenhuma faixa de calculo!"}')::json;
+						END IF;
 					END IF;
+					
 				ELSE 
 					vRetorno = ('{"codigo":16, "Mensagem":"Nao foi identificada nenhuma faixa de calculo de componentes de frete!"}')::json;
-				END CASE;									
+				END IF;									
 			END IF;			
 			
 		ELSE
