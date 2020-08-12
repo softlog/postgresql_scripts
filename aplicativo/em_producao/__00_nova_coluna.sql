@@ -1,0 +1,1 @@
+ALTER TABLE edi_ocorrencias_entrega ADD COLUMN uuid_usuario text;
