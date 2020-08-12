@@ -30,6 +30,12 @@ WHERE
 
 rv = plpy.execute(str_qry)
 
+try:
+    if len(rv) == 0:
+        return ''
+except:
+        return ''
+
 #CTe Emitido
 if rv[0]['cancelado'] == 0 and rv[0]['tipo_documento'] == 1:
     #plpy.notice('Cte Emitido')
@@ -121,5 +127,6 @@ return xml
 $BODY$
   LANGUAGE plpython3u VOLATILE
   COST 100;
--- ALTER FUNCTION public.fpy_get_cte_30(integer)
---   OWNER TO softlog_bsb;
+  
+  
+--ALTER FUNCTION public.fpy_get_cte_30(integer) OWNER TO softlog_bsb;
