@@ -1,7 +1,51 @@
 -- Function: public.f_situacao_nota_fiscal_imp(integer)
 /*
 SELECT * FROM edi_ocorrencias_entrega
-SELECt * FROM f_situacao_nota_fiscal_imp(44322,0)
+SELECt * FROM f_situacao_nota_fiscal_imp(18413188,0)
+
+			SELECT 
+				nf_oco.id_ocorrencia_nf,
+				nf_oco.id_nota_fiscal_imp,
+				nf_oco.id_ocorrencia as id_ocorrencia_2,
+				nf_oco.data_ocorrencia,
+				nf_oco.data_registro as data_registro_oco,
+				oco.ocorrencia,
+				nf_oco.obs_ocorrencia
+						
+
+			FROM  		
+					
+				scr_notas_fiscais_imp_ocorrencias nf_oco				
+				LEFT JOIN scr_ocorrencia_edi oco 
+					ON nf_oco.id_ocorrencia = oco.codigo_edi
+								
+			WHERE 
+				nf_oco.id_nota_fiscal_imp = 18413188
+				AND nf_oco.id_ocorrencia <> 1
+			UNION 
+
+			SELECT 
+				nf_oco.id_ocorrencia_nf,
+				nf_oco.id_nota_fiscal_imp,
+				nf_oco.id_ocorrencia as id_ocorrencia_2,
+				nf_oco.data_ocorrencia,
+				nf_oco.data_registro as data_registro_oco,
+				oco.ocorrencia,
+				nf_oco.obs_ocorrencia
+				
+
+			FROM  		
+					
+				scr_notas_fiscais_imp_ocorrencias nf_oco				
+				LEFT JOIN scr_ocorrencia_edi oco 
+					ON nf_oco.id_ocorrencia = oco.codigo_edi
+								
+			WHERE 
+				nf_oco.id_nota_fiscal_imp = 18413188
+				AND nf_oco.id_ocorrencia = 1
+			ORDER BY 
+				1
+			LIMIT 1	
 SELECT * FROM scr_notas_fiscais_imp LIMIT 1
 */
 -- DROP FUNCTION public.f_situacao_nota_fiscal_imp(integer);
@@ -45,31 +89,67 @@ BEGIN
 			WHERE 
 				id_nota_fiscal_imp = p_id_nota_fiscal_imp
 				-- id_nota_fiscal_imp = 9215358					
-		),
-		nfe_log_min AS (
+		)
+		, nfe_log_min AS (
 			SELECT MIN(id_nota_fiscal_imp_log_atividade) as primeira_ocorrencia FROM nfe_log			
-		)		
+		)			
+		, nfe_oco_a AS (
 		
-		, nfe_oco AS (
-
 			SELECT 
+				nf_oco.id_ocorrencia_nf,
 				nf_oco.id_nota_fiscal_imp,
 				nf_oco.id_ocorrencia as id_ocorrencia_2,
 				nf_oco.data_ocorrencia,
 				nf_oco.data_registro as data_registro_oco,
 				oco.ocorrencia,
-				nf_oco.obs_ocorrencia,
-				nf_oco.id_ocorrencia_nf			
-
-			FROM  
-				scr_notas_fiscais_imp_ocorrencias nf_oco
+				nf_oco.obs_ocorrencia
+			FROM  		
+					
+				scr_notas_fiscais_imp_ocorrencias nf_oco				
 				LEFT JOIN scr_ocorrencia_edi oco 
-					ON nf_oco.id_ocorrencia = oco.codigo_edi				
+					ON nf_oco.id_ocorrencia = oco.codigo_edi
+								
 			WHERE 
 				nf_oco.id_nota_fiscal_imp = p_id_nota_fiscal_imp
+				AND nf_oco.id_ocorrencia <> 1
+					
 				--nf_oco.id_nota_fiscal_imp = 9215358
 				
 		),
+		nfe_oco_b AS (
+
+			
+			SELECT 
+				nf_oco.id_ocorrencia_nf,
+				nf_oco.id_nota_fiscal_imp,
+				nf_oco.id_ocorrencia as id_ocorrencia_2,
+				nf_oco.data_ocorrencia,
+				nf_oco.data_registro as data_registro_oco,
+				oco.ocorrencia,
+				nf_oco.obs_ocorrencia
+				
+
+			FROM  		
+					
+				scr_notas_fiscais_imp_ocorrencias nf_oco				
+				LEFT JOIN scr_ocorrencia_edi oco 
+					ON nf_oco.id_ocorrencia = oco.codigo_edi
+								
+			WHERE 
+				nf_oco.id_nota_fiscal_imp = p_id_nota_fiscal_imp
+				AND nf_oco.id_ocorrencia = 1
+			ORDER BY 
+				1
+			LIMIT 1			
+				--nf_oco.id_nota_fiscal_imp = 9215358
+				
+		),
+		nfe_oco AS (
+			SELECT * FROM nfe_oco_a
+			UNION 
+			SELECT * FROM nfe_oco_b
+		),
+				
 		con AS (
 			WITH temp AS (
 				SELECT id_conhecimento 
@@ -248,7 +328,7 @@ BEGIN
 				CASE 
 					WHEN id_ocorrencia_2 = 0 
 					THEN 'INICIO VIAGEM' 
-					ELSE 'OCORRENCIA ENTREGA' 
+					ELSE 'MUDANCA DE STATUS' 
 				END::text as evento,
 				CASE 	WHEN app.latitude IS NOT NULL AND app.numero_ocorrencia IN (1,2)
 					THEN '<a href="https://maps.google.com/?q=' || app.latitude::text || ',' || app.longitude::text || '" target="_blank">Localização</a>'
