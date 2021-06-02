@@ -1,21 +1,5 @@
--- Function: public.f_edi_get_conemb_v3(integer[])
---SELECT id_conhecimento FROM scr_conhecimento 
--- DROP FUNCTION public.f_edi_get_conemb_v3(integer[]);
 
-CREATE OR REPLACE FUNCTION public.f_edi_get_conemb_v3(lst_conhecimento integer[])
-  RETURNS json AS
-$BODY$
-DECLARE
-	v_resultado json;
-	str_sql text;
-	v_cursor refcursor;
-	v_id text;
-BEGIN
-
-	v_id = array_to_string(lst_conhecimento,',');
-
-
-	str_sql = 'WITH hora AS (
+	WITH hora AS (
 		SELECT now() as data_tempo
 	),
 	lista AS ( 
@@ -24,61 +8,56 @@ BEGIN
 	seniorlog AS (
 		SELECT
 			1::integer as tipo,
-			CASE WHEN current_database() = ''softlog_seniorlog'' THEN ''001'' ELSE NULL END::character(3) as codigo_filial,
-			CASE WHEN current_database() = ''softlog_seniorlog'' THEN ''001'' ELSE NULL END::character(3) as codigo_empresa
+			CASE WHEN current_database() = 'softlog_seniorlog' THEN '001' ELSE NULL END::character(3) as codigo_filial,
+			CASE WHEN current_database() = 'softlog_seniorlog' THEN '001' ELSE NULL END::character(3) as codigo_empresa
 	),
 	conemb AS (
 		SELECT 		
 			c.id_conhecimento,
-			COALESCE(c.chave_cte,'''') as chave_cte,
-			COALESCE(prot_autorizacao_cte,'''') as prot_autorizacao_cte,
-			''322'' as ident,					
-			CASE WHEN tipo_documento = 1 THEN ''57'' ELSE ''07'' END::text as tipo_documento,
+			COALESCE(c.chave_cte,'') as chave_cte,
+			COALESCE(prot_autorizacao_cte,'') as prot_autorizacao_cte,
+			'322' as ident,					
+			CASE WHEN tipo_documento = 1 THEN '57' ELSE '07' END::text as tipo_documento,
 			f.razao_social as filial_emissora,			
-			CASE WHEN c.tipo_documento = 2 THEN '''' ELSE COALESCE(c.serie_doc,'''') END::text as serie_conhecimento,			
-			lpad(right(c.numero_ctrc_filial,7),12,''0'') as numero_conhecimento,
-			to_char(c.data_emissao, ''DDMMYYYY'') as data_emissao,
-			to_char(data_emissao,''DDMMYYYHHMISS'') as data_recebimento_sefaz,
-			CASE WHEN frete_cif_fob = 1 THEN ''C'' ELSE ''F'' END as condicao_frete,
+			CASE WHEN c.tipo_documento = 2 THEN '' ELSE COALESCE(c.serie_doc,'') END::text as serie_conhecimento,			
+			lpad(right(c.numero_ctrc_filial,7),12,'0') as numero_conhecimento,
+			to_char(c.data_emissao, 'DDMMYYYY') as data_emissao,
+			to_char(data_emissao,'DDMMYYYHHMISS') as data_recebimento_sefaz,
+			CASE WHEN frete_cif_fob = 1 THEN 'C' ELSE 'F' END as condicao_frete,
 			(peso::numeric(12,2) * 100)::integer as peso,
-			(COALESCE(c.peso_cubado,0.00)::numeric(12,2) * 100)::integer as peso_cubado, 
 			(c.total_frete * 100)::integer as total_frete,			
-			CASE WHEN c.tipo_imposto IN (6, 7, 8) THEN ''S'' ELSE ''N'' END::text as st,			
-			CASE WHEN c.tipo_imposto IN (6, 7, 8) THEN ''1'' ELSE ''2'' END::text as st1,
-			'' ''::text as espaco,
+			CASE WHEN c.tipo_imposto IN (6, 7, 8) THEN 'S' ELSE 'N' END::text as st,			
+			CASE WHEN c.tipo_imposto IN (6, 7, 8) THEN '1' ELSE '2' END::text as st1,
+			' '::text as espaco,
 			f.cnpj as filial_cnpj,
 			c.remetente_cnpj,
 			c.consig_red_cnpj,
-			c.destinatario_cnpj,
-			c.destinatario_nome,			
-			''I''::text as acao_documento,
+			'I'::text as acao_documento,
 			CASE tipo_transporte 
-				WHEN 1  THEN ''N''
-				WHEN 2  THEN ''D''
-				WHEN 3  THEN ''R''
-				WHEN 5  THEN ''F''
-				WHEN 6  THEN ''T''
-				WHEN 12 THEN ''C''
-				WHEN 14 THEN ''I''
-				WHEN 16 THEN ''P''
-					ELSE ''N''
+				WHEN 1  THEN 'N'
+				WHEN 2  THEN 'D'
+				WHEN 3  THEN 'R'
+				WHEN 5  THEN 'F'
+				WHEN 6  THEN 'T'
+				WHEN 12 THEN 'C'
+				WHEN 14 THEN 'I'
+				WHEN 16 THEN 'P'
+					ELSE 'N'
 			END::text as tipo_conhecimento,
 			cod_operacao_fiscal as cfop,
 			c.remetente_nome,			
-			to_char(hora.data_tempo,''DDMMYY'') as data,
-			to_char(hora.data_tempo,''HH24MI'') as hora,
-			(''CONEMB'' || to_char(hora.data_tempo,''DDMMYY'')) as ident_000,
-			(''CONEMB'' || to_char(hora.data_tempo,''DDMMYYYY'')) as ident_320,			
-			(''CON'' || to_char(hora.data_tempo,''DDMMYYHH24MI'')) as ident_320_stemac,		
-			(''CONHE'' || to_char(hora.data_tempo,''DDMMHH24MI'') || ''1'') as ident_320_simpress,	
+			to_char(hora.data_tempo,'DDMMYY') as data,
+			to_char(hora.data_tempo,'HH24MI') as hora,
+			('CONEMB' || to_char(hora.data_tempo,'DDMMYY')) as ident_000,
+			('CONEMB' || to_char(hora.data_tempo,'DDMMYYYY')) as ident_320,			
+			('CON' || to_char(hora.data_tempo,'DDMMYYHH24MI')) as ident_320_stemac,		
+			('CONHE' || to_char(hora.data_tempo,'DDMMHH24MI') || '1') as ident_320_simpress,	
 			f.razao_social as transportadora,
 			f.cnpj as transportadora_cnpj,
 			0::integer as iss,
-			CASE WHEN calculado_de_id_cidade = 3784 THEN ''3000'' ELSE '''' END::text as info_fiscal_predileta,
+			CASE WHEN calculado_de_id_cidade = 3784 THEN '3000' ELSE '' END::text as info_fiscal_predileta,
 			origem.cod_ibge as codigo_municipio_origem,
 			destino.cod_ibge as codigo_municipio_destino,
-			destino.nome_cidade as cidade_destino,
-			destino.uf as uf_destino,
 			CASE 	WHEN c.calculado_de_id_cidade = c.calculado_ate_id_cidade 
 				THEN (c.total_frete * (iss.aliquota/100)) * 100
 				ELSE NULL
@@ -113,15 +92,14 @@ BEGIN
 				ON destino.id_cidade = c.calculado_ate_id_cidade
 			LEFT JOIN imposto_aliquotas iss
 				ON iss.tipo_imposto = 2 AND iss.id_cidade = c.calculado_de_id_cidade
-		WHERE 
-			
+		WHERE 			
 			--EXISTS(SELECT 1 FROM lista WHERE lista.id = c.id_conhecimento)
 			--ARRAY[c.id_conhecimento] <@ ARRAY[299276]
 			--c.id_conhecimento IN( 299276,299277)
 			--c.id_conhecimento IN (202422,202414,202294,202355,202395)
-			c.id_conhecimento IN (' || v_id || ')
+			c.id_conhecimento IN (4632606)
 			
-	), 
+	) , 
 	cf AS (
 		SELECT 
 			cf.id_conhecimento, 
@@ -132,7 +110,7 @@ BEGIN
 		FROM 
 			v_scr_conhecimento_cf cf			
 		WHERE
-			cf.id_conhecimento IN (' || v_id || ')		
+			cf.id_conhecimento IN (4632606)		
 	)
 	,cf_conemb AS (
 		SELECT 
@@ -221,7 +199,7 @@ BEGIN
 		SELECT 
 			nf.id_conhecimento,
 			(((row_number() over (partition by nf.id_conhecimento order by nf.numero_nota_fiscal))-1)/40)::integer as grupo,
-			rpad(nf.serie_nota_fiscal,3,'' '') as serie_nota_fiscal,
+			rpad(nf.serie_nota_fiscal,3,' ') as serie_nota_fiscal,
 			nf.numero_nota_fiscal,
 			nf.numero_pedido_nf,
 			nf.numero_romaneio_nf,	
@@ -256,44 +234,44 @@ BEGIN
 			rpad(
 				string_agg(
 					serie_nota_fiscal || right(numero_nota_fiscal,8),
-					'''' order by grupo, numero_nota_fiscal
+					'' order by grupo, numero_nota_fiscal
 				),
 				440,
-				''   00000000''
+				'   00000000'
 			) as lst_nf_8,
 			rpad(
 				string_agg(
-					rpad(ltrim(serie_nota_fiscal,''0''),3,'' '') || right(numero_nota_fiscal,8),
-					'''' order by grupo, numero_nota_fiscal
+					rpad(ltrim(serie_nota_fiscal,'0'),3,' ') || right(numero_nota_fiscal,8),
+					'' order by grupo, numero_nota_fiscal
 				),
 				440,
-				''   00000000''
+				'   00000000'
 			) as lst_nf_8_marilan,
 			rpad(
 				string_agg(
-					rpad(ltrim(serie_nota_fiscal,''0''),3,'' '') || numero_nota_fiscal,
-					'''' order by grupo, numero_nota_fiscal
+					rpad(ltrim(serie_nota_fiscal,'0'),3,' ') || numero_nota_fiscal,
+					'' order by grupo, numero_nota_fiscal
 				),
 				480,
-				''   000000000''
+				'   000000000'
 			) as lst_nf_9_coty,
 			rpad(
 				string_agg(
-					rpad(serie_nota_fiscal,3,''0'') || numero_nota_fiscal,
-					'''' order by grupo, numero_nota_fiscal
+					rpad(serie_nota_fiscal,3,'0') || numero_nota_fiscal,
+					'' order by grupo, numero_nota_fiscal
 				),
 				480,
-				'' ''
+				' '
 			) as lst_nf_9,
 			rpad(
 				string_agg(
-					rpad(trim(leading from serie_nota_fiscal,''0''),3,'' '') || numero_nota_fiscal,
-					'''' order by grupo, numero_nota_fiscal
+					rpad(trim(leading from serie_nota_fiscal,'0'),3,' ') || numero_nota_fiscal,
+					'' order by grupo, numero_nota_fiscal
 				),
 				480,
-				'' ''
+				' '
 			) as lst_nf_9s,
-			rpad(string_agg('' '' || chave_nfe,'''' order by grupo, chave_nfe),900,	'' '') as lst_chaves_nfe
+			rpad(string_agg(' ' || chave_nfe,'' order by grupo, chave_nfe),900,	' ') as lst_chaves_nfe
 		FROM
 			t2
 		GROUP BY 
@@ -304,7 +282,7 @@ BEGIN
 		WITH temp AS (
 			SELECT row_to_json(row,true) as registro, id_conhecimento, grupo FROM (
 				SELECT
-					''329''::text as ident,
+					'329'::text as ident,
 					t.remetente_cnpj,										
 					t.id_conhecimento,
 					t.chave_cte,
@@ -313,8 +291,8 @@ BEGIN
 					t.tipo_documento,
 					t.prot_autorizacao_cte,
 					t.consig_red_cnpj,
-					CASE WHEN t.tipo_documento = ''07'' THEN ''55'' ELSE t.tipo_documento END as tipo_documento_marilan,					
-					'' ''::text as espaco,
+					CASE WHEN t.tipo_documento = '07' THEN '55' ELSE t.tipo_documento END as tipo_documento_marilan,					
+					' '::text as espaco,
 					max(t3.grupo) as grupo,
 					info_fiscal_predileta
 				FROM 
@@ -342,7 +320,7 @@ BEGIN
 	),	
 	reg_322 AS (	
 		WITH temp AS (
-			SELECT  row_to_json(row,true) as registro, id_conhecimento, grupo, ''321''::text as reg_pai FROM (
+			SELECT  row_to_json(row,true) as registro, id_conhecimento, grupo, '321'::text as reg_pai FROM (
 				SELECT 			
 					t.id_conhecimento,
 					t.tipo_documento,
@@ -351,7 +329,7 @@ BEGIN
 					t.ident,
 					t.filial_emissora,
 					t.serie_conhecimento,
-					ltrim(t.numero_conhecimento,''0'') as numero_conhecimento,
+					ltrim(t.numero_conhecimento,'0') as numero_conhecimento,
 					t.numero_conhecimento as numero_conhecimento_z,
 					t.data_emissao,
 					t.data_recebimento_sefaz,
@@ -374,28 +352,13 @@ BEGIN
 					t.remetente_cnpj,
 					t.consig_red_cnpj,
 					t.tipo_conhecimento,
-					t.destinatario_nome, 
-					t.destinatario_cnpj,
-					t.peso_cubado,
-					000::integer as ademe,
-					000::integer as desconto,
-					000::integer as emex,
-					000::integer as trt,
-					000::integer as tas,
-					000::integer as tde,					
 					t.cfop,
 					t.espaco,
 					t.acao_documento,
-					''1''::character(1) as meio_transporte,
-					''0''::character(1) as tipo_veiculo,	
-					0::integer as desconto,														
 					t.codigo_municipio_origem,
 					t.codigo_municipio_destino,
-					t.cidade_destino,
-					t.uf_destino,
-					''9''::text as cod_obs,
-					CASE WHEN t3.ultimo_grupo = t3.grupo THEN ''U'' ELSE ''C'' END as continuacao,
-					CASE WHEN t3.ultimo_grupo = t3.grupo THEN '' '' ELSE ''C'' END as continuacao_marilan,
+					CASE WHEN t3.ultimo_grupo = t3.grupo THEN 'U' ELSE 'C' END as continuacao,
+					CASE WHEN t3.ultimo_grupo = t3.grupo THEN ' ' ELSE 'C' END as continuacao_marilan,
 					t3.lst_nf_8,
 					t3.lst_nf_8_marilan,
 					t3.lst_nf_9,
@@ -404,17 +367,17 @@ BEGIN
 					lst_chaves_nfe,
 					t3.grupo,
 					tprod.valor_total_produtos,
-					COALESCE(tprod.numero_pedido_nf,'''') as numero_pedido_nf,
-					CASE WHEN t.tipo_documento = ''07'' THEN ''55'' ELSE t.tipo_documento END as tipo_documento_marilan,										
-					CASE 	WHEN t.tipo_documento = ''57'' 
+					COALESCE(tprod.numero_pedido_nf,'') as numero_pedido_nf,
+					CASE WHEN t.tipo_documento = '07' THEN '55' ELSE t.tipo_documento END as tipo_documento_marilan,										
+					CASE 	WHEN t.tipo_documento = '57' 
 						THEN t.serie_conhecimento 	
-						ELSE ''NFS'' 
+						ELSE 'NFS' 
 					END::text as serie_marilan,
-					CASE 	WHEN t.tipo_documento = ''57'' 
+					CASE 	WHEN t.tipo_documento = '57' 
 						THEN t.numero_conhecimento 	
-						ELSE lpad(trim(COALESCE(tprod.numero_pedido_nf,'''')),12,'' '') 
-					END::text as numero_marilan,					
-					COALESCE(reg_329.json_329,''{}''::json[]) as reg_329
+						ELSE lpad(trim(COALESCE(tprod.numero_pedido_nf,'')),12,' ') 
+					END::text as numero_marilan,
+					COALESCE(reg_329.json_329,'{}'::json[]) as reg_329
 				FROM 
 					t
 					LEFT JOIN t3 
@@ -436,7 +399,7 @@ BEGIN
 		WITH temp AS (
 			SELECT row_to_json(row,true) as json_000  FROM (
 				SELECT 		
-					''000''::text as ident,
+					'000'::text as ident,
 					t.transportadora as remetente,
 					t.remetente_nome as destinatario,
 					t.data,
@@ -459,7 +422,7 @@ BEGIN
 		WITH temp AS (
 			SELECT row_to_json(row,true) as json_320 FROM (
 				SELECT 		
-					''320''::text as ident,
+					'320'::text as ident,
 					t.ident_320,
 					ident_320_stemac,
 					ident_320_simpress,
@@ -479,7 +442,7 @@ BEGIN
 			SELECT (row_to_json(row,true))::json as json_321 FROM (
 				WITH temp AS (
 					SELECT 		
-						''321''::text as ident,
+						'321'::text as ident,
 						t.transportadora as razao_social,
 						t.transportadora_cnpj as cnpj,
 						t.espaco				
@@ -510,10 +473,10 @@ BEGIN
 			SELECT row_to_json(row,true) as json_323 FROM 
 			(
 				SELECT 
-					''323''::text as ident,
+					'323'::text as ident,
 					count(*) as qt_ct,
 					sum(total_frete) as valor_total_ct,
-					''''::text as espaco
+					''::text as espaco
 				FROM
 					t
 			) row
@@ -533,17 +496,4 @@ BEGIN
 			reg_320, 
 			reg_321, 
 			reg_323
-	) row;';
-
-	RAISE NOTICE '%', str_sql;
-
-	OPEN v_cursor FOR EXECUTE str_sql;
-
-	FETCH v_cursor INTO v_resultado;
-
-	CLOSE v_cursor;
-	RETURN v_resultado;
-END;
-$BODY$
-  LANGUAGE plpgsql VOLATILE
-  COST 100;
+	) row;
