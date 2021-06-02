@@ -1,0 +1,1 @@
+ALTER TABLE scr_relatorio_viagem ADD COLUMN faz_retencao integer DEFAULT 1;  
