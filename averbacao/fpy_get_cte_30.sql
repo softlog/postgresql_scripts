@@ -1,4 +1,4 @@
--- Function: public. SELECT * FROM fpy_get_cte_30(183)
+-- Function: public. SELECT * FROM fpy_get_cte_30(26933)
 
 -- DROP FUNCTION public.fpy_get_cte_30(integer);
 
@@ -25,7 +25,7 @@ FROM
     LEFT JOIN filial t ON t.codigo_empresa = c.empresa_emitente AND t.codigo_filial = c.filial_emitente
 WHERE
     c.id_conhecimento =  %i 
-    AND coalesce((xpath('/protCTe/infProt/cStat/text()', 	replace(xml_retorno,'xmlns="http://www.portalfiscal.inf.br/cte"','')::xml)::text[])[1],'') = '100'
+    AND CASE WHEN c.tipo_documento = 1 THEN coalesce((xpath('/protCTe/infProt/cStat/text()', 	replace(xml_retorno,'xmlns="http://www.portalfiscal.inf.br/cte"','')::xml)::text[])[1],'') = '100' ELSE status = 1 END
     """ % (p_id_doc)
 
 rv = plpy.execute(str_qry)
@@ -129,4 +129,4 @@ $BODY$
   COST 100;
   
   
---ALTER FUNCTION public.fpy_get_cte_30(integer) OWNER TO softlog_bsb;
+--ALTER FUNCTION public.fpy_get_cte_30(integer) OWNER TO softlog_seniorlog;

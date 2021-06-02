@@ -1,46 +1,35 @@
 -- Function: public.f_tgg_set_averbacao()
 
 -- DROP FUNCTION public.f_tgg_set_averbacao();
+/*
+
+SELECT id_conhecimento, status, tipo_documento, data_emissao FROM scr_conhecimento WHERE tipo_documento = 2 AND data_emissao >= current_date AND cancelado = 0
+
+SELECT * FROM scr_conhecimento_averbacao WHERE data_registro >= current_date;
+
+UPDATE scr_conhecimento SET status = 0, cstat='100' WHERE tipo_documento = 2 AND data_emissao >= current_date AND cancelado = 0;
+UPDATE scr_conhecimento SET status = 1, cstat='100' WHERE tipo_documento = 2 AND data_emissao >= current_date AND cancelado = 0;
+
+
+*/
+-----
 
 CREATE OR REPLACE FUNCTION public.f_tgg_set_averbacao()
   RETURNS trigger AS
 $BODY$
 DECLARE	
 	vIdAverbacao integer;
-	vTemAverbacao integer;
-	v_averba_minuta integer;
 BEGIN		
 
-
-	
+	RAISE NOTICE 'Disparando Averbacao';
 	IF TG_TABLE_NAME = 'scr_conhecimento' AND TG_OP = 'UPDATE' THEN 
-
-		
-
-		IF NEW.empresa_emitente = '003' AND current_database() = 'softlog_transribeiro' THEN
-			RETURN NULL;
-		END IF;
-		
 		IF NEW.tipo_transporte IN (4,20,12) THEN 
 			RETURN NULL;
 		END IF ;
 
-		SELECT 	count(*) 
-		INTO 	vTemAverbacao 
-		FROM 	empresa_acesso_servicos
-			LEFT JOIN empresa
-				ON empresa.id_empresa = empresa_acesso_servicos.id_empresa			
-		WHERE
-			id_servico_integracao IN (1,100)
-			AND empresa.codigo_empresa = NEW.empresa_emitente;
-
-		IF vTemAverbacao = 0 THEN 
+		IF NEW.responsavel_seguro <> 5 THEN
 			RETURN NULL;
 		END IF;
-
- 		IF NEW.responsavel_seguro <> 5 THEN
- 			RETURN NULL;
- 		END IF;
 
 		IF NEW.tipo_documento = 1 THEN
 			--Se houve emissao de cte
@@ -60,7 +49,6 @@ BEGIN
 				UPDATE scr_conhecimento_averbacao SET cancelado = 1 WHERE id_conhecimento = NEW.id_conhecimento;			
 			END IF;	
 		END IF;
-		
 		IF NEW.tipo_documento = 2 THEN 
 			
 			--Se houve emissao de minuta
@@ -88,7 +76,7 @@ BEGIN
 				
 				SELECT id INTO vIdAverbacao FROM scr_conhecimento_averbacao WHERE id_conhecimento = NEW.id_conhecimento;
 
-				RAISE NOTICE 'Id Averbacao %', vIdAverbacao
+				RAISE NOTICE 'Id Averbacao %', vIdAverbacao;
 
 				IF vIdAverbacao IS NULL THEN 
 					RAISE NOTICE 'Incluindo na fila';
