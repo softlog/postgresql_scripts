@@ -1,3 +1,4 @@
+--SELECT * FROM v_com_nf_cubo LIMIT 1
 CREATE OR REPLACE VIEW v_com_nf_cubo AS
 SELECT 
 	nf.codigo_empresa,

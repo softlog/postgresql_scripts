@@ -28,6 +28,7 @@ SELECT bi_insere_coluna('comercial','data','data');
 SELECT bi_insere_coluna('comercial','mes_ano','mes_ano');
 SELECT bi_insere_coluna('comercial','id_filial','id_filial');
 SELECT bi_insere_coluna('comercial','cnpj','cnpj');
+SELECT bi_insere_coluna('comercial','numero_documento','numero_documento');
 
 
 -- INSERE DIMENSOES
@@ -63,6 +64,7 @@ SELECT bi_insere_dimensao('comercial','semana','semana','Semana',0,NULL,NULL,NUL
 SELECT bi_insere_dimensao('comercial','cfop','cfop','CFOP',2,'SELECT codigo_cfop, (codigo_cfop || '' - '' || trim(initcap(descricao_cfop))) as descricao_cfop FROM cfop','codigo_cfop','descricao_cfop',NULL,0,1,NULL,0,0,NULL,NULL);
 SELECT bi_insere_dimensao('comercial','cnpj','cnpj','CNPJ',0,NULL,NULL,NULL,NULL,0,1,NULL,0,0,NULL,NULL);
 SELECT bi_insere_dimensao('comercial','modelo_doc_fiscal','modelo_doc_fiscal','Tipo Doc.',0,NULL,NULL,NULL,NULL,0,1,NULL,0,0,NULL,NULL);
+SELECT bi_insere_dimensao('comercial','numero_documento','numero_documento','Num.Doc.',0,NULL,NULL,NULL,NULL,0,1,NULL,0,0,NULL,NULL);
 
 
 --SELECT * FROM v_com_nf_cubo ORDER BY 1 LIMIT 10

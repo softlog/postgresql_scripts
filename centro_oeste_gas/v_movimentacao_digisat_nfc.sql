@@ -18,4 +18,7 @@ ORDER BY
 	ultima_movimentacao DESC;
 
 
-SELECT nome_descritivo, cnpj, codigo_empresa, codigo_filial, ultima_movimentacao FROM v_movimentacao_digisat_nfc
+SELECT count(*) FROM v_com_nf_cubo WHERE data_emissao >= '2019-01-01 00:00:00'
+
+SELECT * FROM bi_cubos
+--SELECT trim(nome_descritivo) || ' >> ' || ultima_movimentacao::text, cnpj, codigo_empresa, codigo_filial ultima_movimentacao FROM v_movimentacao_digisat_nfc
