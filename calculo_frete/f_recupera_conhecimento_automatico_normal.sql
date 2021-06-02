@@ -1,17 +1,15 @@
 -- Function: public.f_emite_conhecimento_automatico_normal(integer[], integer, integer, refcursor, refcursor, refcursor, refcursor, refcursor)
---SELECT tipo_documento, regime_especial_mg, * FROM scr_conhecimento WHERE  id_conhecimento = 4367188
 
---SELECT * FROM scr_conhecimento WHERE id_conhecimento_principal = 4367188
-
---numero_ctrc_filial = '0010010000054'
 -- DROP FUNCTION public.f_emite_conhecimento_automatico_normal(integer[], integer, integer, refcursor, refcursor, refcursor, refcursor, refcursor);
 
-CREATE OR REPLACE FUNCTION public.f_emite_conhecimento_automatico_normal(
-    lstnf integer[],
+CREATE OR REPLACE FUNCTION public.f_recupera_conhecimento_automatico_normal(
+    p_id_nf integer,
     pidconhecimento integer,
-    p_id_conhecimento_agrupado integer,
-    cf refcursor,
-    msg refcursor,
+    p_dh_emissao timestamp,
+    p_numero_conhecimento character(7), 
+    p_chave_cte text,
+    cf refcursor,    
+    msg refcursor,    
     imposto_cf refcursor,
     imposto refcursor,
     msg_imposto refcursor)
@@ -63,6 +61,9 @@ DECLARE
 	v_difal_icms_destino		numeric(12,2);
 	v_valor_fcp			numeric(12,2);
 	v_cf_frete			numeric(12,2);
+
+	v_empresa 			character(3);
+	v_filial			character(3);
 	
 
 BEGIN	
@@ -74,12 +75,10 @@ BEGIN
 	
 	--Gera o registro de conhecimento e adiciona as notas fiscais
 	vIdConhecimento = pidconhecimento;
-
 		
-	FOREACH nf IN ARRAY lstnf LOOP
-		RAISE NOTICE 'Gerando Conhecimento de NF %', nf;
-		vIdConhecimento = f_lanca_nota_fiscal_conhecimento(nf,vIdConhecimento,0);
-	END LOOP;
+	
+	vIdConhecimento = f_cria_nota_fiscal_conhecimento(p_id_nf,vIdConhecimento,0);
+	
 
 	IF vIdConhecimento = 0 THEN 
 		RETURN 0;
@@ -99,7 +98,9 @@ BEGIN
 		aliquota_fcp, --11
 		perc_reducao_base_calculo, --12		
 		imposto_incluso, --13
-		calculo_difal --14
+		calculo_difal, --14
+		empresa_emitente, 
+		filial_emitente
 	INTO 
 		vModal, --1
 		vTipoDocumento, --2
@@ -114,7 +115,9 @@ BEGIN
 		v_aliquota_fcp, --11
 		v_perc_base_calculo, --12
 		v_imposto_incluso, --13
-		v_calculo_difal --14
+		v_calculo_difal, --14
+		v_empresa, 
+		v_filial
 	FROM 
 		scr_conhecimento
 	WHERE 
@@ -259,24 +262,14 @@ BEGIN
 	CLOSE imposto;
 	CLOSE msg_imposto;
 
-
-	
-	RAISE NOTICE 'Imposto RE %', v_imposto;
-	RAISE NOTICE 'Base Calculo RE %', v_base_calculo;
-	RAISE NOTICE 'Impsto ST RE %', v_icms_st;
-	RAISE NOTICE 'Base ST RE %', v_base_calculo_st_reduzida;
-
 	vTotalFrete 	= vTotalFrete + COALESCE(v_cf_frete,0.00);
 	
 
-	RAISE NOTICE 'Tipo DOcumento %', vTipoDocumento;
-	RAISE NOTICE 'Modal %', vModal;
-	RAISE NOTICE 'Serie %', vSerieDoc;
-	RAISE NOTICE 'Ambiente CTe %', vAmbienteCte;
+--	vNumeroConhecimento 	= f_scr_get_numero_conhecimento(vTipoDocumento, vModal, vSerieDoc::text, vAmbienteCte::text);
+--	vNumeroDocumento 	= f_scr_get_numero_documento(vTipoDocumento, vModal, vSerieDoc::text, vAmbienteCte::text);	
 
-	
-	vNumeroConhecimento 	= f_scr_get_numero_conhecimento(vTipoDocumento, vModal, vSerieDoc::text, vAmbienteCte::text);
-	vNumeroDocumento 	= f_scr_get_numero_documento(vTipoDocumento, vModal, vSerieDoc::text, vAmbienteCte::text);	
+	vNumeroConhecimento 	= v_empresa || v_filial || p_numero_conhecimento;
+	vNumeroDocumento 	= vNumeroConhecimento;
 
 	-- Grava totais e dados consolidados na tabela de conhecimento
 	WITH tbl AS 
@@ -313,7 +306,11 @@ BEGIN
 			difal_icms_origem	= v_difal_icms_origem,
 			difal_icms_destino	= v_difal_icms_destino,
 			valor_fcp		= v_valor_fcp,
-			flg_viagem		= 1			
+			flg_viagem		= 1,
+			data_emissao 		= p_dh_emissao,
+			cstat			= '000',
+			status 			= 2,
+			chave_cte		= p_chave_cte					
 								
 	FROM	
 		tbl 

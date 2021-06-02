@@ -2,7 +2,7 @@
 
 -- DROP FUNCTION public.f_lanca_nota_fiscal_conhecimento(integer, integer, integer);
 
-CREATE OR REPLACE FUNCTION public.f_lanca_nota_fiscal_conhecimento(
+CREATE OR REPLACE FUNCTION public.f_cria_nota_fiscal_conhecimento(
     pidnf integer,
     pidconhecimento integer,
     p_cte_regime_especial integer)
@@ -38,10 +38,6 @@ BEGIN
 	v_empresa		= COALESCE(fp_get_session('pst_cod_empresa'),'')::text;		
 	
 
-	
-	IF current_database() = 'softlog_saocarlos2' THEN 
-		vCteSerie 	= '999';
-	END IF;
 
 -- 	IF v_empresa IS NULL THEN 
 -- 		SELECT empresa_emitente 
@@ -102,11 +98,10 @@ BEGIN
 
 	SET datestyle = "ISO, DMY";
 			
-	IF pidconhecimento = 0 THEN 
-		RAISE NOTICE 'Criando registro de Conhecimento';
-		
+	IF pidconhecimento > 0 THEN 
 		OPEN vCursor FOR 
 		INSERT INTO scr_conhecimento (
+			id_conhecimento, 
 			---- EMISSAO DO DOCUMENTO -------
 			flg_importado, --(1)
 			status, --(2)
@@ -198,7 +193,6 @@ BEGIN
 			entrega_dificuldade, --88
 			entrega_exclusiva, --89
 			coleta_exclusiva --90			
-			
 -- 			redespachador_id
 -- 			flg_viagem, --(43)
 -- 			responsavel_seguro --(44)
@@ -206,7 +200,8 @@ BEGIN
 		SELECT 
 			--- deixa para disparar a trigger somente depois 
 			--- A trigger f_tgg_operacoes_* só será disparada se flg_importado for diferente
-			--- de -1			
+			--- de -1
+			pidconhecimento,			
 			-1, --(1)
 			0, --(2)
 			nf.tipo_transporte, --(3)
@@ -359,7 +354,6 @@ BEGIN
 			nf.entrega_exclusiva, --89
 			nf.coleta_exclusiva --90
 			
-			
 		FROM 			
 			v_mgr_notas_fiscais nf
 			LEFT JOIN v_scr_notas_fiscais_carregamento ca
@@ -386,7 +380,6 @@ BEGIN
 		PERFORM fp_set_session('tipo_documento_' || vIdConhecimento::text,v_tipo_documento::text);
 	ELSE 
 
-		RAISE NOTICE 'Atualizando Registro de Conhecimento %', pidconhecimento;
 		v_tipo_documento = fp_get_session('tipo_documento_' || pidconhecimento::text);
 		vIdConhecimento = pidconhecimento;
 
@@ -422,8 +415,7 @@ BEGIN
 			sap_tipoobjeto,
 			sap_supervisor,
 			id_nota_fiscal_imp,
-			peso_transportado,
-			obs_medidas
+			peso_transportado
 		)
 		SELECT 	
 			vIdConhecimento,
@@ -453,8 +445,7 @@ BEGIN
 			sap_tipoobjeto,
 			sap_supervisor,
 			pidnf, 
-			peso_transportado,
-			obs_medidas
+			peso_transportado
 		FROM
 			scr_notas_fiscais_imp			
 		WHERE
@@ -499,4 +490,3 @@ $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
 
---SELECT obs_medidas FROM scr_notas_fiscais_imp WHERE obs_medidas IS NOT NULL

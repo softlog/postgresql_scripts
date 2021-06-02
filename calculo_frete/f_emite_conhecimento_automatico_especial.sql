@@ -68,7 +68,7 @@ BEGIN
 		AND data_cte_re = vDataCteRe
 		AND cancelado = 0
 		AND tipo_documento = 1
-		AND COALESCE(cstat,'') <> '100';
+		AND COALESCE(cstat,'') NOT IN ('000','100');
 
 	--Se não existe cte especial na data, 
 	--Fica id = 0
@@ -111,6 +111,8 @@ BEGIN
 	WHERE 
 		id_conhecimento = vIdConhecimentoAgrupado;
 
+	--RAISE NOTICE 'Tipo Imposto %', vTipoImposto;
+	
 	UPDATE scr_conhecimento SET id_conhecimento_principal = vIdConhecimentoAgrupado WHERE id_conhecimento = vIdConhecimento;
 	
 		
@@ -121,11 +123,11 @@ BEGIN
 	SELECT
 		SUM(c.total_frete),
 		SUM(c.desconto),
-		SUM(	CASE 	WHEN c.tipo_imposto IN (6,7,8,9,10)
+		SUM(	CASE 	WHEN c.tipo_imposto NOT IN (6,7,8,9,10)
 				THEN c.imposto 
 				ELSE 0.00
 			END),
-		SUM(	CASE 	WHEN c.tipo_imposto IN (6,7,8,9,10)
+		SUM(	CASE 	WHEN c.tipo_imposto NOT IN (6,7,8,9,10)
 				THEN c.base_calculo 
 				ELSE 0.00
 			END),
@@ -150,8 +152,13 @@ BEGIN
 	WHERE	
 		c.id_conhecimento_principal = vIdConhecimentoAgrupado		
 		AND cancelado = 0 ;
-	
-	
+
+
+	--RAISE NOTICE 'Total Frete %', vTotalFrete;
+	--RAISE NOTICE 'Imposto %', vImposto;
+	--RAISE NOTICE 'Base Calculo %', vBc;
+	--RAISE NOTICE 'Impsto ST %', vImpostoSt;
+	--RAISE NOTICE 'Base ST %', vBcSt;
 	
 	--Grava imposto
 

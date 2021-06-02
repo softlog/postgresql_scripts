@@ -1,6 +1,7 @@
 -- Function: public.f_scr_parametros_calculo_frete(integer)
-
--- DROP FUNCTION public.f_scr_parametros_calculo_frete(integer);
+--SELECT * FROM cliente_tipo_parametros
+--SELECT * FROM f_scr_parametros_calculo_frete(37);
+-- DROP FUNCTION public.f_scr_parametros_calculo_frete(256);
 
 CREATE OR REPLACE FUNCTION public.f_scr_parametros_calculo_frete(pidconhecimento integer)
   RETURNS json AS

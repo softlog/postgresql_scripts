@@ -21,7 +21,7 @@ DECLARE
 	vNumeroConhecimento character(13);
 	vNumeroDocumento  character(13);	
 	vTipoDocumento integer;
-	vSerieDoc integer;
+	vSerieDoc text;
 	vModal integer;
 	vAmbienteCte integer;
 	vTipoImposto integer;

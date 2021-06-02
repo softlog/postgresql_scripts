@@ -6,7 +6,7 @@
 --numero_ctrc_filial = '0010010000054'
 -- DROP FUNCTION public.f_emite_conhecimento_automatico_normal(integer[], integer, integer, refcursor, refcursor, refcursor, refcursor, refcursor);
 
-CREATE OR REPLACE FUNCTION public.f_emite_conhecimento_automatico_normal(
+CREATE OR REPLACE FUNCTION public.f_emite_conhecimento_automatico_cpl_icms(
     lstnf integer[],
     pidconhecimento integer,
     p_id_conhecimento_agrupado integer,
@@ -266,7 +266,7 @@ BEGIN
 	RAISE NOTICE 'Impsto ST RE %', v_icms_st;
 	RAISE NOTICE 'Base ST RE %', v_base_calculo_st_reduzida;
 
-	vTotalFrete 	= vTotalFrete + COALESCE(v_cf_frete,0.00);
+	vTotalFrete 	= 0.00;
 	
 
 	RAISE NOTICE 'Tipo DOcumento %', vTipoDocumento;

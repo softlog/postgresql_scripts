@@ -1,4 +1,5 @@
 -- Function: public.f_scr_calcula_frete(json, refcursor, refcursor)
+-- SELECT * FROm scr_tabelas_tipo_calculo ORDER BY 1 DESC
 -- DROP FUNCTION public.f_scr_calcula_frete(json, refcursor, refcursor);
 
 CREATE OR REPLACE FUNCTION public.f_scr_calcula_frete(
@@ -358,9 +359,7 @@ BEGIN
 					ELSE NULL 
 				END::numeric as dia_entrega,
 				ent.destinatario_id,
-				ent.remetente_id
-
-				
+				ent.remetente_id				
 
 			FROM 		
 				dist_cid_dest,
@@ -463,13 +462,13 @@ BEGIN
 
 				CASE --transferido
 					WHEN t.percentual_devolucao > 0 AND p.tipo_transporte = 2 
-					THEN t.percentual_devolucao/100 
+					THEN (100 - t.percentual_devolucao)/100 
 					ELSE 0.00 
 				END::numeric(12,2) as  percentual_devolucao,
 				
 				CASE 
 					WHEN t.percentual_reentrega > 0 AND p.tipo_transporte = 3
-					THEN t.percentual_reentrega/100 
+					THEN (100 - t.percentual_reentrega)/100 
 					ELSE 0.00 
 				END::numeric(12,2) as percentual_reentrega,
 
@@ -688,11 +687,16 @@ BEGIN
 					END				
 				--Filtra Ad Valorem de acordo com a configuracao das cidades.			
 					
-				AND 	CASE WHEN tcf.id_tipo_calculo IN (19,20)THEN 	(COALESCE(p.satelite_entrega, false) 
-											OR COALESCE(p.capital_polo_entrega, false)
+				AND 	CASE WHEN tcf.id_tipo_calculo IN (19,20)THEN 	(
+											COALESCE(p.capital_polo_entrega, false)
 											OR tod.tipo_rota IN (1,3))											 
 										ELSE true 
 					END
+				AND 	CASE WHEN tcf.id_tipo_calculo IN (200)THEN 	(COALESCE(p.satelite_entrega, false) 
+												OR tod.tipo_rota IN (1,3))											 
+										ELSE true 
+					END
+
 					
 				AND 	CASE WHEN tcf.id_tipo_calculo IN (21) 	THEN COALESCE(p.interior_entrega, false) 
 										ELSE true 
@@ -859,8 +863,8 @@ BEGIN
 			ptf.*,
 			max(tipo_transporte) over (partition by id_tipo_calculo) as tipo_transporte_selecionado,
 			isencao.aplica_isencao,
-			CASE	WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,53,74) AND calcular_a_partir_de = 2 THEN total_nf
-				WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,53,74) AND calcular_a_partir_de IN(1,3) 	THEN total_valor
+			CASE	WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,53,74, 200) AND calcular_a_partir_de = 2 THEN total_nf
+				WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,53,74, 200) AND calcular_a_partir_de IN(1,3) 	THEN total_valor
 				--WHEN ptf.id_tipo_calculo IN (13) THEN null --total_peso_cubad				
 				WHEN ptf.id_tipo_calculo IN (8, 85, 86, 87, 88, 89)  THEN total_unidades -- total_unidades
 				WHEN ptf.id_tipo_calculo IN (12,46) THEN km_entrega -- total_km
@@ -891,7 +895,7 @@ BEGIN
 					true
 				-- Se medida final for 0, filtra trazendo somente se o valor da medida for maior ou igual a medida inicial
 				WHEN 	ptf.medida_final = 0 THEN
-					CASE	WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,74) THEN ptf.total_nf >= ptf.medida_inicial
+					CASE	WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,74,200) THEN ptf.total_nf >= ptf.medida_inicial
 						WHEN ptf.id_tipo_calculo IN (13) THEN false --total_peso_cubado					
 						WHEN ptf.id_tipo_calculo IN (8, 85, 86, 87, 88, 89)  THEN ptf.total_unidades >= ptf.medida_inicial -- total_unidades
 						WHEN ptf.id_tipo_calculo IN (12, 46) THEN ptf.km_entrega >= ptf.medida_inicial -- total_km
@@ -916,7 +920,7 @@ BEGIN
 					
 				-- Se a medida final for diferente de 0, verifica se esta dentro da faixa, ou se tem valor para excedido
 				ELSE	
-					CASE	WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,74) THEN 
+					CASE	WHEN ptf.id_tipo_calculo IN (15,19,20,21,22,23,74,200) THEN 
 							ptf.total_nf >= ptf.medida_inicial 
 							AND (ptf.total_nf <= ptf.medida_final 
 							OR ptf.valor_variavel_excedido > 0 
@@ -1216,7 +1220,8 @@ BEGIN
 					adicional_frete as adicional, 
 					adicional_frete_minimo as adicional_minimo,
 					parametros_faixa_calculo.id_tipo_calculo,
-					scr_tabelas_tipo_calculo.descricao 
+					scr_tabelas_tipo_calculo.descricao,
+					imposto_incluso
 				FROM 	
 					parametros_faixa_calculo
 					LEFT JOIN scr_tabelas_tipo_calculo 
@@ -1237,10 +1242,24 @@ BEGIN
 					descricao,
 					total_valor_pagar,
 					adicional_minimo,
-					f_maior(CASE 	WHEN adicional > 0 AND total_valor_pagar > 0 
-						THEN total_valor_pagar * adicional
-						ELSE 0.00
-					END, adicional_minimo) as valor_adicional
+					f_maior(
+						--Parametro 1
+						CASE 
+							WHEN adicional > 0 AND total_valor_pagar > 0 THEN 
+								CASE 
+									WHEN id_tipo_calculo = 80 AND imposto_incluso = 1 THEN 
+										total_valor_pagar * adicional
+									WHEN id_tipo_calculo = 80 AND imposto_incluso = 0 THEN 
+										(total_valor_pagar / ((100-(adicional*100))/100)) - total_valor_pagar
+									ELSE
+										total_valor_pagar * adicional
+								END
+							ELSE 
+								0.00
+						END, 
+						--Parametro 2
+						adicional_minimo
+					) as valor_adicional
 				FROM a,v
 			)
 			SELECT 
@@ -1276,7 +1295,7 @@ BEGIN
 					percentual_reentrega,
 					total_valor_pagar,
 					CASE 	WHEN percentual_reentrega > 0 AND total_valor_pagar > 0 
-						THEN total_valor_pagar * percentual_reentrega
+						THEN (total_valor_pagar * percentual_reentrega) * -1
 						ELSE 0.00
 					END as valor_adicional
 				FROM percentuais,v
@@ -1285,7 +1304,7 @@ BEGIN
 				NULL::integer as id_conhecimento_cf,
 				1::integer as id_conhecimento,
 				57::integer as id_tipo_calculo,
-				'Adicional Reentrega'::character(50) as descricao,
+				'Desconto Reentrega'::character(50) as descricao,
 				0.00::integer as excedente,
 				percentual_reentrega::numeric(12,2) as quantidade,
 				total_valor_pagar::numeric(12,6) as valor_item,
@@ -1299,7 +1318,7 @@ BEGIN
 				0.00::numeric(5,2) as perc_desconto,
 				valor_adicional::numeric(12,2) as valor_pagar_sdesconto,
 				0.00::numeric(12,2) as desconto
-			FROM valor_adicional WHERE valor_adicional > 0		
+			FROM valor_adicional WHERE valor_adicional < 0		
 			
 		),
 		frete_com_devolucao AS (
@@ -1314,7 +1333,7 @@ BEGIN
 					percentual_devolucao,
 					total_valor_pagar,
 					CASE 	WHEN percentual_devolucao > 0 AND total_valor_pagar > 0 
-						THEN total_valor_pagar * percentual_devolucao
+						THEN (total_valor_pagar * percentual_devolucao) -1 
 						ELSE 0.00
 					END as valor_adicional
 				FROM percentuais,v
@@ -1323,7 +1342,7 @@ BEGIN
 				NULL::integer as id_conhecimento_cf,
 				1::integer as id_conhecimento,
 				58::integer as id_tipo_calculo,
-				'Adicional Devolucao'::character(50) as descricao,
+				'Desconto Devolucao'::character(50) as descricao,
 				0.00::integer as excedente,
 				percentual_devolucao::numeric(12,2) as quantidade,
 				total_valor_pagar::numeric(12,6) as valor_item,
@@ -1337,7 +1356,7 @@ BEGIN
 				0.00::numeric(5,2) as perc_desconto,
 				valor_adicional::numeric(12,2) as valor_pagar_sdesconto,
 				0.00::numeric(12,2) as desconto
-			FROM valor_adicional WHERE valor_adicional > 0		
+			FROM valor_adicional WHERE valor_adicional < 0		
 			
 		)
 		---------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1484,7 +1503,14 @@ BEGIN
 		
 	ELSE --- Se for frete combinado;
 
-		CASE 	WHEN (parametros->>'vl_combinado')::text::numeric 	> 0.00 	THEN 
+		CASE 	WHEN (parametros->>'vl_frete_peso')::text::numeric 	> 0.00 	THEN 
+			
+				v_quantidade_comb = ((parametros->>'peso')::text::numeric);
+				v_valor_item_comb 	= (parametros->>'vl_frete_peso')::text::numeric;
+				v_valor_total_comb	= v_quantidade_comb * v_valor_item_comb;
+				v_valor_pagar_comb	= v_valor_total_comb;
+				v_tipo_combinado = 1;	
+			WHEN (parametros->>'vl_combinado')::text::numeric 	> 0.00 	THEN 
 				v_quantidade_comb = 1;
 				v_valor_item_comb = (parametros->>'vl_combinado')::text::numeric;
 				v_valor_total_comb	= v_quantidade_comb * v_valor_item_comb;
@@ -1581,3 +1607,10 @@ $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100
   ROWS 1000;
+
+/*
+ALTER FUNCTION f_scr_calcula_frete(
+    parametros json,
+    cf refcursor,
+    msg refcursor) OWNER TO softlog_transsafonso;
+   */
