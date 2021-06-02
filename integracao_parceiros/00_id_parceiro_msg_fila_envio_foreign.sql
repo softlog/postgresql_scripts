@@ -1,0 +1,1 @@
+ALTER FOREIGN TABLE msg_fila_envio ADD COLUMN id_parceiro INTEGER;
