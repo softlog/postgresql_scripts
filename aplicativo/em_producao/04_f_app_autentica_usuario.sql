@@ -1,7 +1,10 @@
 --DELETE FROM scr_app_uuid
 --SELECT * FROM scr_app_uuid
 --SELECT f_app_autentica_usuario as resultado FROM f_app_autentica_usuario('06167894671', 'dd5f0d06-11ca-4017-b148-dcbf5394fa25', '123456')
-
+--SELECT * FROM scr_app_uuid WHERE id_fornecedor = 483
+--uuid = '0a32e0c9-af1a-4495-9431-53dd0228167d'
+--SELECT * FROM fornecedores WHERE id_fornecedor = 483
+--SELECT * FROM f
 --SELECT * FROM f_app_autentica_usuario('06167894671','123456','197b1234-b197-4d65-9424-d8c14ca00822')
 CREATE OR REPLACE FUNCTION f_app_autentica_usuario(p_login text, p_senha text, p_uuid text)
   RETURNS json AS
