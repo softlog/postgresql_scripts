@@ -1,237 +1,6 @@
 -- Function: public.edi_ocorrencias_entrega()
--- SELECT * FROM edi_ocorrencias_entrega WHERE id = 2048851
-/*
-SELECT count(*) from edi_ocorrencias_entrega
-BEGIN;
-UPDATE edi_ocorrencias_entrega SET id = id WHERE id = 2114852;
-ROLLBACK;
-*/
---SELECT * FROM edi_ocorrencias_edi  WHERE chave_nfe = '35210416619378000108550200006209081304429734'
--- SELECT * FROM edi_ocorrencias_entrega WHERE chave_nfe = '35210416619378000108550200006209081304429734'
--- SELECT * FROM f_get_div_docs_digitalizado('1217',3)
--- SELECT id_nota_fiscal_imp, data_registro, id_ocorrencia, data_ocorrencia, id_romaneio FROM scr_notas_fiscais_imp WHERE chave_nfe = '35210402057329000114550000011630151520559845'
--- SELECT * FROM scr_conhecimento
--- SELECT id_nota_fiscal_imp, chave_nfe FROM scr_notas_fiscais_imp WHERE numero_nota_fiscal::integer = 1163015
---SELECT * FROM scr_romaneio_nf WHERE id_nota_fiscal_imp = 18453343
--- SELECT * FROM scr_conhecimento_notas_fiscais WHERE chave_nfe = '35210463957302000172550010016678911235647845'
--- SELECT * FROM scr_conhecimento_ocorrencias_nf WHERE id_conhecimento_notas_fiscais = 597294
+
 -- DROP FUNCTION public.edi_ocorrencias_entrega();
--- SELECT * FROM scr_romaneios WHERE id_romaneio IN (160802,160769,160782)
---SELECT * FROM scr_notas_fiscais_imp_log_atividades WHERE id_nota_fiscal_imp = 19015391
---SELECT * FROM fornecedores WHERE cnpj_cpf = '06979529676'
-
-
-/*
-
-SELECT * FROM edi_ocorrencias_entrega WHERE uuid_usuario = 'p7BCfbWUcXbjt5XQIE43'
-
-SELECT * FROM edi_ocorrencias_entrega WHERE chave_nfe = '35210522892980000117550010003920821977824937'
-
-SELECT * FROM edi_ocorrencias_entrega WHERE id_nota_fiscal_imp = 19436901
-
-UPDATE edi_ocorrencias_entrega SET id=id WHERE id = 5479651
-
-SELECT * FROM scr_notas_fiscais_imp_log_atividades WHERE id_nota_fiscal_imp = 19436901
-
-
-SELECT * FROM scr_notas_fiscais_imp_ocorrencias WHERE id_nota_fiscal_imp = 19436901
-
-SELECT id_ocorrencia FROM scr_notas_fiscais_imp_ocorrencias WHERE id_nota_fiscal_imp = 19436901
-SELECT 
-	nf.id_nota_fiscal_imp, 
-	nf.data_ocorrencia,
-	c.data_emissao
-FROM 
-	scr_notas_fiscais_imp nf
-	LEFT JOIN scr_conhecimento c
-		ON c.id_conhecimento = nf.id_conhecimento
-WHERE 
-	numero_nota_fiscal::integer IN (1135275, 1135361,1135487,1135488,1135514,1135572,1135624);
-
-
-SELECT * FROM edi_ocorrencias_entrega WHERE id_nota_fiscal_imp IN (744330,744455,744685,744689,744732,744763,744796)
-
-WITH t AS (
-	SELECT 
-
-	
-		*		
-	FROM 
-		edi_ocorrencias_entrega 
-		
-	WHERE 
-		NOT EXISTS (SELECT 1 FROM scr_notas_fiscais_imp_ocorrencias nfo					
-			    WHERE nfo.id_nota_fiscal_imp = edi_ocorrencias_entrega.id_nota_fiscal_imp AND edi_ocorrencias_entrega.numero_ocorrencia = nfo.id_ocorrencia)
-		AND edi_ocorrencias_entrega.data_importacao >= '2021-05-14'::timestamp
-		
-		
-		
-)
-UPDATE edi_ocorrencias_entrega SET id = id WHERE EXISTS (SELECT 1 FROM t WHERE t.id = edi_ocorrencias_entrega.id)
-
-
-
-SELECT 
-	string_agg(nf.id_nota_fiscal_imp::text, ',') as lst_nfe,
-	nf.chave_nfe,	
-	max(nf.id_ocorrencia) as id_ocorrencia,	
-	nf.data_registro::date as data_registro
-FROM 
-	scr_notas_fiscais_imp nf
-WHERE 
-	nf.data_registro >= '2021-03-01 00:00:00'
-GROUP BY 
-	nf.chave_nfe,
-	nf.data_registro::date
-HAVING max(nf.id_ocorrencia) = 1 AND count(*) > 1 AND min(nf.id_ocorrencia) = 1
-
-WITH t AS (
-	SELECT 
-		*
-		
-	FROM 
-		edi_ocorrencias_entrega 
-	
-		
-	WHERE 
-		NOT EXISTS (SELECT 1 FROM scr_notas_fiscais_imp_ocorrencias nfo					
-			    WHERE nfo.id_nota_fiscal_imp = edi_ocorrencias_entrega.id_nota_fiscal_imp AND edi_ocorrencias_entrega.numero_ocorrencia = nfo.id_ocorrencia)
-		AND edi_ocorrencias_entrega.data_importacao >= '2021-03-01'::timestamp
-)
-SELECT * FROM t
-
-
-
-UPDATE edi_ocorrencias_entrega SET id = id WHERE id = 29919
-
-WITH t AS (
-	SELECT 
-		id,
-		nf.id_nota_fiscal_imp,
-		nf.chave_nfe
-	FROM 
-		edi_ocorrencias_entrega 
-		LEFT JOIN scr_notas_fiscais_imp nf
-			ON nf.chave_nfe = edi_ocorrencias_entrega.chave_nfe
-		
-	WHERE 
-		NOT EXISTS (SELECT 1 FROM scr_notas_fiscais_imp_ocorrencias nfo					
-			    WHERE nf.chave_nfe = edi_ocorrencias_entrega.chave_nfe AND edi_ocorrencias_entrega.numero_ocorrencia = nfo.id_ocorrencia)
-		AND edi_ocorrencias_entrega.data_importacao >= '2021-03-12'::timestamp
-		
-		
-)
-UPDATE edi_ocorrencias_entrega SET id = id WHERE EXISTS (SELECT 1 FROM t WHERE t.id = edi_ocorrencias_entrega.id)
-
-
-*/
-
-
-/*
- SELECT * FROM edi_ocorrencias_entrega WHERE servico_integracao = 4
-update edi_ocorrencias_entrega SET id = id where id_conhecimento IS NULL AND servico_integracao = 1
--- SELECT * FROM edi_ocorrencias_entrega WHERE chave_nfe = '53200626921908000202550020003156461474649616' AND servico_integracao = 1 
--- SELECT * FROM edi_ocorrencias_entrega ORDER BY 1 DESC LIMIT 10 WHERE chave_nfe = '53200626921908000202550020003156461474649616'
--- SELECT id_nota_fiscal_imp, id_ocorrencia FROM scr_notas_fiscais_imp WHERE chave_nfe = '53200606234797000178550010010484351100098401' 
-
-		SELECT * FROM scr_notas_fiscais_imp_ocorrencias WHERE id_nota_fiscal_imp = 18453343
-
-				SELECT id_ocorrencia_softlog, *
-				FROM edi_ocorrencias_comprovei
-				WHERE codigo_status = split_part('001 - Entrega com restrições','-',1)::integer;
-				
-
-				--SELECT split_part('001 - Entrega com restrições                        ','-',1)::integer;
-
-	SELECT * FROM edi_ocorrencias_entrega LIMIT 1
-	UPDATE edi_ocorrencias_entrega SET chave_nfe = chave_nfe WHERE chave_nfe = '42180107432517001170550030006125001000014526'
-
-
-	SELECT 
-		edi.id, 
-		edi.id_nota_fiscal_imp as id_nota_fiscal_imp_edi, 
-		edi.chave_nfe,
-		nf.id_nota_fiscal_imp
-	FROM 
-		edi_ocorrencias_entrega edi 
-		LEFT JOIN scr_notas_fiscais_imp nf 
-			ON nf.chave_nfe = edi.chave_nfe
-	WHERE 
-		edi.data_importacao >= '2021-03-01'::timestamp
-		AND edi.id_nota_fiscal_imp <> nf.id_nota_fiscal_imp
-	
-	
-
-
-	WHERE 
-		EXISTS (SELECT 1
-			FROM scr_notas_fiscais_imp nf
-			WHERE nf.chave_nfe = edi_ocorrencias_entrega.chave_nfe
-				AND nf.id_nota_fiscal_imp <> 
-
-	WITH t AS (
-		SELECT motivo_ocorrencia
-		FROM edi_ocorrencias_entrega 
-		GROUP BY motivo_ocorrencia
-		ORDER BY 1
-	)
-	SELECT 
-		edi.*,
-		
-	
-	BEGIN;
-	
-	UPDATE edi_ocorrencias_entrega SET 		
-		id_nota_fiscal_imp = NULL,
-		id_conhecimento_notas_fiscais = NULL,
-		id_conhecimento = NULL 
-	WHERE 
-		chave_nfe = '53200626921908000202550020003156461474649616';
-
-
-	SELECT * FROM 
-	COMMIT;
-
-	BEGIN;
-	WITH t AS (
-		SELECT 
-			chave_nfe,
-			count(*) as qt
-		FROM 
-			scr_notas_fiscais_imp
-		
-		WHERE 
-			data_registro::date >= '2020-04-01'
-
-
-		GROUP BY 
-			chave_nfe
-		HAVING COUNT(*) >1
-	)
-	UPDATE edi_ocorrencias_entrega SET 	
-		id_nota_fiscal_imp = NULL,
-		id_conhecimento_notas_fiscais = NULL,
-		id_conhecimento = NULL 
-	FROM t
-	WHERE edi_ocorrencias_entrega.chave_nfe = t.chave_nfe 
-
-	
-	
-
-COMMIT;
-ROLLBACK;
-SELECT * FROM scr_notas_fiscais_imp_log_atividades WHERE id_nota_fiscal_imp IN (632302,632599) ORDER BY id_nota_fiscal_imp, data_hora DESC
-
-
-	SELECT char_length(link_img) as tamanho, * FROM scr_docs_digitalizados ORDER BY 1 DESC LIMIT 100
-
-SELECT * FROM 
-
-
-SELECT max(data_ocorrencia) as maxima, min(data_ocorrencia), chave_nfe, numero_ocorrencia FROM edi_ocorrencias_entrega  GROUP BY chave_nfe, numero_ocorrencia HAVING COUNT(*) > 1
-
-*/
-
 
 CREATE OR REPLACE FUNCTION public.edi_ocorrencias_entrega()
   RETURNS trigger AS
@@ -268,12 +37,11 @@ DECLARE
 	v_gerou_devolucao integer;
 
 	v_codigo_cliente integer;
-	v_id_ocorrencia_nf integer;
+	
 	
 BEGIN
 
-	
-	--RAISE NOTICE 'Iniciando Trigger';
+	RAISE NOTICE 'Iniciando Trigger';
 	--Se a Ocorrência veio via Integracao Parceiros Softlog, recebe o código 4
 	
 	IF NEW.id_ocorrencia_app = -1000 THEN 
@@ -737,79 +505,39 @@ BEGIN
 
 	BEGIN
 		IF NEW.servico_integracao IN (2,4)  THEN 
-			
 
 
 			--Nao gravar ocorrencia com a mesma data mais de uma vez
 			IF TG_OP = 'INSERT' THEN 
-
-				IF NEW.id_nota_fiscal_imp IS NOT NULL THEN 
-					SELECT count(*)
-					INTO ja_existe
-					FROM edi_ocorrencias_entrega
-					WHERE 
-						id_nota_fiscal_imp = NEW.id_nota_fiscal_imp
-						AND numero_ocorrencia = NEW.numero_ocorrencia
-						AND data_ocorrencia = NEW.data_ocorrencia
-						AND id <> NEW.id;					
-					
-
-				ELSE 
-					SELECT count(*)
-					INTO ja_existe
-					FROM edi_ocorrencias_entrega
-					WHERE 
-						chave_nfe = NEW.chave_nfe 
-						AND numero_ocorrencia = NEW.numero_ocorrencia
-						AND data_ocorrencia = NEW.data_ocorrencia
-						AND id <> NEW.id;					
-				
-
-
-				END IF;
-
-				IF ja_existe > 0 THEN 
-					RAISE NOTICE 'Já existe ocorrencia igual';
-						RETURN NEW;
-				END IF;
-
-			END IF;
-
-			--Ocorrência de Entrega só pode acontecer uma vez.
-
-			IF NEW.id_nota_fiscal_imp IS NOT NULL THEN 
-				
-				SELECT count(*)
-				INTO ja_existe
-				FROM edi_ocorrencias_entrega
-				WHERE 
-					id_nota_fiscal_imp = NEW.id_nota_fiscal_imp
-					AND numero_ocorrencia = 1
-					AND id <> NEW.id;
-
-				
-			ELSE
-
 				SELECT count(*)
 				INTO ja_existe
 				FROM edi_ocorrencias_entrega
 				WHERE 
 					chave_nfe = NEW.chave_nfe 
-					AND numero_ocorrencia = 1
-					AND id <> NEW.id;
-
-			END IF;
+					AND numero_ocorrencia = NEW.numero_ocorrencia
+					AND data_ocorrencia = NEW.data_ocorrencia;
+							
 				
+
+				IF ja_existe > 0 THEN 
+					RAISE NOTICE 'Já existe ocorrencia igual';
+					RETURN NULL;
+				END IF;
+			END IF;
+
+			--Ocorrência de Entrega só pode acontecer uma vez.
+			SELECT count(*)
+			INTO ja_existe
+			FROM edi_ocorrencias_entrega
+			WHERE 
+				chave_nfe = NEW.chave_nfe 
+				AND numero_ocorrencia = 1;
 
 			IF ja_existe > 0  THEN 
 				RAISE NOTICE 'Já existe ocorrencia de entrega';
-				RETURN NEW;
+				RETURN NULL;
 			END IF;
-
-
-			IF TG_OP = 'UPDATE' THEN 
-				--RETURN NEW;
-			END IF;
+				
 
 
 			IF NEW.id_conhecimento_notas_fiscais IS NOT NULL THEN 
@@ -828,7 +556,48 @@ BEGIN
 
 			--RAISE NOTICE 'Operacao por Nota %', v_operacao_por_nota;
 			
+			IF TG_OP = 'UPDATE' THEN 
+				--RETURN NULL;
+			END IF;
+
 			
+	-- 		SELECT 
+	-- 			count(*) 
+	-- 		INTO 
+	-- 			v_qt
+	-- 		FROM 
+	-- 			edi_ocorrencias_entrega
+	-- 		WHERE 
+	-- 			numero_ocorrencia = NEW.numero_ocorrencia AND id <> NEW.id;
+	-- 
+	-- 
+	-- 		RAISE NOTICE 'QT %',v_qt;
+	-- 		IF v_qt > 0 THEN 
+	-- 			RETURN NULL;
+	-- 		END IF;
+
+		-- 	IF NEW.id_nota_fiscal_imp IS NOT NULL AND OLD.id_nota_fiscal_imp IS NOT NULL THEN 
+		-- 		RETURN NULL;
+		-- 	END IF;
+
+			-- Procura associacao com Nota Importada
+	-- 		IF NEW.id_nota_fiscal_imp IS NULL THEN 
+	-- 		
+	-- 			SELECT id_nota_fiscal_imp, empresa_emitente 
+	-- 			INTO v_id_nota_fiscal_imp, v_empresa
+	-- 			FROM scr_notas_fiscais_imp
+	-- 			WHERE chave_nfe = NEW.chave_nfe
+	-- 			ORDER BY 1 DESC LIMIT 1;
+	-- 
+	-- 			IF v_id_nota_fiscal_imp IS NOT NULL THEN 
+	-- 				NEW.id_nota_fiscal_imp = v_id_nota_fiscal_imp;
+	-- 				v_operacao_por_nota = COALESCE(f_get_parametro_sistema('PST_OPERACAO_POR_NOTA',v_empresa)::integer,0);
+	-- 			END IF ;	
+	-- 		END IF;
+			
+			
+			--SELECT * FROM scr_ocorrencia_edi ORDER BY 1
+			--Tratamento das Ocorrencias
 			
 			--v_operacao_por_nota = 1;
 			v_codigo_ocorrencia = NEW.numero_ocorrencia;
@@ -1174,64 +943,6 @@ BEGIN
 
 	IF NEW.servico_integracao = 3 THEN 
 
-
-		/*
-		BEGIN;
-		UPDATE edi_ocorrencias_entrega SET id = id, chave_nfe = '42210505399786000770550010000016451144024006' WHERE id = 58625;
-
-		DELETE FROM edi_ocorrencias_entrega WHERE servico_integracao = 3
-		DELETE FROM edi_ocorrencias_entrega WHERE chave_nfe = '42210505399786000770550010000016451144024006'
-		ROLLBACK;
-		COMMIT;
-
-		--SELECT * FROM scr_notas_fiscais_imp WHERE chave_nfe = '91576000158550050008859761297197344'
-		SELECT id_nota_fiscal_imp, empresa_emitente, data_ocorrencia
-			
-			FROM scr_notas_fiscais_imp
-			WHERE chave_nfe = '42210505399786000770550010000016451144024006'
-			ORDER BY 1 DESC LIMIT 1;
-			SELECT * FROM 
-		*/
-		RAISE NOTICE '%', NEW.chave_nfe;
-		IF TG_OP = 'UPDATE' THEN 
--- 			IF NEW.url_imagem = '' THEN 
--- 				RETURN NEW;
--- 			END IF;
--- 			IF NEW.url_imagem <> COALESCE(OLD.url_imagem,'') THEN 
--- 
--- 			
--- 				SELECT id_ocorrencia_nf 
--- 				INTO v_id_ocorrencia_nf
--- 				FROM   scr_notas_fiscais_imp_ocorrencias
--- 				WHERE id_nota_fiscal_imp = NEW.id_nota_fiscal_imp AND id_ocorrencia = NEW.numero_ocorrencia;
--- 
--- 				IF v_id_ocorrencia_nf IS NOT NULL THEN 
--- 					--RAISE NOTICE 'INSERINDO IMAGEM';
--- 					INSERT INTO scr_docs_digitalizados (
--- 					link_img,
--- 					id_nota_fiscal_imp,
--- 					id_ocorrencia_nota_fiscal_imp
--- 					)
--- 					VALUES (
--- 						NEW.url_imagem,
--- 						NEW.id_nota_fiscal_imp,
--- 						v_id_ocorrencia_nota_fiscal_imp
--- 					);		
--- 				
--- 
--- 					UPDATE scr_notas_fiscais_imp 
--- 							SET digitalizado = 1 
--- 					WHERE id_nota_fiscal_imp = NEW.id_nota_fiscal_imp;	
--- 					
--- 					UPDATE scr_notas_fiscais_imp_ocorrencias SET canhoto = 1 WHERE id_ocorrencia_nf = v_id_ocorrencia_nf;
--- 				END IF;
--- 				
--- 				
--- 			END IF;
-			RETURN NEW;
-		END IF;
-
-		RAISE NOTICE 'Verificando se UUID ja existe';
 		SELECT 
 			count(*) 
 		INTO 
@@ -1239,34 +950,44 @@ BEGIN
 		FROM 
 			edi_ocorrencias_entrega
 		WHERE 
-			id <> NEW.id AND uuid_usuario = NEW.uuid_usuario;
+			numero_ocorrencia = NEW.numero_ocorrencia AND id_carga_itrack <> NEW.id_carga_itrack AND id_carga_itrack = NEW.id_carga_itrack;
 
-		
 
 		RAISE NOTICE 'QT %',v_qt;
 		IF v_qt > 0 THEN 
-			RAISE NOTICE 'Ja existe ocorrencia registrada!';
 			RETURN NULL;
 		END IF;
 
 	-- 	IF NEW.id_nota_fiscal_imp IS NOT NULL AND OLD.id_nota_fiscal_imp IS NOT NULL THEN 
 	-- 		RETURN NULL;
 	-- 	END IF;
-		
-		--SELECT id_nota_fiscal_imp, chave_nfe, empresa_emitente FROM scr_notas_fiscais_imp WHERE chave_nfe IS NOT NULL ORDER BY 1 DESC LIMIT 1
+	
+		IF NEW.id_carga_itrack IS NOT NULL THEN 
+			SELECT nf.id_nota_fiscal_imp, empresa_emitente
+			INTO v_id_nota_fiscal_imp, v_empresa
+			FROM 
+				fila_documentos_integracoes fila
+				LEFT JOIN scr_notas_fiscais_imp nf
+					ON nf.id_nota_fiscal_imp = fila.id_nota_fiscal_imp
+			WHERE id_integracao = NEW.id_carga_itrack;
+
+			IF v_id_nota_fiscal_imp IS NOT NULL THEN 
+				NEW.id_nota_fiscal_imp = v_id_nota_fiscal_imp;
+				v_operacao_por_nota = COALESCE(f_get_parametro_sistema('PST_OPERACAO_POR_NOTA',v_empresa)::integer,0);
+			END IF ;			
+		END IF;
+	
 
 		-- Procura associacao com Nota Importada
 		IF NEW.id_nota_fiscal_imp IS NULL THEN 
-			
+		
 			SELECT id_nota_fiscal_imp, empresa_emitente 
 			INTO v_id_nota_fiscal_imp, v_empresa
 			FROM scr_notas_fiscais_imp
 			WHERE chave_nfe = NEW.chave_nfe
 			ORDER BY 1 DESC LIMIT 1;
-			
-			--RAISE NOTICE 'Nota Fiscal %',v_id_nota_fiscal_imp;
+
 			IF v_id_nota_fiscal_imp IS NOT NULL THEN 
-			RAISE NOTICE 'Nota Fiscal %',v_id_nota_fiscal_imp;
 				NEW.id_nota_fiscal_imp = v_id_nota_fiscal_imp;
 				v_operacao_por_nota = COALESCE(f_get_parametro_sistema('PST_OPERACAO_POR_NOTA',v_empresa)::integer,0);
 			END IF ;	
@@ -1275,13 +996,12 @@ BEGIN
 		--SELECT * FROM edi_ocorrencias_entrega
 		--SELECT * FROM scr_ocorrencia_edi ORDER BY 1
 		--Tratamento das Ocorrencias
-		--SELECT id_ocorrencia_softlog 
-		--INTO v_codigo_ocorrencia 
-		--FROM edi_ocorrencias_itrack
-		--WHERE codigo_itrack = NEW.numero_ocorrencia;
-
-		v_codigo_ocorrencia = NEW.numero_ocorrencia;
-		--RAISE NOTICE 'Operacao por nota %', v_operacao_por_nota;
+		SELECT id_ocorrencia_softlog 
+		INTO v_codigo_ocorrencia 
+		FROM edi_ocorrencias_itrack
+		WHERE codigo_itrack = NEW.numero_ocorrencia;
+		
+		RAISE NOTICE 'Operacao por nota %', v_operacao_por_nota;
 		IF v_operacao_por_nota = 1 THEN 
 
 			v_codigo_ocorrencia = COALESCE(v_codigo_ocorrencia,1);
@@ -1297,13 +1017,7 @@ BEGIN
 			-- para trigger de ocorrencia automatica abortar insercao
 			PERFORM fp_set_session('id_nota_fiscal_imp',NEW.id_nota_fiscal_imp::text);
 
-			--RAISE NOTICE 'Entrei aqui';
-
-
-			
-			IF trim(NEW.url_imagem) = '' THEN 
-				NEW.url_imagem = NULL;
-			END IF;
+			RAISE NOTICE 'Entrei aqui';
 			
 			IF NEW.url_imagem IS NOT NULL THEN 
 				v_tem_canhoto = 1;
@@ -1344,26 +1058,39 @@ BEGIN
 
 			CLOSE v_cursor;
 
-			
 			--Grava imagem se existir
-			IF NEW.url_imagem IS NOT NULL THEN 
-
-				INSERT INTO scr_docs_digitalizados (
-					link_img,
-					id_nota_fiscal_imp,
-					id_ocorrencia_nota_fiscal_imp
-				)
-				VALUES (
-					NEW.url_imagem,
-					NEW.id_nota_fiscal_imp,
-					v_id_ocorrencia_nota_fiscal_imp
-				);		
+			IF trim(NEW.url_imagem) = '' THEN 
+				NEW.url_imagem = NULL;
+			END IF;
 			
+			IF NEW.url_imagem IS NOT NULL THEN 
+		
+				va_img = string_to_array(NEW.url_imagem,';');
+				tamanho = array_length(va_img,1);
+				
+				FOR i IN 1..tamanho LOOP
+					IF va_img[i] <> '' THEN 
+						INSERT INTO scr_docs_digitalizados (
+							link_img,
+							id_nota_fiscal_imp,
+							id_ocorrencia_nota_fiscal_imp,
+							upload_s3 
+						)
+						VALUES (
+							va_img[i],
+							NEW.id_nota_fiscal_imp,
+							v_id_ocorrencia_nota_fiscal_imp,
+							1
+						);		
+					END IF;
+				END LOOP;
 
 				UPDATE scr_notas_fiscais_imp 
-						SET digitalizado = 1 
-				WHERE id_nota_fiscal_imp = NEW.id_nota_fiscal_imp;	
+					SET digitalizado = 1 
+				WHERE 
+					id_nota_fiscal_imp = NEW.id_nota_fiscal_imp;	
 
+							
 			END IF;
 
 			--Grava Log Atividades
@@ -1376,7 +1103,7 @@ BEGIN
 			VALUES (
 				NEW.id_nota_fiscal_imp,
 				now(),
-				'OCORRENCIA via Webservice Softlog Codigo:' || v_codigo_ocorrencia::text,
+				'OCORRENCIA via ITrack Codigo:' || v_codigo_ocorrencia::text,
 				'suporte'
 			);
 			
@@ -1635,178 +1362,9 @@ BEGIN
 		
 	END IF;
 
-	IF NEW.servico_integracao = 8 THEN 
-
-		SELECT 
-			count(*) 
-		INTO 
-			v_qt
-		FROM 
-			edi_ocorrencias_entrega
-		WHERE 
-			numero_ocorrencia = NEW.numero_ocorrencia AND id_carga_itrack <> NEW.id_carga_itrack AND id_carga_itrack = NEW.id_carga_itrack;
-
-
-		RAISE NOTICE 'QT %',v_qt;
-		IF v_qt > 0 THEN 
-			RETURN NULL;
-		END IF;
-
-	-- 	IF NEW.id_nota_fiscal_imp IS NOT NULL AND OLD.id_nota_fiscal_imp IS NOT NULL THEN 
-	-- 		RETURN NULL;
-	-- 	END IF;
-	
-		IF NEW.id_carga_itrack IS NOT NULL THEN 
-			SELECT nf.id_nota_fiscal_imp, empresa_emitente
-			INTO v_id_nota_fiscal_imp, v_empresa
-			FROM 
-				fila_documentos_integracoes fila
-				LEFT JOIN scr_notas_fiscais_imp nf
-					ON nf.id_nota_fiscal_imp = fila.id_nota_fiscal_imp
-			WHERE id_integracao = NEW.id_carga_itrack;
-
-			IF v_id_nota_fiscal_imp IS NOT NULL THEN 
-				NEW.id_nota_fiscal_imp = v_id_nota_fiscal_imp;
-				v_operacao_por_nota = COALESCE(f_get_parametro_sistema('PST_OPERACAO_POR_NOTA',v_empresa)::integer,0);
-			END IF ;			
-		END IF;
-	
-
-		-- Procura associacao com Nota Importada
-		IF NEW.id_nota_fiscal_imp IS NULL THEN 
-		
-			SELECT id_nota_fiscal_imp, empresa_emitente 
-			INTO v_id_nota_fiscal_imp, v_empresa
-			FROM scr_notas_fiscais_imp
-			WHERE chave_nfe = NEW.chave_nfe
-			ORDER BY 1 DESC LIMIT 1;
-
-			IF v_id_nota_fiscal_imp IS NOT NULL THEN 
-				NEW.id_nota_fiscal_imp = v_id_nota_fiscal_imp;
-				v_operacao_por_nota = COALESCE(f_get_parametro_sistema('PST_OPERACAO_POR_NOTA',v_empresa)::integer,0);
-			END IF ;	
-		END IF;
-		
-		--SELECT * FROM edi_ocorrencias_entrega
-		--SELECT * FROM scr_ocorrencia_edi ORDER BY 1
-		--Tratamento das Ocorrencias
-		SELECT id_ocorrencia_softlog 
-		INTO v_codigo_ocorrencia 
-		FROM edi_ocorrencias_itrack
-		WHERE codigo_itrack = NEW.numero_ocorrencia;
-		
-		RAISE NOTICE 'Operacao por nota %', v_operacao_por_nota;
-		IF v_operacao_por_nota = 1 THEN 
-
-			v_codigo_ocorrencia = COALESCE(v_codigo_ocorrencia,1);
-
-			IF NEW.data_ocorrencia IS NULL THEN
-				--Se não tem data de baixa, seta status 2
-				-- que é o indicativo de erro;
-				NEW.status = 2;			
-				RETURN NEW;
-			END IF;
-
-			--Coloca id da nota fiscal imp na variavel global 
-			-- para trigger de ocorrencia automatica abortar insercao
-			PERFORM fp_set_session('id_nota_fiscal_imp',NEW.id_nota_fiscal_imp::text);
-
-			RAISE NOTICE 'Entrei aqui';
-			
-			IF NEW.url_imagem IS NOT NULL THEN 
-				v_tem_canhoto = 1;
-			ELSE
-				v_tem_canhoto = 0;
-			END IF;
-
-			
-			--Faz update na nota fiscal 
-			UPDATE scr_notas_fiscais_imp nf
-				SET 
-					id_ocorrencia   = v_codigo_ocorrencia,
-					data_ocorrencia = NEW.data_ocorrencia,
-					nome_recebedor  = NEW.recebedor,
-					canhoto = v_tem_canhoto				
-			WHERE
-				nf.id_nota_fiscal_imp   = NEW.id_nota_fiscal_imp;
-
-
-			
-
-			OPEN v_cursor FOR 
-			INSERT INTO scr_notas_fiscais_imp_ocorrencias(
-				id_nota_fiscal_imp, 
-				id_ocorrencia,
-				data_ocorrencia,
-				data_registro,
-				canhoto)
-			 VALUES(
-				NEW.id_nota_fiscal_imp,
-				v_codigo_ocorrencia,
-				NEW.data_ocorrencia,
-				now(),
-				v_tem_canhoto)
-			RETURNING id_ocorrencia_nf;
-
-			FETCH v_cursor INTO v_id_ocorrencia_nota_fiscal_imp;
-
-			CLOSE v_cursor;
-
-			--Grava imagem se existir
-			IF trim(NEW.url_imagem) = '' THEN 
-				NEW.url_imagem = NULL;
-			END IF;
-			
-			IF NEW.url_imagem IS NOT NULL THEN 
-		
-				va_img = string_to_array(NEW.url_imagem,';');
-				tamanho = array_length(va_img,1);
-				
-				FOR i IN 1..tamanho LOOP
-					IF va_img[i] <> '' THEN 
-						INSERT INTO scr_docs_digitalizados (
-							link_img,
-							id_nota_fiscal_imp,
-							id_ocorrencia_nota_fiscal_imp 
-						)
-						VALUES (
-							va_img[i],
-							NEW.id_nota_fiscal_imp,
-							v_id_ocorrencia_nota_fiscal_imp
-						);		
-					END IF;
-				END LOOP;
-
-				UPDATE scr_notas_fiscais_imp 
-					SET digitalizado = 1 
-				WHERE 
-					id_nota_fiscal_imp = NEW.id_nota_fiscal_imp;	
-
-							
-			END IF;
-
-			--Grava Log Atividades
-			INSERT INTO scr_notas_fiscais_imp_log_atividades(
-				id_nota_fiscal_imp, 
-				data_hora, 
-				atividade_executada, 
-				usuario
-				)
-			VALUES (
-				NEW.id_nota_fiscal_imp,
-				now(),
-				'OCORRENCIA via ITrack Codigo:' || v_codigo_ocorrencia::text,
-				'suporte'
-			);
-			
-		END IF;
-	END IF;
-
-
 
 	RETURN NEW;
 END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
-
