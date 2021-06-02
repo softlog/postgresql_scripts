@@ -1,0 +1,1 @@
+ALTER TABLE scr_relatorio_viagem ADD COLUMN emitido integer DEFAULT 0;

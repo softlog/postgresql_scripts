@@ -1,0 +1,1 @@
+ALTER TABLE fornecedores ADD COLUMN tabela_motorista_tmp character(13);
