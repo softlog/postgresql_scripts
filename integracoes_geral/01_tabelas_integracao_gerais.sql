@@ -16,10 +16,12 @@ CREATE TABLE fila_documentos_integracoes
 	CONSTRAINT scr_notas_fiscais_integracoes_id_pk PRIMARY KEY (id)  
 );
 
+
+
 COMMENT ON COLUMN fila_documentos_integracoes.tipo_integracao
 		IS '1 - COMPROVEI, 2 - E-CONFIRMEI, 3-ITRACK, 5-VUUPT, 6 - EFrete';
 COMMENT ON COLUMN fila_documentos_integracoes.tipo_documento
-		IS '1-NFe; 2 - NFe-Com-Cte, 3 - CTe, 4 - Romaneio, 5 - Manifesto, 6 - Proprietario, 7 - Motorista, 8 - Veiculo ';
+		IS '1-NFe; 2 - NFe-Com-Cte, 3 - CTe, 4 - Romaneio, 5 - Manifesto, 6 - Proprietario, 7 - Motorista, 8 - Veiculo, 9 - Ciot, 10 - ADD viagem, 11 - ADD pagamento, 12 GET Ciot, 13 Get Ciot 2, 14 - Retif.Ciot, 15 - Cancela Ciot, 16 - Encerra Ciot';
 COMMENT ON COLUMN fila_documentos_integracoes.data_registro
 		IS 'Data em que o registro foi inserido';
 COMMENT ON COLUMN fila_documentos_integracoes.data_processamento
@@ -53,7 +55,7 @@ ALTER TABLE fila_documentos_integracoes ADD COLUMN id_fornecedor integer;
 
 ALTER TABLE fila_documentos_integracoes ADD COLUMN placa_veiculo character(7);
 
-ALTER TABLE fila_documentos_integracoes ADD COLUMN id_ciot character(7);
+ALTER TABLE fila_documentos_integracoes ADD COLUMN id_ciot integer;
 
 
 

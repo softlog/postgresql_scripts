@@ -1,0 +1,1 @@
+ALTER TABLE fila_documentos_integracoes ADD COLUMN lst_documentos text;
