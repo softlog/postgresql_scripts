@@ -95,20 +95,38 @@ except:
 dest_cnpj = p['part_cnpj_cpf']
 
 p['part_nome'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['xNome'].replace('&','e')
-p['part_logradouro'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest']['xLgr'].replace('&','e')
-p['part_numero'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest']['nro']
-p['part_bairro'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest']['xBairro'].replace('&','e')
-p['part_cod_mun'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest']['cMun']
-dest_cod_mun = p['part_cod_mun']
-p['part_uf'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest']['UF']
-p['part_cep'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest'].get('CEP')
-p['part_pais'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest'].get('xPais')
-p['part_fone'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest'].get('fone')
+
 try:
     p['part_ie'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest'].get('IE')
 except:
     pass
-p['part_email'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest'].get('email')
+
+if xml_nfe['nfeProc']['NFe']['infNFe'].get('entrega') is None:
+
+    p['part_logradouro'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest']['xLgr'].replace('&','e')
+    p['part_numero'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest']['nro']
+    p['part_bairro'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest']['xBairro'].replace('&','e')
+    p['part_cod_mun'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest']['cMun']
+    dest_cod_mun = p['part_cod_mun']
+    p['part_uf'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest']['UF']
+    p['part_cep'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest'].get('CEP')
+    p['part_pais'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest'].get('xPais')
+    p['part_fone'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest'].get('fone')
+    p['part_email'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest'].get('email')
+else:
+    plpy.notice('Endereco de Entrega')
+    p['part_logradouro'] = xml_nfe['nfeProc']['NFe']['infNFe']['entrega']['xLgr'].replace('&','e')
+    p['part_numero'] = xml_nfe['nfeProc']['NFe']['infNFe']['entrega']['nro']
+    p['part_bairro'] = xml_nfe['nfeProc']['NFe']['infNFe']['entrega']['xBairro'].replace('&','e')
+    p['part_cod_mun'] = xml_nfe['nfeProc']['NFe']['infNFe']['entrega']['cMun']
+    dest_cod_mun = p['part_cod_mun']
+    p['part_uf'] = xml_nfe['nfeProc']['NFe']['infNFe']['entrega']['UF']
+    p['part_cep'] = xml_nfe['nfeProc']['NFe']['infNFe']['entrega'].get('CEP')
+    p['part_pais'] = xml_nfe['nfeProc']['NFe']['infNFe']['entrega'].get('xPais')
+    p['part_fone'] = xml_nfe['nfeProc']['NFe']['infNFe']['entrega'].get('fone')
+    p['part_email'] = xml_nfe['nfeProc']['NFe']['infNFe']['entrega'].get('email')
+
+    
 lst_part.append(p)
 
 #dados da Nota Fiscal
@@ -143,6 +161,8 @@ try:
     n['nfe_id_conhecimento_parceiro'] = onf.get('id_conhecimento_parceiro')
     n['nfe_codigo_integracao'] = onf.get('codigo_integracao')
     n['chave_cte'] = onf.get('chave_cte')
+    n['nfe_numero_pedido'] = onf.get('numero_pedido_nf')
+    n['nfe_valor_cte_origem'] = onf.get('valor_cte')
 except:
     pass
 
@@ -316,8 +336,12 @@ try:
 except:
     n['nfe_unidade'] = 'UN'
 
-n['nfe_especie_mercadoria'] = ','.join(lst_unidades)
-n['nfe_especie_mercadoria'] = n['nfe_especie_mercadoria'][0:30]
+try:
+    n['nfe_especie_mercadoria'] = ','.join(lst_unidades)
+    n['nfe_especie_mercadoria'] = n['nfe_especie_mercadoria'][0:30]
+except:
+    n['nfe_especie_mercadoria'] = 'SN'
+    
 n['nfe_cfop_predominante'] = cfop	
 
 nfe['dados_nota'] = n
@@ -330,4 +354,4 @@ $BODY$
   LANGUAGE plpython3u VOLATILE
   COST 100;
 
---ALTER FUNCTION fpy_parse_xml_nfe(xml text)  OWNER TO softlog_unitylog;
+--ALTER FUNCTION fpy_parse_xml_nfe(xml text)  OWNER TO softlog_transribeiro;

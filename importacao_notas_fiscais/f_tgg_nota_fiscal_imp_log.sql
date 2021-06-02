@@ -18,7 +18,7 @@ BEGIN
 	v_historico = NULL;
 	--Verifica se teve operação via formulário
 	vAtividadeExecutada = fp_get_session('ATIVIDADE_EXECUTADA');
-	RAISE NOTICE 'Logando com Atividade Executada %', vAtividadeExecutada;
+	--RAISE NOTICE 'Logando com Atividade Executada %', vAtividadeExecutada;
 	IF vAtividadeExecutada IS NOT NULL THEN 
 
 		CASE 
@@ -34,12 +34,7 @@ BEGIN
 				vLogAtividade = 'BAIXA. via InfoGED: ' || COALESCE(NEW.id_ocorrencia::text,'S.Ocorrencia');
 			WHEN vAtividadeExecutada = 'ROMANEADO'  THEN 
 				--Se id do Romaneio está nulo;
-				IF NEW.id_romaneio IS NULL THEN
-					--Pode ter sido incluído e excluido numa mesma sessão.
-					IF OLD.id_romaneio IS NULL THEN 
-						vLogAtividade 	= 'INCLUIDO/EXCLUIDO DE ROMANEIO';
-						v_historico 		= '';
-					END IF;
+				IF NEW.id_romaneio IS NULL THEN					
 					--Pode ter sido excluído noutra operação.
 					IF OLD.id_romaneio IS NOT NULL THEN 
 						vLogAtividade 	= 'REMOVIDO DE ROMANEIO';
@@ -68,7 +63,7 @@ BEGIN
 				vLogAtividade = vAtividadeExecutada;
 		END CASE;
 
-		RAISE NOTICE 'Log Atividade %', vLogAtividade;
+		--RAISE NOTICE 'Log Atividade %', vLogAtividade;
 		INSERT INTO scr_notas_fiscais_imp_log_atividades(
 			id_nota_fiscal_imp, 
 			data_hora, 

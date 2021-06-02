@@ -22,6 +22,9 @@ DECLARE
 	p_tipo_frete_padrao text; 
 	p_frequencia_faturamento text;
 	p_sem_cnpj_cpf integer;
+	p_busca_mun_por_cep integer;
+	p_cod_mun_aux text;
+	v_id_subscricao integer;
 	
 	vIdCidade integer;
 	vUf character(2);
@@ -29,6 +32,9 @@ DECLARE
 	vTipoCliente integer;
 	vClassificacaoFiscal character(30);
 	vEndereco text;
+
+	vLatitude double precision;
+	vLongitude double precision;
 
 	vCodigoCliente integer;
 	
@@ -40,6 +46,11 @@ DECLARE
 
 	vIE text;
 	vRazao text;
+
+	v_tem_subscricao integer;
+
+	v_importa_para_crm integer;
+	v_id_contato integer;
 	
 BEGIN	
 	
@@ -65,7 +76,9 @@ BEGIN
 	p_tipo_frete_padrao 		= dadosCliente->>'frete_padrao';
 	p_frequencia_faturamento 	= dadosCliente->>'frequencia_faturamento';
 	p_sem_cnpj_cpf		 	= COALESCE(((dadosCliente->>'part_sem_cnpj_cpf')::text::integer),0);
-
+	vLatitude			= ((dadosCliente->>'part_latitude')::text::double precision);
+	vLongitude			= ((dadosCliente->>'part_longitude')::text::double precision);
+	v_id_subscricao 		= COALESCE(((dadosCliente->>'part_subscricao')::text::integer),0);
 
 	IF trim(p_cod_mun) = '' THEN		
 		p_cod_mun = NULL;
@@ -73,6 +86,16 @@ BEGIN
 
 	vEmpresa 	= fp_get_session('pst_cod_empresa');
 	vFilial  	= fp_get_session('pst_filial');
+
+
+	--BUSCA CODIGO IBGE POR CEP
+		
+	SELECT valor_parametro::integer
+	INTO p_busca_mun_por_cep
+	FROM parametros 
+	WHERE cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_BUSCA_CIDADE_POR_CEP';
+	
+	p_busca_mun_por_cep = COALESCE(p_busca_mun_por_cep,0);
 	
 	--Percentual Devolucao
 	IF p_percentual_devolucao IS NULL THEN 	
@@ -82,6 +105,7 @@ BEGIN
 		WHERE cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_PERCENTUAL_DEVOLUCAO';
 	END IF; 
 
+	
 
 	--Percentual Reentrega
 	IF p_percentual_reentrega IS NULL THEN 	
@@ -133,6 +157,15 @@ BEGIN
 	END IF;
 
 
+	--Importa dados para o CRM
+	
+	SELECT COALESCE(valor_parametro::integer,0)::integer
+	INTO v_importa_para_crm
+	FROM parametros 
+	WHERE cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_IMPORTA_DADOS_CRM';
+	
+
+	
 	
 	-- Verifica se o cliente ja existe
 	vCodigoCliente = 0;
@@ -147,8 +180,20 @@ BEGIN
 
 	CLOSE vCursor;
 
+			
 
 	IF (vExiste = 0) THEN 		
+
+		IF p_busca_mun_por_cep = 1 THEN 
+			SELECT 
+				cod_ibge
+			INTO 
+				p_cod_mun_aux
+			FROM 
+				cep 
+			WHERE cep = p_cep;
+			p_cod_mun = COALESCE(p_cod_mun_aux,p_cod_mun);
+		END IF;
 
 		
 		IF p_cod_mun IS NOT NULL THEN 
@@ -161,7 +206,7 @@ BEGIN
 
 		CLOSE vCursor;
 
-
+		
 		-- Se a cidade nao foi encontrada, utiliza uma busca por distancia de edicao
 		IF vIdCidade IS NULL THEN 
 
@@ -219,7 +264,7 @@ BEGIN
 				vClassificacaoFiscal = 'NAO CONTRIBUINT';
 			
 			END IF;
-	
+			RAISE NOTICE 'Cliente cnpj %', p_cnpj_cpf;
 			OPEN vCursor FOR
 			INSERT INTO cliente (
 						cnpj_cpf, --1
@@ -246,7 +291,9 @@ BEGIN
 						fone_contato, --22
 						percentual_devolucao, --23
 						percentual_reentrega, --24
-						email		--25
+						email,		--25
+						latitude,
+						longitude
 					     )
 				VALUES (  
 						trim(p_cnpj_cpf), --1
@@ -273,13 +320,70 @@ BEGIN
 						NULLIF(trim(p_fone),''), --22				
 						p_percentual_devolucao, --23
 						p_percentual_reentrega, --24
-						left(lower(p_email),100)
+						left(lower(p_email),100),
+						vLatitude,
+						vLongitude
 					) 						
 			RETURNING codigo_cliente;
-
-			FETCH vCursor INTO vCodigoCliente;
+			
+			FETCH vCursor INTO vCodigoCliente;			
 			
 			CLOSE vCursor;			
+
+			/*
+			SELECT codigo_cliente
+			INTO vCodigoCliente 
+			FROM cliente 
+			WHERE cnpj_cpf = p_cnpj_cpf;
+			*/
+
+			--SELECT * FROM crm_contatos_detalhes
+			--RAISE NOTICE 'Cliente codigo %', vCodigoCliente;
+
+			IF (v_importa_para_crm = 1) AND ( NULLIF(vDDD,'') || (NULLIF(trim(p_fone),'')) <> '') THEN 
+				OPEN vCursor FOR
+				INSERT INTO public.crm_contatos(
+					nome_razao, --1 			    				
+					endereco, --3
+					numero, --4				
+					bairro, --6
+					id_cidade, --7
+					cep, --8								
+					cnpj_cpf, --9
+					dt_cadastro --14			    
+				) VALUES (
+					fpy_limpa_caracteres(upper(left(p_nome_cliente,50))), --1
+					fpy_limpa_caracteres(upper(COALESCE(LEFT(p_lgr,100),''))), --3
+					COALESCE(LEFT(p_nro,6),''), --4
+					fpy_limpa_caracteres(upper(COALESCE(LEFT(p_bairro,30),''))), --6
+					vIdCidade, --7
+					COALESCE(trim(p_cep),''), --8
+					trim(p_cnpj_cpf), --9
+					current_date --14				
+				)
+				RETURNING id_contato;
+
+				
+				FETCH vCursor INTO v_id_contato;				
+
+				CLOSE vCursor;
+
+				INSERT INTO public.crm_cont_relacoes(
+				    id_contato, id_estrangeiro, flg_estrangeiro, 
+				    atual_em)
+				VALUES (v_id_contato, vCodigoCliente, 'C');
+
+				INSERT INTO crm_contatos_detalhes (
+					id_contato,
+					tp_detalhe, 
+					detalhe
+				) VALUES (
+					v_id_contato,
+					'Fone Comercial',
+					NULLIF(vDDD,'') || NULLIF(trim(p_fone),'')
+				);				
+	
+			END IF;
 		END IF;	
 	ELSE
 
@@ -290,6 +394,19 @@ BEGIN
 			--RAISE NOTICE 'Não mudou Endereco';
 			RETURN 0;
 		END IF;
+
+
+		IF p_busca_mun_por_cep = 1 THEN 
+			SELECT 
+				cod_ibge
+			INTO 
+				p_cod_mun_aux
+			FROM 
+				cep 
+			WHERE cep = p_cep;
+			p_cod_mun = COALESCE(p_cod_mun_aux,p_cod_mun);
+		END IF;
+		
 		
 		IF p_cod_mun IS NOT NULL THEN 
 			OPEN vCursor FOR SELECT id_cidade, uf, ddd_padrao FROM cidades WHERE trim(cod_ibge) = trim(p_cod_mun);
@@ -330,7 +447,7 @@ BEGIN
 			CLOSE vCursor;
 
 		END IF;	
-			
+		--RAISE NOTICE 'Cliente ja esta no sistema %', p_nome_cliente;	
 		OPEN vCursor FOR 
 		UPDATE cliente SET
 			nome_cliente  =  fpy_limpa_caracteres(upper(left(p_nome_cliente,50))), --2
@@ -345,7 +462,9 @@ BEGIN
 			ddd_cliente = NULLIF(vDDD,''), --21
 			fone_contato = NULLIF(trim(p_fone),''), --22
 			email= left(lower(p_email),100),	--25
-			inscricao_estadual = upper(COALESCE(left(p_ie,18),'')) --4
+			inscricao_estadual = upper(COALESCE(left(p_ie,18),'')), --4,
+			latitude = vLatitude,
+			longitude = vLongitude
 		WHERE 
 			cliente.cnpj_cpf = p_cnpj_cpf
 		RETURNING codigo_cliente;
@@ -354,6 +473,37 @@ BEGIN
 
 		CLOSE vCursor;
 	END IF; 
+	
+	--RAISE NOTICE 'Codigo Cliente %', vCodigoCliente;
+	--RAISE NOTICE 'v_id_subscricao %', v_id_subscricao;
+	
+	IF vCodigoCliente > 0 AND v_id_subscricao > 0 THEN 
+	
+		SELECT count(*) 
+		INTO v_tem_subscricao
+		FROM msg_subscricao
+		WHERE codigo_cliente = vCodigoCliente
+			AND id_notificacao = 4;
+
+
+		RAISE NOTICE 'Tem subscricao %', v_tem_subscricao;
+		IF v_tem_subscricao = 0 THEN 
+			INSERT INTO msg_subscricao (
+				ativo,
+				id_notificacao,
+				codigo_cliente,
+				email,
+				tipo_host
+			) VALUES (
+				1,
+				4,
+				vCodigoCliente,
+				p_email,
+				0
+			);
+		END IF;
+
+	END IF;
 	
 	RETURN vCodigoCliente;
 END;

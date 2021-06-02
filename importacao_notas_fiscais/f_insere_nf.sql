@@ -31,6 +31,8 @@ DECLARE
 	v_especie_mercadoria	text;
 	v_valor_produtos	numeric(12,2);
 	v_cfop_predominante	character(4);	
+	v_previsao_entrega 	date;
+	v_id_romaneio 		integer;
 	
 	
 
@@ -85,7 +87,10 @@ DECLARE
 	vIdNotaFiscalImp	integer;
 	vCodigoModelo		integer;
 	vAvista			integer;
-	
+	vNomeMotorista		text;
+	vIdMotorista 		integer;
+
+	vCodigoCliente 		integer;
 
 	-- Variaveis de ambiente
 	vEmpresa		character(3);
@@ -160,12 +165,15 @@ DECLARE
 	v_viagem_automatica 	integer;
 	v_cidade_subcontrato_par integer;
 	v_valor_cte_origem	numeric(12,2);
-	vCodigoDescarte		text;
-	
+	vCodigoDescarte		text;	
+	v_usa_filial_xml	integer;
+	v_filial_xml		character(3);
+	v_empresa_xml		character(3);
 
 BEGIN	
 
 	-- Alterações: 26/03/2015
+	-- 1 - Reconstrução do código que captura os dados das informações da nfe.
 	-- 1 - Reconstrução do código que captura os dados das informações da nfe.
 	-- 1.1 Gravação do código interno de frete, recuperado na nfe do cliente.
 	-- 1.2 Tratamento do volume_no_item presumido.
@@ -324,9 +332,10 @@ BEGIN
 	v_emit_cod_mun		= dadosNf->>'nfe_emit_cod_mun';
 	v_dest_cnpj_cpf		= dadosNf->>'nfe_dest_cnpj_cpf';
 	v_dest_cod_mun		= dadosNf->>'nfe_dest_cod_mun';
-	v_transportador_cnpj_cpf= dadosNf->>'nfe_dest_cod_mun';
+	v_transportador_cnpj_cpf= dadosNf->>'nfe_transportador_cnpj_cpf';
 	v_data_emissao		= dadosNf->>'nfe_data_emissao';
 	v_data_emissao_hr	= COALESCE((dadosNf->>'nfe_data_emissao_hr')::text,NULL)::timestamp;
+	v_previsao_entrega	= COALESCE((dadosNf->>'nfe_previsao_entrega')::text,NULL)::date;
 	v_numero_doc		= dadosNf->>'nfe_numero_doc';
 	v_modelo		= dadosNf->>'nfe_modelo';
 	v_serie			= dadosNf->>'nfe_serie';
@@ -379,9 +388,7 @@ BEGIN
 		v_volume_cubico_edi	= ((dadosNf->>'nfe_volume_cubico')::text)::numeric(16,6);
 	EXCEPTION WHEN OTHERS  THEN 
 		v_volume_cubico_edi	= NULL;
-	END;
-
-	
+	END;	
 
 
 	--RAISE NOTICE 'dados: %', dadosNf;
@@ -391,18 +398,54 @@ BEGIN
 	v_ind_final		= COALESCE(((dadosNf->>'nfe_ind_final')::text)::integer,0);
 	v_ie_dest		= COALESCE(((dadosNf->>'nfe_ie_dest')::text),'1');
 	v_tp_nf			= COALESCE(((dadosNf->>'nfe_tp_nf')::text)::integer,1);
+	v_id_romaneio		= COALESCE(((dadosNf->>'id_romaneio')::text)::integer,0);
+	
+	IF v_id_romaneio = 0 THEN 
+		v_id_romaneio = NULL;
+	END IF;
 
 	--Dados de Integracao Softlog
 	v_pagador_cnpj_cpf	= dadosNf->>'nfe_pagador_cnpj_cpf';
-	v_id_doc_parceiro	= COALESCE(((dadosNf->>'nfe_id_nota_fiscal_parceiro')::text)::integer,NULL);
-	v_id_rom_parceiro	= COALESCE(((dadosNf->>'nfe_id_romaneio_parceiro')::text)::integer,NULL);
-	v_id_nf_cte_parceiro	= COALESCE(((dadosNf->>'nfe_id_conhecimento_notas_fiscais')::text)::integer,NULL);
-	v_id_cte_parceiro	= COALESCE(((dadosNf->>'nfe_id_conhecimento_parceiro')::text)::integer,NULL);
-	v_codigo_integracao 	= COALESCE(((dadosNf->>'nfe_codigo_integracao')::text)::integer,NULL);
-	v_codigo_parceiro	= COALESCE(((dadosNf->>'nfe_codigo_softlog_parceiro')::text)::integer,NULL);
-	
-	
+
+	BEGIN
+
+		v_id_doc_parceiro	= COALESCE(((dadosNf->>'nfe_id_nota_fiscal_parceiro')::text)::integer,NULL);
+	EXCEPTION WHEN OTHERS  THEN		
+		v_id_doc_parceiro	= NULL;
+	END;
+
+	BEGIN
+		v_id_rom_parceiro	= COALESCE(((dadosNf->>'nfe_id_romaneio_parceiro')::text)::integer,NULL);
+	EXCEPTION WHEN OTHERS  THEN				
+		v_id_rom_parceiro	= NULL;
+	END;
+
+	BEGIN
+		v_id_nf_cte_parceiro	= COALESCE(((dadosNf->>'nfe_id_conhecimento_notas_fiscais')::text)::integer,NULL);
+	EXCEPTION WHEN OTHERS  THEN
+		v_id_nf_cte_parceiro = NULL;
+	END;
+
+	BEGIN
+		v_id_cte_parceiro	= COALESCE(((dadosNf->>'nfe_id_conhecimento_parceiro')::text)::integer,NULL);
+	EXCEPTION WHEN OTHERS  THEN
+		v_id_cte_parceiro	= NULL;	
+	END;
+
+	BEGIN
+		v_codigo_integracao 	= COALESCE(((dadosNf->>'nfe_codigo_integracao')::text)::integer,NULL);
+	EXCEPTION WHEN OTHERS  THEN
+		v_codigo_integracao 	= NULL;
+	END;
+
+	BEGIN		
+		v_codigo_parceiro	= COALESCE(((dadosNf->>'nfe_codigo_softlog_parceiro')::text)::integer,NULL);
+	EXCEPTION WHEN OTHERS  THEN
+		v_codigo_parceiro	= NULL;
+	END;
+		
 	v_chave_cte		= dadosNf->>'chave_cte';
+	
 	BEGIN 
 		v_valor_cte_origem = ((dadosNf->>'nfe_valor_cte_origem')::text)::numeric(12,2);
 	EXCEPTION WHEN OTHERS THEN 
@@ -410,6 +453,7 @@ BEGIN
 	END;
 	
 	v_tipo_transporte_par	= COALESCE(((dadosNf->>'tipo_transporte')::text)::integer,1);
+	--RAISE NOTICE 'Tipo Transporte %', v_tipo_transporte_par;
 	v_forca_importacao	= COALESCE(((dadosNf->>'forca_importacao')::text)::integer,0);
 
 
@@ -423,16 +467,7 @@ BEGIN
 	vUsuario	= fp_get_session('pst_usuario');
 	v_modal		= fp_get_session('pst_modal');
 
-	SELECT 	(COALESCE(valor_parametro,'0'))::integer
-	INTO 	vOrigemFilial 
-	FROM 	parametros 
-	WHERE 	cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_USAR_ORIGEM_DE_FILIAL';	 	
-
-
-	SELECT 	(COALESCE(valor_parametro,'0'))::integer
-	INTO 	v_viagem_automatica 
-	FROM 	parametros 
-	WHERE 	cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_VIAGEM_AUTOMATICA';	 	
+		 	
 
 
 ------------------------------------------------------------------------------------------------------------------
@@ -467,10 +502,18 @@ BEGIN
 	
 	IF v_tipo_transporte_par NOT IN (2,3) AND v_forca_importacao = 0 THEN 
 
-		SELECT 	codigo_cliente
-		INTO 	vCodigoRemetente
-		FROM 	cliente
-		WHERE   cnpj_cpf = v_emit_cnpj_cpf;
+		
+		IF v_tp_nf = 0 THEN
+			SELECT 	codigo_cliente
+			INTO 	vCodigoCliente
+			FROM 	cliente
+			WHERE   cnpj_cpf = v_dest_cnpj_cpf;
+		ELSE 
+			SELECT 	codigo_cliente
+			INTO 	vCodigoCliente
+			FROM 	cliente
+			WHERE   cnpj_cpf = v_emit_cnpj_cpf;
+		END IF;
 
 
 		--Verifica quantos conhecimentos não cancelados existem para a nota
@@ -485,7 +528,7 @@ BEGIN
 				LEFT JOIN scr_conhecimento c
 					ON c.id_conhecimento = nf.id_conhecimento
 			WHERE 
-				remetente_id = vCodigoRemetente
+				remetente_id = vCodigoCliente
 				AND ltrim(nf.serie_nota_fiscal,'0')  = ltrim(v_serie,'0')
 				AND nf.numero_nota_fiscal::integer = v_numero_doc::integer;
 		ELSE
@@ -517,7 +560,7 @@ BEGIN
 					(dadosNf::jsonb || '{"forca_importacao":"1"}'::jsonb)::text,
 					v_numero_doc,
 					v_serie,					
-					vCodigoRemetente,
+					vCodigoCliente,
 					'Já existe conhecimento com a chave desta NFe.'
 				);			
 				RETURN 0;
@@ -527,6 +570,9 @@ BEGIN
 
 		-- Verifica se a nota já não está importada
 		BEGIN 
+			--RAISE NOTICE 'Remetente %', vCodigoRemetente;
+			--RAISE NOTICE 'Serie %', ltrim(v_serie,'0');
+			--RAISE NOTICE 'Nota %', v_numero_doc::integer;
 			SELECT	
 				COUNT(*) as qt		
 			INTO 	
@@ -540,8 +586,9 @@ BEGIN
 	-- 			AND ltrim(nf.serie_nota_fiscal,'0')  = ltrim(v_serie,'0')
 				AND nf.numero_nota_fiscal::integer = v_numero_doc::integer
 				AND ltrim(nf.serie_nota_fiscal,'0')  = ltrim(v_serie,'0')
-				AND nf.remetente_id = vCodigoRemetente;
+				AND nf.remetente_id = vCodigoCliente;
 		EXCEPTION WHEN OTHERS  THEN
+			
 			vExiste = 0;
 		END;
 
@@ -559,7 +606,7 @@ BEGIN
 					(dadosNf::jsonb || '{"forca_importacao":"1"}'::jsonb)::text,
 					v_numero_doc,
 					v_serie,					
-					vCodigoRemetente,
+					vCodigoCliente,
 					'Nota Fiscal já importada. ' || COALESCE(v_chave_cte,'')
 				);			
 				RETURN 0;
@@ -708,7 +755,7 @@ BEGIN
 		vParametros = v_parametros_dest;
 	END IF;
 	
-	-- Pega o Tipo do Documento 
+	
 	vOrigemCalculo = ((vParametros->>'ORIGEM_CALCULO')::text)::integer;
 	--RAISE NOTICE 'Origem Calculo %', vOrigemCalculo;
 
@@ -724,14 +771,37 @@ BEGIN
 	
 	IF vTermo IS NOT NULL THEN 
 		vNaturezaCarga = fpy_extrai_valor(v_inf,TRIM(vTermo));
-		--RAISE NOTICE 'Natureza da Carga %', vTermo;
+		RAISE NOTICE 'Natureza da Carga %', vNaturezaCarga;
 	END IF;
-	-- Pega o código do pedido da NFE
-	vTermo = vParametros->>'CODIGO_PEDIDO';	
+
+	-- Pega a Natureza da Carga
+	vTermo = vParametros->>'TAG_MOTORISTA';	
 	
 	IF vTermo IS NOT NULL THEN 
-		vCodigoPedido = fpy_extrai_valor(v_inf,TRIM(vTermo));
+		vNomeMotorista = fpy_extrai_valor(v_inf,TRIM(vTermo));
+
+		IF vNomeMotorista IS NOT NULL THEN 
+			SELECT id_fornecedor
+			INTO vIdMotorista
+			FROM fornecedores
+			WHERE upper(nome_razao) = trim(UPPER(vNomeMotorista));			
+		END IF;
+		
+		--RAISE NOTICE 'Natureza da Carga %', vTermo;
 	END IF;
+
+	
+	-- Pega o código do pedido da NFE
+	vTermo = vParametros->>'CODIGO_PEDIDO';	
+
+	--RAISE NOTICE 'Termo para Codigo do Pedido %', vTermo;
+	
+	IF vTermo IS NOT NULL THEN 
+		vCodigoPedido = fpy_extrai_valor(v_inf,TRIM(replace(vTermo,'/s','\s')));
+	END IF;
+
+	--RAISE NOTICE 'INFO NFE %', v_inf;
+	--RAISE NOTICE 'Codigo Pedido %', vCodigoPedido;
 
 	-- Pega o código interno do frete se ele existir
 	vTermo = vParametros->>'COD_INTERNO_FRETE';	
@@ -828,11 +898,34 @@ BEGIN
 -- 				           Codigo do Transportador
 ------------------------------------------------------------------------------------------------------------------	
 	
-	SELECT 	id_filial
-	INTO	vCodigoTransportador
+	SELECT 	id_filial, codigo_empresa, codigo_filial
+	INTO	vCodigoTransportador, v_empresa_xml, v_filial_xml
 	FROM	filial
 	WHERE 	filial.cnpj = v_transportador_cnpj_cpf;
 
+	BEGIN 
+		v_usa_filial_xml = (vParametros->>'USAR_FILIAL_XML')::integer;		
+	EXCEPTION WHEN OTHERS THEN 
+		v_usa_filial_xml = 0;
+	END;
+
+	IF v_usa_filial_xml = 1 THEN 
+		RAISE NOTICE 'Usa Filial XML';
+		vEmpresa = COALESCE(v_empresa_xml, vEmpresa);
+		vFilial = COALESCE(v_filial_xml, vFilial);
+	END IF; 
+		
+
+	SELECT 	(COALESCE(valor_parametro,'0'))::integer
+	INTO 	vOrigemFilial 
+	FROM 	parametros 
+	WHERE 	cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_USAR_ORIGEM_DE_FILIAL';	 	
+
+
+	SELECT 	(COALESCE(valor_parametro,'0'))::integer
+	INTO 	v_viagem_automatica 
+	FROM 	parametros 
+	WHERE 	cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_VIAGEM_AUTOMATICA';
 
 
 ------------------------------------------------------------------------------------------------------------------
@@ -1071,7 +1164,7 @@ BEGIN
 		FROM 	filial 
 		WHERE 	codigo_filial = vFilial 
 			AND codigo_empresa = vEmpresa;
-		--RAISE NOTICE 'Cidade de Origem Filial  %', vCidadeOrigem;
+		RAISE NOTICE 'Cidade de Origem Filial  %', vCidadeOrigem;
 	END IF;
 
 	-- Ignorar cidade da filial ou do remetente se origem do calculo esta parametrizado direto no cliente
@@ -1340,14 +1433,18 @@ BEGIN
 	ELSE
 		v_contribuinte = 1;
 	END IF;
-------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------
 -- 					Alinhamento das placas de veiculos
 -----------------------------------------------------------------------------------------------------------------
 	
 	
 	--RAISE NOTICE 'Placa Veiculo %', v_placa_veiculo;
+	SELECT placa_veiculo
+	INTO v_placa_veiculo
+	FROM veiculos
+	WHERE placa_veiculo = v_placa_veiculo;
 	
-	IF v_placa_veiculo IS NOT NULL THEN 
+	IF v_placa_veiculo IS NOT NULL THEN 		
 	
 		SELECT 
 			placa_veiculo_tracao			
@@ -1370,34 +1467,34 @@ BEGIN
 			v_placa_reboque1 = v_placa_veiculo;
 			v_placa_veiculo  = v_placa_veiculo_eng;					
 		END IF;		
-		
+
 		SELECT 
-			string_agg(placa_veiculo_reboque, ',' order by id_mov)
+			placas_engates				
 		INTO 
 			v_placas_reboque
 		FROM 
-			frt_mov_eng_deseng 
+			v_frt_veic_tracionado 
 		WHERE
-			placa_veiculo_tracao IN (v_placa_veiculo)
-			AND flag_acao = 1;
-
+			placa_veiculo IN (v_placa_veiculo);
+			
 		IF v_placas_reboque IS NOT NULL THEN 
-		
+						
 			v_array_placas_reboque = string_to_array(v_placas_reboque,',');
 			
 			BEGIN 
-				v_placa_reboque1 = v_array_placas_reboque[1];
+				v_placa_reboque1 = trim(v_array_placas_reboque[1]);
 			EXCEPTION WHEN OTHERS THEN 
 				v_placa_reboque1 = NULL;
 			END;
 
 
 			BEGIN 
-				v_placa_reboque2 = v_array_placas_reboque[2];
+				v_placa_reboque2 = trim(v_array_placas_reboque[2]);
 			EXCEPTION WHEN OTHERS THEN 
 				v_placa_reboque2 = NULL;
 			END;			
-		END IF;				
+		END IF;	
+					
 	END IF;
 
 	
@@ -1498,7 +1595,10 @@ BEGIN
 			peso_transportado, --84
 			flg_viagem_automatica,--85			
 			expedidor_cnpj, --86			
-			total_frete_origem --87
+			total_frete_origem, --87
+			data_previsao_entrega,--, --88
+			nao_romaneia, --89
+			id_motorista --90
 		)
 		VALUES 
 		(
@@ -1539,9 +1639,10 @@ BEGIN
 			vUsuario, -- 56
 			vCidadeAgentePadrao, --57
 			v_placa_veiculo, --58
+			--NULL,
 			v_placa_reboque1, --59
 			v_placa_reboque2, --60
-			vCodInternoFrete, --(61)
+			LEFT(vCodInternoFrete,13), --(61)
 			CASE WHEN v_is_tonelada THEN COALESCE(v_peso_liquido,0.0000) * 1000 ELSE v_peso_liquido END, --(62)
 			v_especie_mercadoria, --(63)
 			v_cod_vendedor, --(64)
@@ -1567,7 +1668,10 @@ BEGIN
 			v_peso_transportado, --84
 			v_viagem_automatica, --85
 			v_expedidor_cnpj, --86			
-			v_valor_cte_origem --87
+			v_valor_cte_origem, --87
+			v_previsao_entrega,--, --88
+			CASE WHEN COALESCE(v_id_romaneio,0) < 0 THEN 1 ELSE 0 END, --89 
+			vIdMotorista --90
 
 		) RETURNING id_nota_fiscal_imp;
 	
@@ -1583,6 +1687,7 @@ BEGIN
 			serie_nota_fiscal,
 			remetente_id,
 			observacao
+			
 		) VALUES (
 			(dadosNf::jsonb || '{"forca_importacao":"1"}'::jsonb)::text,
 			v_numero_doc,
@@ -1591,6 +1696,10 @@ BEGIN
 			SQLERRM
 		);			
 		vIdNotaFiscalImp = 0;
+
+		RAISE NOTICE 'ERRO ****************************************%', SQLERRM;
+		RAISE NOTICE 'CODIGO INTERNO FRETE %', vCodInternoFrete;
+		
 	END;
 	
 	RAISE NOTICE 'Nota Fiscal Importada %',vIdNotaFiscalImp;
@@ -1600,3 +1709,5 @@ $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
 
+--SELECT * FROM fd_dados_tabela('scr_notas_fiscais_imp') ORDER BY 4
+--SELECT * FROM scr_notas_fiscais_nao_imp ORDER BY 1 DESC 

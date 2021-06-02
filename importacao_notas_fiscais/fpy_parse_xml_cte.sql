@@ -103,21 +103,25 @@ lst_part.append(p)
 n = {}
 
 
-infNFe = xml['cteProc']['CTe']['infCte']['infCTeNorm']['infDoc']['infNFe'] 
+try:
+    infNFe = xml['cteProc']['CTe']['infCte']['infCTeNorm']['infDoc']['infNFe'] 
 
-if type(infNFe) == type([]):
-    lista_nfe = [ x['chave'] for x in infNFe]
-else:
-    nfes = xml['cteProc']['CTe']['infCte']['infCTeNorm']['infDoc']['infNFe']['chave']
-
-    if type(nfes) == type(""):
-        lista_nfe = []
-        lista_nfe.append(nfes)
-
-    elif  type(nfes) == type([]):
-        lista_nfe = [x for x in nfes]
+    if type(infNFe) == type([]):
+        lista_nfe = [ x['chave'] for x in infNFe]
     else:
-        lista_nfe = []
+        nfes = xml['cteProc']['CTe']['infCte']['infCTeNorm']['infDoc']['infNFe']['chave']
+
+        if type(nfes) == type(""):
+            lista_nfe = []
+            lista_nfe.append(nfes)
+
+        elif  type(nfes) == type([]):
+            lista_nfe = [x for x in nfes]
+        else:
+            lista_nfe = []
+except:
+    lista_nfe = []
+
 
 total_nfe = len(lista_nfe)
 valor_carga = Decimal(xml['cteProc']['CTe']['infCte']['infCTeNorm']['infCarga']['vCarga'])
@@ -233,4 +237,4 @@ $BODY$
   LANGUAGE plpython3u VOLATILE
   COST 100;
 
---ALTER FUNCTION fpy_parse_xml_cte(xml text)  OWNER TO softlog_fg;
+--ALTER FUNCTION fpy_parse_xml_cte(xml text)  OWNER TO softlog_medilog;

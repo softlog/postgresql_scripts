@@ -1,5 +1,7 @@
 -- Function: public.fpy_get_doc_doria(text)
+
 -- DROP FUNCTION public.fpy_get_doc_doria(text);
+
 CREATE OR REPLACE FUNCTION public.fpy_get_doc_doria(arquivo text)
   RETURNS json AS
 $BODY$
@@ -58,10 +60,9 @@ $BODY$
         if len(linha) == 338 or is_luchefarma:        
             plpy.notice('Luchefarma')
             registros.append(reg_luchefarma(linha))	
-            is_luchefarma = True       
-                 
-        ##elif len(linha) == 333:
-        ##    registros.append(reg_profarma(linha))
+            is_luchefarma = True            
+        elif len(linha) == 333:
+            registros.append(reg_profarma(linha))
 
         elif len(linha) == 379:
             registros.append(reg_util(linha))
@@ -88,7 +89,7 @@ $BODY$
         ##Chave da NFe
         n = {}
         #plpy.notice('Tamanho ',str(len(r)))
-                
+        
         if not tem_chave:
             n['nfe_chave_nfe'] = ''
         elif is_util:
@@ -138,16 +139,12 @@ $BODY$
 
         
         emit_cnpj = n['nfe_chave_nfe'][6:20] 
-        if emit_cnpj.strip() == '':
-            continue
         
         ##informacoes de remetente/destinatario
         n['nfe_emit_cnpj_cpf'] = emit_cnpj
         n['nfe_emit_cod_mun']  = ''
         n['nfe_dest_cnpj_cpf'] = dest_cnpj        
         n['nfe_dest_cod_mun']  = dest_cod_mun
-
-
 
         ##informacoes gerais
         de = r[1]
@@ -188,12 +185,10 @@ $BODY$
             plpy.notice('Luchefarma ' + r[16])
             n['nfe_peso_presumido'] = r[10][:-2] + '.' + r[10][-2:]
             n['nfe_peso_liquido'] = r[10][:-2] + '.' + r[10][-2:]
-            ##n['nfe_volume_presumido'] = r[16][:-3] + '.' + r[16][-4:]
-            n['nfe_volume_presumido'] = r[16][:-2] + '.' + r[16][-2:]
+            n['nfe_volume_presumido'] = r[16][:-3] + '.' + r[16][-3:]
 
             ## Informacoes dos Itens de Produto
-            ##n['nfe_volume_produtos'] = r[16][:-3] + '.' + r[16][-4:]
-            n['nfe_volume_produtos'] = r[16][:-2] + '.' + r[16][-2:]
+            n['nfe_volume_produtos'] = r[16][:-3] + '.' + r[16][-3:]
             n['nfe_peso_produtos'] = r[10][:-2] + '.' + r[10][-2:]
 
         else:
@@ -231,5 +226,5 @@ $BODY$
 $BODY$
   LANGUAGE plpython3u VOLATILE
   COST 100;
-
---ALTER FUNCTION fpy_get_doc_doria(arquivo text) OWNER TO dng_teste
+ALTER FUNCTION public.fpy_get_doc_doria(text)
+  OWNER TO softlog_dng;

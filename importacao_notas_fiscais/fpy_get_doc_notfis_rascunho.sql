@@ -1,7 +1,4 @@
--- Function: public.fpy_get_doc_notfis(text)
-
--- 
-CREATE OR REPLACE FUNCTION public.fpy_get_doc_notfis(arquivo text)
+CREATE OR REPLACE FUNCTION fpy_get_doc_notfis(arquivo text)
   RETURNS json AS
 $BODY$
     import re
@@ -242,12 +239,10 @@ $BODY$
     reg_313_pratti = DocParser.make_parser((3,15,7,1,1,1,1,3,8,8,15,15,7,15,7,5,1,
                                       1,15,15,7,1,15,15,15,15,1,12,12,1,44))    
 
-
-    #Customizacao Softlog Parceiros 
-    reg_313_softlog_parceiro = DocParser.make_parser((3,15,7,1,1,1,1,3,8,8,15,15,7,15,7,5,1,
-                                      1,15,15,7,1,15,15,15,15,1,12,12,1,
-                                      44,44,15,15,15,15,15,3,15))
-
+    #Customizacao Softlog Parceiros
+    reg_313_softlog_parceiros = DocParser.make_parser((3,15,7,1,1,1,1,3,8,8,15,15,7,15,7,5,1,
+                                      1,15,15,7,1,15,15,15,15,1,12,12,1,20,44,44,15,15,15,15,15,3,15))
+    
     reg_333 = DocParser.make_parser((3,4,1,8,4,8,4,15,1,10,26,26,26,26,15,5,
                                                             5,10,5,12,5))
 
@@ -310,14 +305,15 @@ $BODY$
         elif id_reg == '310':
             registros.append(reg_310(linha))
 
-        elif id_reg == '311':            
+        elif id_reg == '311':
+            
             
             if linha[3:11] in  ('07432517') or tamanho == 303:                            
                 emb_spss = True
             else:                
                 emb_spss = False
-
-            if tamanho in (346,347):
+            
+            if tamanho in (346,347,420):
                 emb_softlog = True
             else:
                 emb_softlog = False
@@ -334,11 +330,11 @@ $BODY$
 
         elif id_reg == '312':
             emb_jeu = False;
-            #plpy.notice(len(linha))
+            plpy.notice(len(linha))
             if len(linha)==341:                   
                 emb_jeu = True
                 registros.append(reg_312_jeunesse(linha))
-            elif emb_spss:                
+            elif emb_spss:
                 registros.append(reg_312_SPSS(linha))
             elif emb_softlog:  
                 registros.append(reg_312_SPSS(linha))
@@ -349,24 +345,28 @@ $BODY$
                 registros.append(reg_312(linha))
 
         elif id_reg == '313':
-            #plpy.notice('Funcionando aqui inicio')
+            plpy.notice('Tamanho 313 %s' %  str(len(linha)))
 
             emb_pratti = False
             emb_luche = False
             emb_rc = False
             emb_softlog_parceiro = False
+            
             if emb_spss or len(linha) == 303:
                 emb_spss = True
                 #plpy.notice('LEIAUTE SIMPRESS')
                 registros.append(reg_313_SPSS(linha))           
-            elif len(linha)== 420:                
-                registros.append(reg_313_softlog_parceiro(linha))           
-                emb_softlog_parceiro = True
             elif len(linha)== 256:
                 registros.append(reg_313_luche(linha))
                 emb_luche = True
+            elif len(linha) == 420:    
+                plpy.notice('Definindo Leiaute Softlog Parceiro')            
+                registros.append(reg_313_softlog_parceiros(linha))                         
+                emb_softlog_parceiro = True 
+                #emb_softlog = True                                      
             elif emb_softlog:     
                 #plpy.notice(reg_313_SOFTLOG(linha))
+                #plpy.notice(linha)           
                 emb_softlog = True
                 registros.append(reg_313_SOFTLOG(linha))              
             elif len(linha) in (284,285):
@@ -394,7 +394,7 @@ $BODY$
                 registros.append(reg_313_SC(linha))
             elif len(linha) == 305:                
                 registros.append(reg_313_rc(linha))     
-                emb_rc = True           
+                emb_rc = True                       
             else:
                 #plpy.notice('LEIAUTE PADRAO')
                 registros.append(reg_313(linha))
@@ -425,7 +425,7 @@ $BODY$
         if len(r) == 0:
             i = i + 1
             continue
-
+        plpy.notice("Linha %i" % i)
         id = r[0]
 
 
@@ -442,7 +442,7 @@ $BODY$
             
             #plpy.notice('CNPJ %s',emit_cnpj)
       
-            if emb_softlog:
+            if emb_softlog or emb_softlog_parceiro:
                 p = {}
                 p['part_cnpj_cpf'] = r[2].strip().upper()               
 
@@ -559,8 +559,7 @@ $BODY$
                     #plpy.notice('Chave ', r[11])
                     
                     nf['nfe_pagador_cnpj_cpf'] = r[2]   
-                    if not emb_softlog_parceiro:
-                        nf['chave_cte'] = r[11]             
+                    nf['chave_cte'] = r[11]             
                 
             except:
                 nfe_pagador_cnpj_cpf = r[2]
@@ -592,7 +591,9 @@ $BODY$
         
             
         if id == '313':
-            print('Dados da Nota Fiscal')
+            plpy.notice('Dados da Nota Fiscal')
+            plpy.notice(str(r))
+            
 
             n = {}
 
@@ -602,30 +603,36 @@ $BODY$
             #plpy.notice(str(len(r)))
             if emb_spss:
                 n['nfe_chave_nfe'] = r[31]
-            elif emb_softlog_parceiro:   		
-                n['nfe_chave_nfe'] = r[30]
-                n['chave_cte'] = r[31]
-                n['nfe_valor_cte_origem'] = r[32]
-                n['nfe_id_nota_fiscal_parceiro'] = r[33]
-                n['nfe_id_romaneio_parceiro'] = r[34]
-                n['nfe_id_conhecimento_notas_fiscais'] = r[35]
-                n['nfe_id_conhecimento_parceiro'] = r[36]
-                n['nfe_codigo_integracao'] = r[37]
-                n['nfe_codigo_softlog_parceiro'] = r[38]     
+            elif emb_softlog_parceiro:
+                
+                n['nfe_chave_nfe'] = r[31]
+                n['chave_cte'] = r[32]
+                n['nfe_valor_cte_origem'] = r[33]
+                n['nfe_id_nota_fiscal_parceiro'] = r[34]
+                n['nfe_id_romaneio_parceiro'] = r[35]
+                n['nfe_id_conhecimento_notas_fiscais'] = r[36]
+                n['nfe_id_conhecimento_parceiro'] = r[37]
+                n['nfe_codigo_integracao'] = r[38]
+                n['nfe_codigo_softlog_parceiro'] = r[39]                              
             elif emb_softlog:
                 n['nfe_chave_nfe'] = r[31]
                 n['chave_cte'] = r[32]
+                
+            
             elif emb_rc:            
-                n['nfe_chave_nfe'] = r[31]                
+                n['nfe_chave_nfe'] = r[31]     
+                           
             elif len(r) == 36:
                 n['nfe_chave_nfe'] = r[33]
+                
             elif len(r) == 29:
                 n['nfe_chave_nfe'] = r[27]
+                
             elif len(r) == 33 and not emb_360:
-                n['nfe_chave_nfe'] = r[32]                        
+                n['nfe_chave_nfe'] = r[32]     
+                                   
             elif len(r) == 32 or len(r) == 45:
                 n['nfe_chave_nfe'] = r[31]
-
                 n['nfe_numero_pedido'] = r[1][:7]
 
                 if n['nfe_chave_nfe'][20:22] == '57':
@@ -696,6 +703,8 @@ $BODY$
             n['nfe_unidade'] = 'UN'
 
             n['nfe_especie_mercadoria'] = 'DIVERSOS'
+
+
          
             try:
                 proximo_id = registros[i+1][0]
@@ -741,5 +750,6 @@ $BODY$
     retorno = json.dumps(dados)    
     return retorno
 $BODY$
-  LANGUAGE plpython3u VOLATILE
-  COST 100;
+  LANGUAGE plpython3u VOLATILE;
+
+--ALTER FUNCTION fpy_get_doc_notfis(arquivo text) OWNER TO softlog_dfreire;

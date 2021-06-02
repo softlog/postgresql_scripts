@@ -30,27 +30,160 @@ DECLARE
 	log text;
 	log_original text;
 	v_id_edi integer;
-	
+
+	vCursor refcursor;
+	v_cmd text;
+	crsemitente 	refcursor;
+	vFornecedor 	t_xml_pessoas%rowtype;
+	vIdFornecedor integer;
+	vIdCidade integer;
+
+	v_importa_para_crm integer;
+	vEmpresa text;
+	v_id_contato integer;
+
+
 BEGIN
 
 	log_original = COALESCE(fp_get_session('pst_tipo_especifico_importacao'),'');
 	log = REPLACE(log_original, 'UPLOAD/XML','UPLOAD');
+
+	IF NEW.tipo_doc = 1000 THEN 
+		NEW.doc_xml = fpy_decode_base64(NEW.doc_xml);
+		i = fpy_read_epta_sga(NEW.doc_xml);
+		RETURN NEW;		
+	END IF;
+
+	IF NEW.tipo_doc = 300 THEN 
+
+		NEW.doc_xml = fpy_decode_base64(NEW.doc_xml);
+
+		v_cmd = f_py_get_cmd_bloco_nfe_2(NEW.doc_xml);		
+		
+		OPEN crsemitente FOR EXECUTE v_cmd;
+		FETCH crsemitente INTO vFornecedor;
+		CLOSE crsemitente;
+
+
+		SELECT 	id_fornecedor
+		INTO vIdFornecedor
+		FROM 	fornecedores 
+		WHERE 	cnpj_cpf = vFornecedor.cnpjcpf;
+
+		
+		IF vIdFornecedor IS NULL THEN 
+
+			SELECT id_cidade
+			INTO vIdCidade
+			FROM cidades
+			WHERE cod_ibge = trim(vFornecedor.codmunicipio);
+
+			
+			INSERT INTO fornecedores (
+				cnpj_cpf, --1
+				nome_razao, --2
+				fantasia, --3
+				endereco, --4
+				numero, --5
+				bairro, --6
+				id_cidade, --7
+				cep, --9
+				telefone1, --10
+				iest
+				
+
+			) VALUES (
+				trim(vFornecedor.cnpjcpf), --1
+				upper(trim(left(vFornecedor.nomerazao,50))), --2
+				upper(trim(left(vFornecedor.nomerazao,40))), --3
+				upper(trim(vFornecedor.endereco)), --4
+				trim(vFornecedor.numero), --5
+				upper(trim(left(vFornecedor.bairro,30))), --6
+				vIdCidade,				
+				trim(vFornecedor.cep), --9
+				trim(left(vFornecedor.telefone,8)), --10
+				trim(LEFT(vFornecedor.iestadual,15))--11
+				
+			);			
+			
+			vEmpresa 	= fp_get_session('pst_cod_empresa');
+			SELECT COALESCE(valor_parametro::integer,0)::integer
+			INTO v_importa_para_crm
+			FROM parametros 
+			WHERE cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_IMPORTA_DADOS_CRM';
+
+			IF (v_importa_para_crm = 1) AND COALESCE(vFornecedor.telefone,'') <> '' THEN 
+
+				OPEN vCursor FOR
+				INSERT INTO public.crm_contatos(
+					nome_razao, --1 			    				
+					endereco, --3
+					numero, --4				
+					bairro, --6
+					id_cidade, --7
+					cep, --8								
+					cnpj_cpf, --9
+					dt_cadastro --14			    
+				) VALUES (
+					upper(trim(left(vFornecedor.nomerazao,50))), --1
+					upper(trim(vFornecedor.endereco)), --3
+					trim(vFornecedor.numero), --4
+					upper(trim(left(vFornecedor.bairro,30))), --6
+					vIdCidade, --7
+					trim(vFornecedor.cep), --8
+					trim(vFornecedor.cnpjcpf), --9
+					current_date --14				
+				)
+				RETURNING id_contato;
+
+				
+				FETCH vCursor INTO v_id_contato;				
+
+				CLOSE vCursor;
+
+				INSERT INTO public.crm_cont_relacoes(
+				    id_contato, id_estrangeiro, flg_estrangeiro, 
+				    atual_em)
+				VALUES (v_id_contato, vCodigoCliente, 'C');
+
+				INSERT INTO crm_contatos_detalhes (
+					id_contato,
+					tp_detalhe, 
+					detalhe
+				) VALUES (
+					v_id_contato,
+					'Fone Comercial',
+					trim(left(vFornecedor.telefone,8))
+				);				
+	
+			END IF;
+
+
+			
+		END IF;
+		RETURN NEW;
+	END IF;
+
 		
 	identificar = True;
 
 	IF NEW.tipo_doc = -2 THEN 
 		NEW.doc_xml = fpy_decode_base64(NEW.doc_xml);
-		RAISE NOTICE '%', NEW.doc_xml;
+		--RAISE NOTICE '%', NEW.doc_xml;
 		NEW.tipo_doc = 2;
 	END IF;
 
 	IF substr(NEW.doc_xml,1,1) = E'\xEF\xBB\xBF' THEN 
 		NEW.doc_xml = replace(NEW.doc_xml, E'\xEF\xBB\xBF','');
 	END IF;
+
+	--Verifica se eh EDI tipo VTEX
+	IF NEW.tipo_doc = 14 THEN 
+		identificar = False;
+	END IF;
 	
-	--Verifica se eh EDI tipo NOTFIS
-	IF NEW.tipo_doc = 10 THEN 
-		
+	--Verifica se eh EDI tipo A451
+	IF NEW.tipo_doc = 10 THEN 		
 		identificar = False;
 	END IF;
 	
@@ -128,7 +261,7 @@ BEGIN
 
 
 
-	--RAISE NOTICE 'Tipo Documento: %', NEW.tipo_doc;
+	RAISE NOTICE 'Tipo Documento: %', NEW.tipo_doc;
 
 	-- 2) Documento tipo XML da NFe
 	IF NEW.tipo_doc = 2 THEN 
@@ -137,7 +270,7 @@ BEGIN
                 r = fp_set_session('pst_tipo_especifico_importacao',LEFT(log,50));
 		v_dados = fpy_parse_xml_nfe(NEW.doc_xml);	        
 	
-		
+		RAISE NOTICE 'Dados %', v_dados;
 		
 		IF v_dados IS NOT NULL THEN 
 		
@@ -168,7 +301,8 @@ BEGIN
 				IF NEW.chave_doc IS NULL THEN 
 					--RAISE NOTICE 'Não grava o registro, sem chave';
 					r = fp_set_session('pst_tipo_especifico_importacao',log_original);
-					UPDATE scr_doc_integracao SET id_doc_integracao = id_doc_integracao WHERE chave_doc = NEW.chave_doc;
+					UPDATE scr_doc_integracao SET id_doc_integracao = id_doc_integracao 
+					WHERE chave_doc = NEW.chave_doc AND id_doc_integracao <> NEW.id_doc_integracao; 
 					RETURN NULL;
 				END IF;
 				
@@ -204,6 +338,7 @@ BEGIN
 						r = fp_set_session('pst_tipo_especifico_importacao',log_original);
 						UPDATE scr_doc_integracao SET id_doc_integracao = id_doc_integracao WHERE chave_doc = NEW.chave_doc;
 						RETURN NULL;
+						
 					END IF;
 					NEW.entrou_repetida = 1;
 				END IF;
@@ -229,8 +364,10 @@ BEGIN
 	-- 7) Documento tipo XML de CTe 
 	-- 8) Documento tipo Doria
 	-- 10) Planilha Excell a451
-	IF NEW.tipo_doc IN (4, 5, 6, 7, 1, 8, 10) THEN
+	-- 14) Json NFe VTEX
+	IF NEW.tipo_doc IN (4, 5, 6, 7, 1, 8, 10, 14) THEN
 
+		RAISE NOTICE 'Entrando para gravar arquivos';
 
 		IF NEW.tipo_doc = 1 THEN 
 			log = log || ' XML CTe';		
@@ -242,8 +379,10 @@ BEGIN
 		IF NEW.tipo_doc = 4 THEN 
 			log = log || ' NOTFIS 3.1';
 			r = fp_set_session('pst_tipo_especifico_importacao',LEFT(log,50));
-			v_dados = fpy_get_doc_notfis(NEW.doc_xml);			
-			--RAISE NOTICE '%', v_dados;
+			--RAISE NOTICE 'Log %', log;
+			--RAISE NOTICE '%', NEW.doc_xml;			
+			v_dados = fpy_get_doc_notfis(NEW.doc_xml);
+			RAISE NOTICE '%', v_dados;
 		END IF;
 
 		
@@ -272,14 +411,24 @@ BEGIN
 			log = log || ' DORIA';
 			r = fp_set_session('pst_tipo_especifico_importacao',LEFT(log,50));
 			v_dados = fpy_get_doc_doria(NEW.doc_xml);
-			--RAISE NOTICE 'Dados: %s', v_dados;			
+			--RAISE NOTICE 'Dados: %', v_dados;			
 		END IF;
 
 
 		IF NEW.tipo_doc = 10 THEN 		
 			log = log || ' A451';
+			
 			r = fp_set_session('pst_tipo_especifico_importacao',LEFT(log,50));
 			v_dados = fpy_get_doc_a451(NEW.doc_xml);
+			RAISE NOTICE 'Dados %', v_dados;
+			--RAISE NOTICE 'Dados: %s', v_dados;			
+		END IF;
+
+
+		IF NEW.tipo_doc = 14 THEN 		
+			log = log || ' FIKBELLA VTEX';
+			r = fp_set_session('pst_tipo_especifico_importacao',LEFT(log,50));
+			v_dados = fpy_get_doc_vtex(NEW.doc_xml);
 			--RAISE NOTICE 'Dados: %s', v_dados;			
 		END IF;
 		
@@ -289,7 +438,7 @@ BEGIN
 		t = json_array_length(v_participantes)-1;
 		
 		FOR i IN 0..t LOOP	
-			--RAISE NOTICE 'Participante %', v_participantes::text;
+			RAISE NOTICE 'Participante %', (v_participantes->>i)::json;
 			v_destinatario = f_insere_cliente((v_participantes->>i)::json);			
 		END LOOP;
 
@@ -299,17 +448,26 @@ BEGIN
 		t = json_array_length(v_notas_fiscais)-1;
 				
 		FOR i IN 0..t LOOP				
+			
 			v_nf = f_insere_nf((v_notas_fiscais->>i)::json);
-			NEW.chave_doc = (((v_notas_fiscais->>i)::json)::json)->>'chave_cte';
-			--RAISE NOTICE 'Nota Fiscal %', v_nf;			
+			NEW.chave_doc = (((v_notas_fiscais->>i)::json)::json)->>'nfe_chave_nfe';
+			
+			RAISE NOTICE 'Nota Fiscal %', NEW.chave_doc;			
 			INSERT INTO scr_doc_integracao_nfe (id_doc_integracao, id_nota_fiscal_imp, chave_doc)
 			VALUES (NEW.id_doc_integracao, v_nf, (((v_notas_fiscais->>i)::json)::json)->>'nfe_chave_nfe');
+
+			IF NEW.tipo_doc = 14 THEN 
+				UPDATE scr_notas_fiscais_imp SET 
+					id_ocorrencia = 302,
+					data_ocorrencia = now()
+				WHERE id_nota_fiscal_imp = v_nf;
+			END IF;
+		
 		END LOOP;
 		
 	END IF;
 
 	IF NEW.tipo_doc IN (20) THEN
-
 
 		
 		log = log || ' XML NFc';		
@@ -369,4 +527,4 @@ END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
---ALTER FUNCTIOn f_tgg_parser_doc_integracao() OWNER TO softlog_aeroprest
+--ALTER FUNCTIOn f_tgg_parser_doc_integracao() OWNER TO softlog_3glog
