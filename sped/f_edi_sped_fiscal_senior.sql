@@ -1,19 +1,18 @@
 -- Function: public.f_edi_sped_fiscal(date, date, text, text, text, integer, json)
--- DROP FUNCTION public.f_edi_sped_fiscal(date, date, text, text, text, integer, json);
--- SELECT * FROM edi_sped_docs ORDER BY 1
 /*
-	SELECT f_get_arquivo_efd(
-						'001',
-						'001',
-						'03',
-						'2021',
-						'0',
-						'EFD-ICMS-IPI',
-						0
-			) as arquivo;			
+SELECT f_get_arquivo_efd(
+				'001',
+				'003',
+				'10',
+				'2020',
+				'0',
+				'EFD-ICMS-IPI',
+				0
+	) as arquivo;						
 */
---SELECT f_edi_sped_fiscal('2020-08-01','2020-08-31','001','003','0',0,null)
-CREATE OR REPLACE FUNCTION f_edi_sped_fiscal(
+-- DROP FUNCTION public.f_edi_sped_fiscal(date, date, text, text, text, integer, json);
+
+CREATE OR REPLACE FUNCTION public.f_edi_sped_fiscal(
     p_inicio date,
     p_fim date,
     p_empresa text,
@@ -29,6 +28,7 @@ BEGIN
 	--EXPLAIN ANALYSE	
 	WITH 
  	sped_fiscal AS (
+ 	
 	SELECT 
  			p_inicio as inicio,
  			p_fim as fim,
@@ -39,16 +39,17 @@ BEGIN
  			p_inventario::integer as tem_inventario
  				
  	)
- 	-- SELECT 
---   			'2020-08-01'::date as inicio,
---   			'2020-08-31'::date as fim,
---   			f_edi_sped_versao('2020-08-01'::date, 'EFD-ICMS-IPI') as versao,
---   			'0'::text as cod_fin,
---   			'001'::text as codigo_empresa,
---   			'003'::text as codigo_filial,
---   			0::integer as tem_inventario
---  	)
-		
+ 	/* 	
+ 	SELECT 
+   			'2020-10-01'::date as inicio,
+   			'2020-10-31'::date as fim,
+   			f_edi_sped_versao('2020-10-01'::date, 'EFD-ICMS-IPI') as versao,
+   			'0'::text as cod_fin,
+   			'001'::text as codigo_empresa,
+   			'003'::text as codigo_filial,
+   			0::integer as tem_inventario
+  	)
+	*/	
 	-------------------------------------------------------------------------------------------------
 	--- Coleta e Processamento dos Dados do SPED                                                   --
 	-------------------------------------------------------------------------------------------------	
@@ -94,7 +95,8 @@ BEGIN
 					AND upper(cod_parametro) = 'PST_COD_CTA_INVENTARIO'					
 		WHERE 
 			filial.codigo_empresa = sped_fiscal.codigo_empresa AND filial.codigo_filial = sped_fiscal.codigo_filial
-	),
+	)
+	,
 	contador AS (
 		SELECT 	
 			fornecedores.nome_razao, 	
@@ -130,7 +132,7 @@ BEGIN
 			'57'::character(2) as cod_mod, 	
 			TRIM(COALESCE(serie_doc,'')) as serie_doc, 	
 			''::character(5) as sub_serie, 	
-			f_scr_get_cst(c.tipo_imposto) as cst,
+			f_scr_get_cst(2) as cst,
 			modal, 	
 			id_conhecimento,	
 			pagador_id as codigo_participante,
@@ -154,31 +156,31 @@ BEGIN
 			COALESCE(frete_valor,0.00)::numeric(12,2) as frete_valor,     
 			0.00::numeric(12,2) as vl_desc,
 			COALESCE(total_frete,0.00)::numeric(12,2) as total_frete,     
-			CASE 	WHEN f_scr_get_cst(c.tipo_imposto) IN ('000')				
+			CASE 	WHEN f_scr_get_cst(2) IN ('000')				
 				THEN COALESCE(imposto,0.00)
-				WHEN f_scr_get_cst(c.tipo_imposto) IN ('040','060')				
+				WHEN f_scr_get_cst(2) IN ('040','060')				
 				THEN 0.00
-				WHEN f_scr_get_cst(c.tipo_imposto) IN ('020','090')				
+				WHEN f_scr_get_cst(2) IN ('020','090')				
 				THEN COALESCE(c.icms_st,0.00)
 				ELSE 0.00
 			END::numeric(12,2) as imposto,			
-				CASE 	WHEN f_scr_get_cst(c.tipo_imposto) IN ('000')				
+				CASE WHEN f_scr_get_cst(2) IN ('000')				
 				THEN COALESCE(c.base_calculo,0.00)
-				WHEN f_scr_get_cst(c.tipo_imposto) IN ('040','060')				
+				WHEN f_scr_get_cst(2) IN ('040','060')				
 				THEN 0.00				
-				WHEN f_scr_get_cst(c.tipo_imposto) IN ('020','090')				
+				WHEN f_scr_get_cst(2) IN ('020','090')				
 				THEN COALESCE(c.base_calculo_st_reduzida,0.00)
 				ELSE 0.00
 			END::numeric(12,2) as base_calculo,			
-			CASE 	WHEN f_scr_get_cst(c.tipo_imposto) IN ('000')				
+			CASE 	WHEN f_scr_get_cst(2) IN ('000')				
 				THEN COALESCE(c.aliquota,0.00)
-				WHEN f_scr_get_cst(c.tipo_imposto) IN ('040','060')				
+				WHEN f_scr_get_cst(2) IN ('040','060')	
 				THEN 0.00
-				WHEN f_scr_get_cst(c.tipo_imposto) IN ('020','090')				
+				WHEN f_scr_get_cst(2) IN ('020','090')		
 				THEN COALESCE(c.aliquota_icms_st,0.00)
 				ELSE 0.00
 			END::numeric(12,2) as aliquota,				
-			tipo_imposto,     
+			2::integer as tipo_imposto,     
 			0.00::numeric(12,2) as vl_nt,
 			chave_cte,     
 			status_cte,
@@ -255,7 +257,7 @@ BEGIN
 			AND c.tipo_documento = 1 
 			AND c.cstat IN ('101','102','135')  
 	UNION 
-	--Documentos Inutilizados que nÃ£o estÃ£o no sistema
+	--Documentos Inutilizados que não estão no sistema
 	SELECT 	
 			1::integer as ind_oper, 	
 			0::integer as ind_emit, 	
@@ -452,9 +454,9 @@ BEGIN
 	)		
 	,registro_1400 AS (
 		SELECT 
-			c.cod_ibge, 
-			f.cod_item_1400_sped_fiscal,
-			SUM(c.total_frete)::numeric(12,2) as total_mun			
+			c.cod_ibge, 			
+			f.cod_item_1400_sped_fiscal as cod_item_1400_sped_fiscal,			
+			SUM(c.total_frete)::numeric(12,2) as total_mun		
 		FROM 
 			c,
 			f
@@ -462,13 +464,14 @@ BEGIN
 			c.cod_ibge IS NOT NULL
 			AND c.cod_sit = '00'
 			AND c.ind_oper = '1'
-			AND f.uf = c.uf_origem
+			--AND f.uf = c.uf_origem			
 		GROUP BY 
 			c.cod_ibge,
 			f.cod_item_1400_sped_fiscal	
 		ORDER BY 
 			c.cod_ibge 
 	)	
+	--SELECT * FROM registro_1400
 	,registro_1800 AS (
 		SELECT  
 			cst, 
@@ -654,7 +657,7 @@ BEGIN
 			COALESCE(i.vl_cofins,0.00) as vl_cofins, 
 			COALESCE(i.vl_total,0.00) as vl_total, 
 			COALESCE(i.vl_frete,0.00) as vl_frete, 			
-			--Se tiver produto compartilhado por softwares de terceiros, uso o cÃ³digo do terceiro
+			--Se tiver produto compartilhado por softwares de terceiros, uso o código do terceiro
 			COALESCE(ecf_i.codigo_produto::integer, i.id_produto) as id_produto,
 			COALESCE(ecf_i.id_produto_softlog,i.id_produto) as id_produto_softlog,
 			nfe.vl_para_rateio,
@@ -875,7 +878,7 @@ BEGIN
 			COALESCE(ci.valor_cofins,0.00) as vl_cofins, 
 			COALESCE(ci.vl_total,0.00) as vl_total, 
 			COALESCE(ci.observacao,'') as observacao, 
-			--Se tiver produto compartilhado por softwares de terceiros, uso o cÃ³digo do terceiro
+			--Se tiver produto compartilhado por softwares de terceiros, uso o código do terceiro
 			COALESCE(ecf_i.codigo_produto::integer, ci.id_produto) as id_produto,
 			COALESCE(ecf_i.id_produto_softlog,ci.id_produto) as id_produto_softlog,
 			c.vl_para_rateio,
@@ -1224,7 +1227,7 @@ BEGIN
 		
 	)
 	-------------------------------------------------------------------------------------------------
-	--- Dados para o Bloco H - InventÃ¡rio                                                          --	
+	--- Dados para o Bloco H - Inventário                                                          --	
 	-------------------------------------------------------------------------------------------------
 	--- Relacao para trazer inventario                                                             --
 	-------------------------------------------------------------------------------------------------
@@ -1242,7 +1245,7 @@ BEGIN
 			
 	)
 	-------------------------------------------------------------------------------------------------
-	--- Processamento do Estoque na data do InventÃ¡rio                                
+	--- Processamento do Estoque na data do Inventário                                
 	-------------------------------------------------------------------------------------------------
 	,estoque_atual AS (
 		SELECT 
@@ -1614,7 +1617,11 @@ BEGIN
 				
 		)
 		SELECT 	
-			'P' || lpad(COALESCE(ecf_i.codigo_produto::text,com_produtos.id_produto::text),7,'0') as id_produto,	
+			CASE WHEN f.uf = 'PE' THEN 
+				'PEIPMS0'
+			ELSE 
+				'P' || lpad(COALESCE(ecf_i.codigo_produto::text,com_produtos.id_produto::text),7,'0') 
+			END::text as id_produto,					
 			COALESCE(trim(descr_item),'') as descr_item, 	
 			COALESCE(trim(cod_barra),'') as cod_barra, 	
 			COALESCE(trim(efd_unidades_medida.unidade),'') as unidade, 	
@@ -1625,7 +1632,7 @@ BEGIN
 			COALESCE(trim(codigo_genero),'') as codigo_genero, 	
 			COALESCE(trim(codigo_servico),'') as codigo_servico,
 			''::text as cest 
-		FROM 	
+		FROM 	f,
 			com_produtos 	
 			LEFT JOIN efd_unidades_medida 
 				ON com_produtos.id_unidade = efd_unidades_medida.id_unidade 
@@ -1740,30 +1747,36 @@ BEGIN
 				) row
 		)
 		SELECT array_agg(json) as reg_1800 from temp
-	)	
+	)				
 	,reg_1400 AS (		
 		WITH temp AS (
 			SELECT (row_to_json(row,true))::json as json FROM (
 				SELECT 
 					'1400' as reg,
-					'P' || lpad(f.cod_item_1400_sped_fiscal::text,7,'0') as cod_item_ipm,
-					f.cod_ibge as mun,
+					CASE WHEN f.uf = 'PE' THEN 
+						'PEIPMS0'
+					ELSE
+						'P' || lpad(f.cod_item_1400_sped_fiscal::text,7,'0') 
+					END::text as cod_item_ipm,
+					registro_1400.cod_ibge as mun,					
 					total_mun as valor					
 				FROM 
 					f,
 					registro_1400
 				WHERE 				
 					flg_item_1400_sped_fiscal = 1
-									
 				/*
 				GROUP BY 
-					registor_1400.cod_ibge,
-					'P' || lpad(f.cod_item_1400_sped_fiscal::text,7,'0')
+					f.cod_ibge,
+					'P' || lpad(f.cod_item_1400_sped_fiscal::text,7,'0'),
+					f.uf
 				*/
 				) row
+				
 		)
 		SELECT array_agg(json) as reg_1400 from temp
 	)
+	
 	,reg_1010 AS (
 		WITH temp AS (
 			SELECT (row_to_json(row,true))::json as json FROM (
@@ -2452,7 +2465,7 @@ BEGIN
 					aliquota_icms as aliq_icms,
 					valor_icms as vl_icms,				
 			
-					--Estudar o caso de SubstituiÃ§Ã£o TributÃ¡rio 
+					--Estudar o caso de Substituição Tributário 
 					-- para o Lucro Real
 					COALESCE(0.00,valor_base_icms_st) as vl_bc_icms_st,
 					COALESCE(0.00, aliquota_icms_st) as aliq_st,
@@ -2506,7 +2519,7 @@ BEGIN
 -- 					aliquota_icms as aliq_icms,
 -- 					valor_icms as vl_icms,				
 -- 			
--- 					--Estudar o caso de SubstituiÃ§Ã£o TributÃ¡rio 
+-- 					--Estudar o caso de Substituição Tributário 
 -- 					-- para o Lucro Real
 -- 					COALESCE(0.00,valor_base_icms_st) as vl_bc_icms_st,
 -- 					COALESCE(0.00, aliquota_icms_st) as aliq_st,
@@ -2568,7 +2581,7 @@ BEGIN
 						vl_base_calculo as vl_bc_icms,
 						vl_icms as vl_icms,
 						
-						--Estudar o caso de SubstituiÃ§Ã£o TributÃ¡rio 
+						--Estudar o caso de Substituição Tributário 
 						-- para o Lucro Real
 						COALESCE(0.00,vl_base_calculo_st) as vl_bc_icms_st,
 						COALESCE(0.00,vl_icms_st) as vl_icms_st,					
@@ -2607,7 +2620,7 @@ BEGIN
 						vl_outras_despesas as vl_out_da,
 						vl_base_calculo as vl_bc_icms,
 						vl_icms as vl_icms,					
-						--Estudar o caso de SubstituiÃ§Ã£o TributÃ¡rio 
+						--Estudar o caso de Substituição Tributário 
 						-- para o Lucro Real
 						vl_base_calculo_st as vl_bc_icms_st,
 						vl_icms_st as vl_icms_st,					
@@ -2644,7 +2657,7 @@ BEGIN
 						vl_out_da,
 						vl_bc_icms,
 						vl_icms,					
-						--Estudar o caso de SubstituiÃ§Ã£o TributÃ¡rio 
+						--Estudar o caso de Substituição Tributário 
 						-- para o Lucro Real
 						vl_bc_icms_st,
 						vl_icms_st,					
@@ -2852,7 +2865,7 @@ BEGIN
 					'0000' as reg,
 					reg_0001.reg_0001,
 					reg_c001.reg_c001,
-					--Bloco Existente a partir da versÃ£o 013.
+					--Bloco Existente a partir da versão 013.
 					CASE 	WHEN sped_fiscal.versao::integer < 13 
 						THEN NULL
 						ELSE reg_b001.reg_b001
@@ -2861,7 +2874,7 @@ BEGIN
 					reg_e001.reg_e001,
 					reg_g001.reg_g001,
 					reg_h001.reg_h001,
-					--Bloco Existente a partir da versÃ£o 010.
+					--Bloco Existente a partir da versão 010.
 					CASE 	WHEN sped_fiscal.versao::integer < 10 
 						THEN NULL
 						ELSE reg_k001.reg_k001
@@ -3036,7 +3049,7 @@ BEGIN
 					END as ind_perfil,
 					'1' as ind_ativ,
 					reg_0001.reg_0001,
-					--Bloco Existente a partir da versÃ£o 013.
+					--Bloco Existente a partir da versão 013.
 					CASE 	WHEN sped_fiscal.versao::integer < 13 
 						THEN NULL
 						ELSE reg_b001.reg_b001
@@ -3046,7 +3059,7 @@ BEGIN
 					reg_e001.reg_e001,
 					reg_g001.reg_g001,
 					reg_h001.reg_h001,					
-					--Bloco Existente a partir da versÃ£o 010.
+					--Bloco Existente a partir da versão 010.
 					CASE 	WHEN sped_fiscal.versao::integer < 10 
 						THEN NULL
 						ELSE reg_k001.reg_k001
@@ -3089,17 +3102,5 @@ END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
-
-/*
-
-ALTER FUNCTION f_edi_sped_fiscal(
-     p_inicio date,
-     p_fim date,
-     p_empresa text,
-     p_filial text,
-     p_cod_fin text,
-     p_inventario integer,
-     blocos json)
-OWNER TO softlog_solar
-
-*/
+ALTER FUNCTION public.f_edi_sped_fiscal(date, date, text, text, text, integer, json)
+  OWNER TO softlog_seniorlog;
