@@ -107,8 +107,8 @@ BEGIN
 			NEW.codigo_filial,--(4)
 			v_numero_romaneio,--(5)			
 			NEW.data_romaneio,--(6)
-			NEW.id_origem,--(7)
-			(NEW.id_destino) * -1,--(8)
+			CASE WHEN NEW.id_origem < 0 THEN NEW.id_origem * (-1) ELSE NEW.id_origem END,--(7)
+			CASE WHEN NEW.id_destino < 0 THEN NEW.id_destino * (-1) ELSE NEW.id_destino END,--(8)
 			NULL, --(8.1)
 			NEW.data_inicio, --(9) 
 			NEW.data_fim, --(10)
@@ -213,11 +213,9 @@ $BODY$
   LANGUAGE plpgsql VOLATILE;
 
 
-/*
 CREATE TRIGGER tgg_edi_romaneio_atividades
 BEFORE INSERT OR UPDATE 
 ON edi_romaneios
 FOR EACH ROW
 WHEN (NEW.tipo_rota = 2)
 EXECUTE PROCEDURE f_tgg_edi_atividades()
-*/

@@ -1,7 +1,9 @@
-/*
+/*	
+
 	Substituicao da tabela frt_tipo_inspecao_itens pela tb_check;
 	A frt_operacao_diaria passa a ter um numero de controle e passa a ter um registro por veiculo.
 	As inspecoes serao gravadas na tabela frt_operacao_diaria_inspecao.	
+	
 */
 
 ALTER TABLE frt_operacao_diaria ADD COLUMN numero_operacao_diaria character(13);
@@ -13,7 +15,7 @@ COMMENT ON COLUMN frt_operacao_diaria.numero_operacao_diaria
 		IS 'Numero da operacao diaria composto por codigo_empresa, codigo_filial, numero_sequencial';
 		
 COMMENT ON COLUMN frt_operacao_diaria.placa_veiculo
-		IS 'Placa do veiculo';
+		IS 'Placa do veiculo';		
 
 DROP TABLE frt_operacao_diaria_inspecao;
 CREATE TABLE frt_operacao_diaria_inspecao
@@ -49,6 +51,7 @@ INSERT INTO frt_operacao_diaria_inspecao (id_operacao_diaria, id_check, valor_po
 INSERT INTO frt_operacao_diaria_inspecao (id_operacao_diaria, id_check, valor_positivo, valor_negativo) VALUES ( 1, 67, 1, 0);
 INSERT INTO frt_operacao_diaria_inspecao (id_operacao_diaria, id_check, valor_positivo, valor_negativo) VALUES ( 1, 66, 1, 0);
 INSERT INTO frt_operacao_diaria_inspecao (id_operacao_diaria, id_check, valor_positivo, valor_negativo) VALUES ( 1, 65, 1, 0);
+
 
 
 */
