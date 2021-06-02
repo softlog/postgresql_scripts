@@ -1,0 +1,1 @@
+ALTER TABLE empresa ADD COLUMN id_contador integer;
