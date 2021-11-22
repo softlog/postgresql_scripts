@@ -1,5 +1,6 @@
 -- Function: public.f_tgg_operacoes_conhecimento()
-
+-- SELECT fp_set_session('pst_cod_empresa','001')
+-- UPDATE scr_conhecimento SET id_conhecimento = id_conhecimento WHERE numero_ctrc_filial = '0010010291105'
 -- DROP FUNCTION public.f_tgg_operacoes_conhecimento();
 
 CREATE OR REPLACE FUNCTION public.f_tgg_operacoes_conhecimento()
@@ -105,6 +106,11 @@ BEGIN
 		END IF;	
 
 		IF TG_OP = 'UPDATE' THEN 
+			
+
+			
+			vRecalculaRegiao = True;
+			
 
 			--Grava dados da Região de Origem e Destino, caso houver
 			IF 
@@ -183,7 +189,7 @@ BEGIN
 				END IF;
 
 				RAISE NOTICE 'Densidade % ', v_densidade;				
-				
+				v_densidade = COALESCE(v_densidade, 300);
 				NEW.peso_cubado = NEW.volume_cubico * v_densidade;
 			END IF;
 			IF v_usar_valor_presumido = 0 THEN 

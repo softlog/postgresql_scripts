@@ -17,7 +17,7 @@ DELETE FROM scr_conhecimento WHERE id_conhecimento >= 4367187
  UPDATE scr_
 
 5996803
-
+SELECT * FROM scr_tipo_imposto
 */
 -- DROP FUNCTION public.f_scr_get_icms(json, refcursor, refcursor, refcursor);
 
@@ -66,8 +66,14 @@ $BODY$
 	bc_origem		numeric(12,2);
 	icms_destino		numeric(12,2);
 	icms_origem		numeric(12,2); 	 	
+
+	v_padrao_sistema 	integer;
+	v_isenta 		integer;
  	
  BEGIN	
+
+
+
 
 
 	WITH ent AS (
@@ -144,11 +150,11 @@ $BODY$
 	icms_destino	= 0.00;
 	fcp		= 0.00;
 
-
+	SELECT padrao_sistema, isento INTO v_padrao_sistema, v_isenta FROM scr_tipo_imposto WHERE scr_tipo_imposto.tipo_imposto = tipo_imposto;
 	-- Nao calcula se tipo de imposto for isento
-	IF tipo_imposto <> 2 THEN 		
+	IF v_isenta = 0 THEN 		
 
-		IF tipo_imposto IN (6,7,8,9,10) THEN
+		IF padrao_sistema = 0 THEN
 			aliq = aliquota_icms_st;
 		ELSE
 			aliq = aliquota;
@@ -430,6 +436,7 @@ $BODY$
 		imposto 		= icms_origem;		
 	END IF;
 
+	CASE WHEN 
 	--Define se o imposto faz parte do valor cobrado do frete
 	--Se for substituição Tributária, valor do imposto não integra montante do frete
 	--Se 
@@ -477,7 +484,7 @@ $BODY$
 		cf_frete;
 	
 		
-
+	
 	retorno = '{"msg_imposto":""}'::json;
 
 	OPEN msg_imposto FOR SELECT retorno as msg_imposto;
@@ -488,5 +495,3 @@ $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100
   ROWS 1000;
-ALTER FUNCTION public.f_scr_get_icms(json, refcursor, refcursor, refcursor)
-  OWNER TO softlog_dng;

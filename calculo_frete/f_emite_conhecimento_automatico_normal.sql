@@ -312,8 +312,7 @@ BEGIN
 			base_calculo_difal	= v_base_calculo_difal,
 			difal_icms_origem	= v_difal_icms_origem,
 			difal_icms_destino	= v_difal_icms_destino,
-			valor_fcp		= v_valor_fcp,
-			flg_viagem		= 1			
+			valor_fcp		= v_valor_fcp	
 								
 	FROM	
 		tbl 

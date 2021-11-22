@@ -13,6 +13,7 @@ DECLARE
 	vImpostoSt	numeric(12,2);
 	vBcSt		numeric(12,2);	
 	vStatusCte	integer;
+	v_padrao_sistema 	integer;
 BEGIN
 
 	--perform f_debug('teste', 'antes do braço NEW.tipo_documento = 3');	
@@ -127,19 +128,19 @@ BEGIN
 		SELECT
 			SUM(c.total_frete),
 			SUM(c.desconto),
-			SUM(	CASE 	WHEN c.tipo_imposto NOT IN (6,7,8,9,10)
+			SUM(	CASE 	WHEN ti.padrao_sistema = 1
 					THEN c.imposto 
 					ELSE 0.00
 				END),
-			SUM(	CASE 	WHEN c.tipo_imposto NOT IN (6,7,8,9,10)
+			SUM(	CASE 	WHEN ti.padrao_sistema = 1
 					THEN c.base_calculo 
 					ELSE 0.00
 				END),
-			SUM(	CASE 	WHEN c.tipo_imposto IN (6,7,8,9,10)
+			SUM(	CASE 	WHEN ti.padrao_sistema = 0
 					THEN 0.00 
 					ELSE icms_st
 				END),
-			SUM(	CASE 	WHEN c.tipo_imposto IN (6,7,8,9,10)
+			SUM(	CASE 	WHEN ti.padrao_sistema = 0
 					THEN 0.00
 					ELSE c.base_calculo_st_reduzida
 				END)		
@@ -152,10 +153,14 @@ BEGIN
 			vImpostoSt,
 			vBcSt
 		FROM 	
-			scr_conhecimento c		
+			scr_conhecimento c
+			LEFT JOIN scr_tipo_imposto ti		
+				ON ti.id_tipo_imposto = c.tipo_imposto
 		WHERE	
-			c.id_conhecimento_principal = NEW.id_conhecimento_principal
-			and c.cancelado = 0 ;
+			c.id_conhecimento_principal = NEW.id_conhecimento_principal				
+			AND c.cancelado = 0 ;
+
+			
 
 		--perform f_debug('total frete', vTotalFrete::text);
 		

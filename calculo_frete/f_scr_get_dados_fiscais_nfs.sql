@@ -1,6 +1,10 @@
 -- Function: public.f_scr_get_dados_fiscais_nfs(text)
+/*
+SELECT * FROM f_scr_get_dados_fiscais_nfs('7876')
 
--- DROP FUNCTION public.f_scr_get_dados_fiscais_nfs(text);
+SELECT * FROM scr_conhecimento_notas_fiscais ORDER BY 1 DESC LIMIT 1
+*/
+-- DROP FUNCTION public.f_scr_get_dados_fiscais_nfs('7876');
 
 CREATE OR REPLACE FUNCTION public.f_scr_get_dados_fiscais_nfs(lst_nf text)
   RETURNS SETOF t_dados_fiscais AS
@@ -11,7 +15,8 @@ BEGIN
 
 	RETURN QUERY
 	WITH nfs AS (
-		SELECT regexp_split_to_table(lst_nf,',')::integer as id_nota_fiscal_imp
+		SELECT regexp_split_to_table('7876',',')::integer as id_nota_fiscal_imp
+		--SELECT regexp_split_to_table(lst_nf,',')::integer as id_nota_fiscal_imp
 	)	
 	,t AS (
 		SELECT 	
@@ -26,7 +31,7 @@ BEGIN
 				remetente_id,
 				destinatario_id,
 				consignatario_id,
-				natureza_carga,
+				trim(natureza_carga) as natureza_carga,
 				filial_emitente,
 				COALESCE(cliente.empresa_responsavel,empresa_emitente) as empresa_emitente,
 				consumidor_final,
@@ -42,7 +47,7 @@ BEGIN
 				
 	
 			) row
-	)
+	)	
 	SELECT 
 		id,
 		tipo_imposto,

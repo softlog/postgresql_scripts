@@ -1,9 +1,14 @@
 -- Function: public.f_scr_importa_ctrc_tipo_transporte(integer, text, text, integer, refcursor, refcursor, refcursor, refcursor)
 /*
-BEGIN;
-SELECT * FROM f_scr_importa_ctrc_tipo_transporte(1,'1','0010010109108', 27, 'cconhecimento'::refcursor, 'cnotafiscal'::refcursor, 'ccf'::refcursor, 'msg'::refcursor);
-FETCH IN "cconhecimento";
 COMMIT;
+BEGIN;
+SELECT * FROM f_scr_importa_ctrc_tipo_transporte(1,'1','0010060000264', 27, 'cconhecimento'::refcursor, 'cnotafiscal'::refcursor, 'ccf'::refcursor, 'msg'::refcursor);
+FETCH IN "cconhecimento";
+FETCH ALL IN "ccf";
+
+SELECT id_conhecimento, tipo_documento FROM scr_conhecimento WHERE numero_ctrc_filial = '0010060000264';
+
+SELECT * FROM v_scr_conhecimento_cf WHERE id_conhecimento = 439764
 
 */
 -- DROP FUNCTION public.f_scr_importa_ctrc_tipo_transporte(integer, text, text, integer, refcursor, refcursor, refcursor, refcursor);
@@ -234,30 +239,56 @@ BEGIN
 
 
 		RETURN NEXT cnotafiscal;
-		--Grava informações do componente de frete		
-		OPEN ccf FOR 
-		SELECT 
-			NULL::integer as id_conhecimento_cf,
-			NULL::integer as id_conhecimento,
-			v_scr_conhecimento_cf .id_tipo_calculo, 
-			scr_tabelas_tipo_calculo.descricao,			
-			excedente, 
-			quantidade, 
-			(valor_item 	* vPercentual/100) as valor_item, 
-			(valor_total 	* vPercentual/100) as valor_total, 
-			(valor_minimo    * vPercentual/100) as valor_minimo, 
-			(valor_pagar	* vPercentual/100) as valor_pagar, 
-			operacao, 
-			id_faixa, 
-			combinado
-		FROM 
-			v_scr_conhecimento_cf  
-			LEFT JOIN scr_tabelas_tipo_calculo ON v_scr_conhecimento_cf .id_tipo_calculo = scr_tabelas_tipo_calculo.id_tipo_calculo
-		WHERE 
-			id_conhecimento =  rC.id_conhecimento
-			AND v_scr_conhecimento_cf .id_tipo_calculo < 1000;	
+		--Grava informações do componente de frete
+		IF ptt = 27 THEN
+			OPEN ccf FOR 
+				SELECT 
+					NULL::integer as id_conhecimento_cf,
+					NULL::integer as id_conhecimento,
+					2::integer as id_tipo_calculo, 
+					scr_tabelas_tipo_calculo.descricao,			
+					0::integer as excedente, 
+					1::numeric as quantidade, 
+					SUM(valor_pagar) as valor_item, 
+					SUM(valor_total) as valor_total, 
+					SUM(valor_pagar) as valor_minimo, 
+					SUM(valor_pagar) as valor_pagar, 
+					'C'::character(1) operacao, 
+					1::integer as id_faixa, 
+					1::integer as combinado
+				FROM 
+					v_scr_conhecimento_cf  
+					LEFT JOIN scr_tabelas_tipo_calculo ON scr_tabelas_tipo_calculo.id_tipo_calculo = 2 				
+				WHERE 
+					id_conhecimento =  rC.id_conhecimento
+				GROUP BY 
+					scr_tabelas_tipo_calculo.descricao;
 					
+		ELSE
+			OPEN ccf FOR 
+			SELECT 
+				NULL::integer as id_conhecimento_cf,
+				NULL::integer as id_conhecimento,
+				v_scr_conhecimento_cf .id_tipo_calculo, 
+				scr_tabelas_tipo_calculo.descricao,			
+				excedente, 
+				quantidade, 
+				(valor_item 	* vPercentual/100) as valor_item, 
+				(valor_total 	* vPercentual/100) as valor_total, 
+				(valor_minimo    * vPercentual/100) as valor_minimo, 
+				(valor_pagar	* vPercentual/100) as valor_pagar, 
+				operacao, 
+				id_faixa, 
+				combinado
+			FROM 
+				v_scr_conhecimento_cf  
+				LEFT JOIN scr_tabelas_tipo_calculo ON v_scr_conhecimento_cf.id_tipo_calculo = scr_tabelas_tipo_calculo.id_tipo_calculo
+			WHERE 
+				id_conhecimento =  rC.id_conhecimento
+				AND v_scr_conhecimento_cf.id_tipo_calculo < 1000;					
+		END IF;
 
+		RAISE NOTICE 'Imposto Incluso %', rC.imposto_incluso;
 		RETURN NEXT ccf;
 		-- SELECT string_agg(id_conhecimento_cf::text,'-') INTO str_teste FROM scr_conhecimento_cf WHERE id_conhecimento = rC.id_conhecimento;
 		-- PERFORM f_debug('resultado',str_teste);

@@ -197,7 +197,8 @@ BEGIN
 			coleta_dificuldade, --87
 			entrega_dificuldade, --88
 			entrega_exclusiva, --89
-			coleta_exclusiva --90			
+			coleta_exclusiva, --90			
+			desagrupa_destino_viagem --91
 			
 -- 			redespachador_id
 -- 			flg_viagem, --(43)
@@ -357,9 +358,9 @@ BEGIN
 			nf.coleta_dificuldade, --87
 			nf.entrega_dificuldade, --88
 			nf.entrega_exclusiva, --89
-			nf.coleta_exclusiva --90
-			
-			
+			nf.coleta_exclusiva, --90			
+			nf.desagrupa_destino_viagem --91
+						
 		FROM 			
 			v_mgr_notas_fiscais nf
 			LEFT JOIN v_scr_notas_fiscais_carregamento ca

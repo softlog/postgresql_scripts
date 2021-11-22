@@ -36,6 +36,8 @@ DECLARE
 	vDataCteRe date;
 	vPrimeiraNota integer;
 
+	v_padrao_sistema 	integer;
+
 BEGIN	
 	--Alteração 22/04/15
 	-- 1.0 - Verificaçao se o cte re está autorizado, se estiver cria outro na mesma data.
@@ -120,22 +122,24 @@ BEGIN
 	--	id_tipo_calculo;
 	
 	--- Recupera os totais das minutas de re
+	SELECT padrao_sistema INTO v_padrao_sistema FROM scr_tipo_imposto WHERE scr_tipo_imposto.id_tipo_imposto = vTipoImposto;
+	
 	SELECT
 		SUM(c.total_frete),
 		SUM(c.desconto),
-		SUM(	CASE 	WHEN c.tipo_imposto NOT IN (6,7,8,9,10)
+		SUM(	CASE 	WHEN v_padrao_sistema = 1
 				THEN c.imposto 
 				ELSE 0.00
 			END),
-		SUM(	CASE 	WHEN c.tipo_imposto NOT IN (6,7,8,9,10)
+		SUM(	CASE 	WHEN v_padrao_sistema = 1
 				THEN c.base_calculo 
 				ELSE 0.00
 			END),
-		SUM(	CASE 	WHEN c.tipo_imposto IN (6,7,8,9,10)
+		SUM(	CASE 	WHEN v_padrao_sistema = 1
 				THEN 0.00 
 				ELSE icms_st
 			END),
-		SUM(	CASE 	WHEN c.tipo_imposto IN (6,7,8,9,10)
+		SUM(	CASE 	WHEN v_padrao_sistema = 1
 				THEN 0.00
 				ELSE c.base_calculo_st_reduzida
 			END)		
