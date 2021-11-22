@@ -22,7 +22,13 @@ BEGIN
 			THEN 
 			--Para cada apolice de seguro, cria um registro
 			
-				FOR vLinha IN SELECT * FROM empresa_acesso_servicos WHERE id_servico_integracao IN (1,100) ORDER BY id LOOP
+				FOR vLinha IN 	SELECT empresa_acesso_servicos.* 
+						FROM empresa_acesso_servicos 
+							LEFT JOIN empresa ON empresa.id_empresa = empresa_acesso_servicos.id_empresa 
+						WHERE 
+							empresa_acesso_servicos.id_servico_integracao = 1 
+							AND empresa.codigo_empresa = NEW.empresa_manifesto							
+						ORDER BY empresa_acesso_servicos.id LOOP
 					vAverba = 1;
 
 					RAISE NOTICE 'Dados de Averbacao % ',vLinha.descricao;
@@ -57,8 +63,8 @@ BEGIN
 			END IF;		
 
 			
-			--Se houve cancelamento de cte
-			IF COALESCE(OLD.cstat,'') <> COALESCE(NEW.cstat,'') AND COALESCE(NEW.cstat,'') = '135'  THEN 
+			--Se houve cancelamento de cte			
+			IF COALESCE(OLD.status,0) <> COALESCE(NEW.status,0) AND COALESCE(NEW.status,0) = 4  THEN 
 				UPDATE scr_manifesto_averbacao SET cancelado = 1 WHERE id_manifesto = NEW.id_manifesto;
 			END IF;	
 
@@ -66,7 +72,6 @@ BEGIN
 			IF OLD.data_chegada IS NULL AND NEW.data_chegada IS NOT NULL  THEN 
 				UPDATE scr_manifesto_averbacao SET encerrado = 1, data_registro_encerramento = NOW() WHERE id_manifesto = NEW.id_manifesto;
 			END IF;	
-			
 		EXCEPTION WHEN OTHERS THEN 
 			RAISE NOTICE 'Ocorreu um erro ao tentar enfileira averbacao';
 			RETURN NEW;
@@ -81,4 +86,3 @@ $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
 
---UPDATE empresa_acesso_servicos SET averba_manifesto = 1 WHERE id_servico_integracao = 100
