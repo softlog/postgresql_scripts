@@ -3,70 +3,65 @@
 -- DROP FUNCTION public.f_get_dados_romaneio_json(integer, text);35545
 /*
 
-	SELECT f_get_dados_romaneio_krona(40738, '', '') 
+SELECT f_get_dados_romaneio_krona(47547, '', '') 
 
-	SELECT id_veiculo, * FROM veiculos WHERE placa_veiculo = 'PYM4170'
+SELECT id_veiculo, * FROM veiculos WHERE placa_veiculo = 'PYM4170'
 	
 	
 	
 
-	SELECT * FROM scr_romaneios WHERE placa_veiculo = 'PYM4170' ORDER BY 1 DESC LIMIT 10;
+SELECT * FROM scr_romaneios WHERE placa_veiculo = 'PYM4170' ORDER BY 1 DESC LIMIT 10;
 
-	SELECT nome_razao FROM fornecedores WHERE cnpj_cpf = '81526172704'
+SELECT nome_razao FROM fornecedores WHERE cnpj_cpf = '81526172704'
 
-	PST_INTEGRACAO_KRONA
+PST_INTEGRACAO_KRONA
 
-	INSERT INTO parametros (cod_empresa, codigo_modulo, cod_parametro, valor_parametro, tipo_parametro)
-	VALUES ('001', 'ST_RODOVIA', 'pST_integracao_krona', '1', 'N');
+INSERT INTO parametros (cod_empresa, codigo_modulo, cod_parametro, valor_parametro, tipo_parametro)
+VALUES ('001', 'ST_RODOVIA', 'pST_integracao_krona', '1', 'N');
 
 
-	--DELETE FROM fila_documentos_integracoes WHERE tipo_integracao = 11
-DELETE FROM fila_documentos_integracoes WHERE tipo_integracao = 11
-	INSERT INTO fila_documentos_integracoes (tipo_integracao, tipo_documento, lst_documentos, id_romaneio, data_registro)
-	VALUES (11, 2, NULL, 42168, now());
+--DELETE FROM fila_documentos_integracoes WHERE tipo_integracao = 11
 
-	INSERT INTO fila_documentos_integracoes (tipo_integracao, tipo_documento, lst_documentos, id_romaneio, data_registro)
-	VALUES (11, 2, NULL, 42375, now());
+DELETE FROM fila_documentos_integracoes WHERE tipo_integracao = 11;
 
-	SELECT
-            id,
-            f_get_dados_romaneio_krona(id_romaneio, '%(usuario)s', '%(senha)s') as dados,
-            id_romaneio
-        FROM
-            fila_documentos_integracoes
-            fila_documentos_integracoes
-        WHERE
-            enviado = 0
-            AND pendencia = 0
-            AND tipo_integracao = 11
-            AND qt_tentativas < 4
-        ORDER BY
-            1
+INSERT INTO fila_documentos_integracoes (tipo_integracao, tipo_documento, lst_documentos, id_romaneio, data_registro)
+VALUES (11, 2, NULL, 42168, now());
 
+INSERT INTO fila_documentos_integracoes (tipo_integracao, tipo_documento, lst_documentos, id_romaneio, data_registro)
+VALUES (11, 2, NULL, 42375, now());
 
 SELECT
-            id,
-            f_get_dados_romaneio_krona(id_romaneio, '%(usuario)s', '%(password)s') as dados,
-            id_romaneio,
-            *
-        FROM
-            fila_documentos_integracoes
-        WHERE
-            enviado = 0
-            AND pendencia = 0
-            AND tipo_integracao = 11
-            AND qt_tentativas < 4
-        ORDER BY
-            1
+    id,
+    f_get_dados_romaneio_krona(id_romaneio, '%(usuario)s', '%(senha)s') as dados,
+    id_romaneio
+FROM
+    fila_documentos_integracoes
+    fila_documentos_integracoes
+WHERE
+    enviado = 0
+    AND pendencia = 0
+    AND tipo_integracao = 11
+    AND qt_tentativas < 4
+ORDER BY
+    1
 
-            SELECT * FROM 
+SELECT
+    id,
+    f_get_dados_romaneio_krona(id_romaneio, '%(usuario)s', '%(password)s') as dados,
+    id_romaneio,
+    *
+FROM
+    fila_documentos_integracoes
+WHERE
+    enviado = 0
+    AND pendencia = 0
+    AND tipo_integracao = 11
+    AND qt_tentativas < 4
+ORDER BY
+    1
 
-                                        mensagens = '%s',
 
 
-                                        mensagens = '%s',
-
-	
 */
 
 CREATE OR REPLACE FUNCTION public.f_get_dados_romaneio_krona(p_id_romaneio integer, p_usuario text, p_senha text)

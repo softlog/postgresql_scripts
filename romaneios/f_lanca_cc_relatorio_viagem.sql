@@ -30,7 +30,7 @@ BEGIN
 	SELECT DISTINCT 
 		scr_relatorio_viagem.id_relatorio_viagem, 
 		1,
-		COALESCE(fornecedores.codigo_centro_custo,pcentrocusto, v_centro_custo)
+		COALESCE(pcentrocusto, fornecedores.codigo_centro_custo, v_centro_custo)
 	FROM 	scr_relatorio_viagem
 		LEFT JOIN fornecedores ON fornecedores.id_fornecedor = scr_relatorio_viagem.id_fornecedor 
 	WHERE 	

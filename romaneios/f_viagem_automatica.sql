@@ -9,8 +9,13 @@ SELECT id_conhecimento, data_emissao, data_viagem, cancelado, id_motorista, plac
 SELECT id_motorista FROM scr_notas_fiscais_imp WHERE id_conhecimento = 5690
 SELECT * FROM scr_viagens_docs WHERE id_documento IN (792,793,794)
 
-UPDATE scr_conhecimento SET data_emissao = NULL WHERE id_conhecimento IN (5690);
-UPDATE scr_conhecimento SET data_emissao = now() WHERE id_conhecimento IN (5690);
+SELECT fp_set_session('pst_login','suporte');
+SELECT fp_set_session('pst_cod_empresa', '001');
+
+BEGIN;
+UPDATE scr_conhecimento SET data_emissao = NULL WHERE id_conhecimento IN (12240);
+UPDATE scr_conhecimento SET data_emissao = '2021-11-09 17:27:40' WHERE id_conhecimento IN (12240);
+ROLLBACK;
 
 SELECT * FROM scr_viagens_docs WHERE id_documento = 5690;
 BEGIN;
@@ -30,6 +35,7 @@ SELECT id_conhecimento, numero_ctrc_filial, cancelado FROM scr_conhecimento WHER
 SELECT max(id_conhecimento) FROM scr_conhecimento 
 SELECT id_conhecimento, data_emissao, data_digitacao, data_viagem FROM scr_conhecimento WHERE data_emissao IS NULL 
 ROLLBACK
+
 */
 
 -- UPDATE scr_conhecimento SET flg_viagem = 1 WHERE id_motorista = 21;
@@ -59,7 +65,7 @@ DECLARE
 	vPlacaVeiculo character(7);
 	v_placas_engates text;
 	vDataDigitacao date;
-	vIdOrigem integer;
+	vIdOrigem integer;	
 	vIdDestino integer;
 	vResultado text;
 	
@@ -76,6 +82,7 @@ DECLARE
 	v_id_origem integer;
 	v_id_destino integer;
 	v_usa_odometro integer;
+	v_desagrupa_destino integer;
 BEGIN
 	
 	-- Verifica se é para lançar viagem automática
@@ -112,8 +119,10 @@ BEGIN
 
 	--Verifica se foi emitido
 	IF (COALESCE(NEW.data_emissao,now()) <> COALESCE(OLD.data_emissao,now())) AND NEW.data_emissao IS NOT NULL AND NEW.cancelado = 0 THEN 
+		RAISE NOTICE 'TEM emissao';
 		v_executa = true;
 	ELSE
+	
 		IF NEW.data_emissao IS NOT NULL THEN 
 			IF OLD.id_motorista IS NULL AND NEW.id_motorista IS NOT NULL THEN 
 				v_executa = true;
@@ -141,8 +150,7 @@ BEGIN
 	
 	IF v_executa THEN 
 	--IF 1=1 THEN 
-		--RAISE NOTICE 'Executa Viagem Automatica';
-	
+		RAISE NOTICE 'Executa Viagem Automatica';	
 		
 		vEmpresa 	= COALESCE(NEW.empresa_emitente,'001');
 
@@ -150,10 +158,21 @@ BEGIN
 		INTO v_viagem_automatica
 		FROM parametros 
 		WHERE cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_VIAGEM_AUTOMATICA';
+
 		
 		IF v_viagem_automatica = 0 THEN 		
 			RETURN NEW;
 		END IF;
+
+		RAISE NOTICE 'Viagem Automatica = 1';
+		
+		IF NEW.flg_viagem = 0 THEN 
+			-- SELECT id_conhecimento, flg_viagem FROM scr_conhecimento WHERE numero_ctrc_filial = '0020010000306'
+			-- SELECT * FROM scr_notas_fiscais_imp WHERE id_conhecimento = 4926
+			RETURN NEW;
+		END IF;
+
+		RAISE NOTICE 'Flag de Viagem marcado';
 		
 		SELECT COALESCE(valor_parametro::integer,0)::integer
 		INTO v_valor_presumido 
@@ -169,21 +188,40 @@ BEGIN
 		v_usa_odometro = COALESCE(v_usa_odometro, 0);
 
 		IF v_usa_odometro = 1 AND NEW.odometro_inicial IS NULL THEN 			
+			RAISE NOTICE 'Nao tem odometro inicial';	
 			RETURN NEW;
+			
 		END IF;
+
 
 		/*
 
-		OPEN vCursor FOR 
-			SELECT MAX(data_nota_fiscal) FROM scr_conhecimento_notas_fiscais WHERE id_conhecimento = NEW.id_conhecimento;
+			SELECT COALESCE(valor_parametro::integer,1)::integer
+			INTO v_agrupa_destino
+			FROM parametros 
+			WHERE cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_VIAGEM_AGRUPA_DESTINO';
 
-		FETCH vCursor INTO vDataViagem;
 
-		CLOSE vCursor;
+			v_agrupa_destino = COAELESCE(v_agrupa_destino, 1);
+
+			
+		*/
+
+		
+		/*
+
+			OPEN vCursor FOR 
+				SELECT MAX(data_nota_fiscal) FROM scr_conhecimento_notas_fiscais WHERE id_conhecimento = NEW.id_conhecimento;
+
+			FETCH vCursor INTO vDataViagem;
+
+			CLOSE vCursor;
+			
 		*/
 		
 		-- Verifica se tem Coleta associada com o CTe.
-		IF COALESCE(v_valor_presumido,1) = 0 THEN 		
+		IF COALESCE(v_valor_presumido,1) = 0 THEN 
+			RAISE NOTICE 'Valor Presumido';
 			SELECT COALESCE((col_coletas.data_coleta::text || ' ' || col_coletas.hora_coleta::text)::timestamp, vDataViagem), col_coletas.id_coleta 
 
 			INTO vDataViagem, v_id_coleta
@@ -279,24 +317,45 @@ BEGIN
 				WHERE id_coleta = v_id_coleta;
 								
 			ELSE
-				SELECT id_romaneio
-				INTO vIdRomaneio
-				FROM 	scr_romaneios
-					LEFT JOIN fornecedores ON scr_romaneios.id_motorista = fornecedores.id_fornecedor
-					-- LEFT JOIN regiao_cidades reg_origem_ct ON reg_origem_ct.id_cidade = NEW.calculado_de_id_cidade				
-	-- 				LEFT JOIN regiao_cidades reg_destino_ct ON reg_destino_ct.id_cidade = NEW.calculado_ate_id_cidade
-	-- 				LEFT JOIN regiao_cidades reg_origem_rom ON reg_origem_rom.id_cidade = scr_romaneios.id_origem				
-	-- 				LEFT JOIN regiao_cidades reg_destino_rom ON reg_destino_rom.id_cidade = scr_romaneios.id_destino				
-				WHERE 	
-					id_motorista 			= NEW.id_motorista
-					AND placa_veiculo		= NEW.placa_veiculo
-					AND data_saida::date 		= vDataViagem::date
-					AND scr_romaneios.id_origem 	= NEW.calculado_de_id_cidade				
-					---AND scr_romaneios.id_destino 	= NEW.calculado_ate_id_cidade
-					AND scr_romaneios.cancelado 	= 0
-					AND NOT EXISTS (SELECT 1 FROM scr_relatorio_viagem_romaneios WHERE scr_relatorio_viagem_romaneios.id_romaneio = scr_romaneios.id_romaneio);
-	-- 				AND reg_origem_ct.id_regiao = reg_origem_rom.id_regiao
-	-- 				AND reg_destino_ct.id_regiao = reg_destino_rom.id_regiao;
+				IF COALESCE(NEW.desagrupa_destino_viagem,0) = 1 THEN 
+					SELECT id_romaneio
+					INTO vIdRomaneio
+					FROM 	scr_romaneios
+						LEFT JOIN fornecedores ON scr_romaneios.id_motorista = fornecedores.id_fornecedor
+						-- LEFT JOIN regiao_cidades reg_origem_ct ON reg_origem_ct.id_cidade = NEW.calculado_de_id_cidade				
+		-- 				LEFT JOIN regiao_cidades reg_destino_ct ON reg_destino_ct.id_cidade = NEW.calculado_ate_id_cidade
+		-- 				LEFT JOIN regiao_cidades reg_origem_rom ON reg_origem_rom.id_cidade = scr_romaneios.id_origem				
+		-- 				LEFT JOIN regiao_cidades reg_destino_rom ON reg_destino_rom.id_cidade = scr_romaneios.id_destino				
+					WHERE 	
+						id_motorista 			= NEW.id_motorista
+						AND placa_veiculo		= NEW.placa_veiculo
+						AND data_saida::date 		= vDataViagem::date
+						AND scr_romaneios.id_origem 	= NEW.calculado_de_id_cidade				
+						AND scr_romaneios.id_destino 	= NEW.calculado_ate_id_cidade
+						AND scr_romaneios.cancelado 	= 0
+						AND NOT EXISTS (SELECT 1 FROM scr_relatorio_viagem_romaneios WHERE scr_relatorio_viagem_romaneios.id_romaneio = scr_romaneios.id_romaneio);
+		-- 				AND reg_origem_ct.id_regiao = reg_origem_rom.id_regiao
+		-- 				AND reg_destino_ct.id_regiao = reg_destino_rom.id_regiao;
+				ELSE
+					SELECT id_romaneio
+					INTO vIdRomaneio
+					FROM 	scr_romaneios
+						LEFT JOIN fornecedores ON scr_romaneios.id_motorista = fornecedores.id_fornecedor
+		-- 				LEFT JOIN regiao_cidades reg_origem_ct ON reg_origem_ct.id_cidade = NEW.calculado_de_id_cidade				
+		-- 				LEFT JOIN regiao_cidades reg_destino_ct ON reg_destino_ct.id_cidade = NEW.calculado_ate_id_cidade
+		-- 				LEFT JOIN regiao_cidades reg_origem_rom ON reg_origem_rom.id_cidade = scr_romaneios.id_origem				
+		-- 				LEFT JOIN regiao_cidades reg_destino_rom ON reg_destino_rom.id_cidade = scr_romaneios.id_destino				
+					WHERE 	
+						id_motorista 			= NEW.id_motorista
+						AND placa_veiculo		= NEW.placa_veiculo
+						AND data_saida::date 		= vDataViagem::date
+						AND scr_romaneios.id_origem 	= NEW.calculado_de_id_cidade				
+		-- 				AND scr_romaneios.id_destino 	= NEW.calculado_ate_id_cidade
+						AND scr_romaneios.cancelado 	= 0
+						AND NOT EXISTS (SELECT 1 FROM scr_relatorio_viagem_romaneios WHERE scr_relatorio_viagem_romaneios.id_romaneio = scr_romaneios.id_romaneio);
+		-- 				AND reg_origem_ct.id_regiao = reg_origem_rom.id_regiao
+		-- 				AND reg_destino_ct.id_regiao = reg_destino_rom.id_regiao;
+				END IF;
 			END IF;					
 
 			

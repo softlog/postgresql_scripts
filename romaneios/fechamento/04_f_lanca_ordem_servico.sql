@@ -37,6 +37,8 @@ BEGIN
 				      AND scr_relatorio_viagem_os.descontar = 1
 				)
 		AND os.os_placa = v_placa_veiculo
+		AND os.os_status <> 4
+		--SELECT * FROM fd_dados_tabela('frt_os')
 	RETURNING v_cursor;
 
 	FETCH v_cursor INTO v_id;

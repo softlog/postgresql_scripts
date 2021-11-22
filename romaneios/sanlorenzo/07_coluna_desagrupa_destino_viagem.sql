@@ -1,0 +1,2 @@
+ALTER TABLE scr_notas_fiscais_imp ADD COLUMN desagrupa_destino_viagem integer;
+ALTER TABLE scr_conhecimento ADD COLUMN desagrupa_destino_viagem integer;

@@ -2,17 +2,26 @@
 
 /*
 
-SELECT * FROM edi_tms_agenda_envio WHERE id_banco_dados = 75
+SELECT * FROM edi_tms_agenda_envio WHERE id_banco_dados = 73
 SELECT * FROM string_conexoes WHERE id_string_conexao = 75
 
 SELECT * FROM now()
+
+SELECT data_importacao - lead(data_importacao) over (partition by 1 order by data_importacao DESC) as intervalo, * FROM email_uid_imap WHERE status = 1 ORDER BY data_importacao DESC LIMIT  100 
+
+SELECT * FROM email_uid_imap WHERE status = 0 order by DATA_REGISTRO desc
+WHERE status = 0 
+
+
 SELECT f_edi_tms_enfileira(
-    1,
+    9,
     now()::timestamp,
-    null);
+    '2021-09-01 00:00:00');
+    
 SELECT * FROM empresa_acesso_servicos;
 UPDATE empresa_acesso_servicos SET codigo_acesso = 'xml-nfe' WHERE id = 3;
-SELECT  f_edi_tms_enfileira(1,'2021-04-29 10:25:52.178485'::timestamp, null::timestamp);
+SELECT * FROM msg_edi_lista_chaves ORDER BY 1 DESC LIMIT 100
+SELECT  f_edi_tms_enfileira(5,now()::timestamp, null::timestamp);
 SELECT * FROM scr_doc_integracao
 SELECT * FROM scr_notas_fiscais_imp_ocorrencias WHERE id_ocorrencia_nf IN (19149463, 19143235);
 
@@ -21,10 +30,24 @@ SELECT * FROM empresa_acesso_servicos
 SELECT * FROM scr_notas_fiscais_imp 
 UPDATE empresa_acesso_servicos SET codigo_acesso = '\Faturamento\TR0000129800\Entrada';
 
-SELECT * FROM msg_edi_lista_chaves WHERE id_embarcador = 39 ORDER BY 1 DESC LIMIT 100;
+SELECT * FROM msg_edi_lista_chaves ORDER BY 1 DESC LIMIT 100;
 
 --DROP FUNCTION public.f_edi_tms_enfileira(integer, timestamp without time zone, timestamp without time zone);
-    
+
+SELECT * FROM edi_tms_embarcador_docs
+
+
+SELECT
+*
+
+
+FROM email_uid_imap
+
+ORDER BY id DESC LIMIT 1000
+
+SELECT data_registro FROM scr_notas_fiscais_imp ORDER By 1 DESC LIMIT 100
+
+
 */
 
 
@@ -154,7 +177,8 @@ BEGIN
 
 	-- Enfileira Ocoren por conhecimentos embarcados
 	IF v_tipo_doc = 2 AND v_operacao_por_nota = '0' THEN 
-	
+		RAISE NOTICE 'OCOREN por CTE';
+		
 		--PERFORM f_debug('Data Ini',v_data_ini::text);
 		--PERFORM f_debug('Data Fim',v_data_fim::text);
 		--PERFORM f_debug('Data Fim',v_cnpj_cliente);
@@ -224,7 +248,7 @@ BEGIN
 
 	-- Enfileira Ocoren da Vytra por conhecimentos embarcados
 	IF v_tipo_doc = -2 AND v_operacao_por_nota = '0' THEN 
-	
+		
 		RAISE NOTICE 'Data Ini %',v_data_ini;
 		RAISE NOTICE 'Data Fim %',v_data_fim;
 		RAISE NOTICE 'Cliente %',v_cnpj_cliente;
@@ -328,7 +352,7 @@ BEGIN
 
 	-- Enfileira Ocoren da SSW por NFe embarcada
 	IF v_tipo_doc = -4 THEN 
-	
+		
 		RAISE NOTICE 'Data Ini %',v_data_ini;
 		RAISE NOTICE 'Data Fim %',v_data_fim;
 		RAISE NOTICE 'Cliente %',v_cnpj_cliente;
@@ -382,10 +406,10 @@ BEGIN
 	-- Enfileira Ocoren por notas fiscais embarcadas
 	IF v_tipo_doc = 2 AND v_operacao_por_nota = '1' THEN 
 	
-		--RAISE NOTICE 'Entrei em Operacao por Nota'; 
-		--RAISE NOTICE 'Data Ini %', v_data_ini;
-		--RAISE NOTICE 'Data Fim %', v_data_fim;
-		--RAISE NOTICE 'CNPJ %', v_cnpj_cliente;
+		RAISE NOTICE 'Entrei em Operacao por Nota'; 
+		RAISE NOTICE 'Data Ini %', v_data_ini;
+		RAISE NOTICE 'Data Fim %', v_data_fim;
+		RAISE NOTICE 'CNPJ %', v_cnpj_cliente;
 		
 		--PERFORM f_debug('Data Ini',v_data_ini::text);
 		--PERFORM f_debug('Data Fim',v_data_fim::text);
@@ -532,9 +556,9 @@ BEGIN
 	END IF;
 
 	
-	-- Enfileira Importação XML-NFe-Mail
-	-- Nesta Fila o tipo_doc é usado para direcionar para o script de importacao
-	IF v_tipo_doc IN (8,9,10,12, 14) THEN 
+	-- Enfileira Importacao XML-NFe-Mail
+	-- Nesta Fila o tipo_doc e usado para direcionar para o script de importacao
+	IF v_tipo_doc IN (8,9,10,12, 14, 16) THEN 
 		
 		INSERT INTO msg_edi_lista_chaves(
 			id_doc, 
@@ -548,6 +572,9 @@ BEGIN
 			current_date,
 			v_tipo_doc::integer;		
 	END IF;
+
+
+
 
 	SELECT id_string_conexao 
 	INTO v_id_bd

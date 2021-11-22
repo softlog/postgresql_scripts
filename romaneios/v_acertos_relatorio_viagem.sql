@@ -38,7 +38,7 @@ CREATE OR REPLACE VIEW public.v_acertos_relatorio_viagem AS
      LEFT JOIN fornecedores proprietario ON proprietario.cnpj_cpf::bpchar = scr_romaneios.cnpj_cpf_proprietario
      LEFT JOIN fornecedores proprietario2 ON proprietario2.id_fornecedor = veiculos.id_proprietario
      LEFT JOIN scr_tabela_motorista ON scr_tabela_motorista.numero_tabela_motorista = scr_romaneios.numero_tabela_motorista
-  WHERE scr_romaneios.fechamento = 1 AND scr_romaneios.id_acerto IS NULL AND scr_romaneios.cancelado = 0
+  WHERE scr_romaneios.fechamento = 1 AND CASE WHEN scr_romaneios.id_acerto IS NULL THEN true WHEN scr_romaneios.id_acerto = 0 THEN true ELSE false END AND scr_romaneios.cancelado = 0 
 UNION
  SELECT (('3'::text || btrim(to_char(scr_conhecimento_redespacho.id_conhecimento_redespacho, '0000000000'::text))))::character(11) AS chave,
     3 AS categoria,
@@ -114,4 +114,3 @@ UNION
      LEFT JOIN scr_tabela_motorista ON scr_tabela_motorista.numero_tabela_motorista = scr_romaneios.numero_tabela_motorista
   WHERE scr_conhecimento_redespacho.id_acerto IS NULL AND scr_conhecimento_redespacho.id_romaneios IS NULL
   ORDER BY 2;
-

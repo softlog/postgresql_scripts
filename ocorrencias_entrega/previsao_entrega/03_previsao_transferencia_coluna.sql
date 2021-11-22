@@ -1,0 +1,2 @@
+ALTER TABLE scr_romaneios ADD COLUMN previsao_transferencia timestamp;
+ALTER TABLE scr_notas_fiscais_imp ADD COLUMN data_previsao_entrega_dh timestamp;

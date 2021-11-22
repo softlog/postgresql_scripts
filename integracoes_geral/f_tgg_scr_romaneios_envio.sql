@@ -2,6 +2,9 @@
 --has_n
 -- DROP FUNCTION public.f_tgg_scr_romaneios_envio();
 /*
+
+SELECT * FROM msg_fila_averb_atm WHERE is_nfe = 1
+
 INSERT INTO fila_documentos_integracoes (tipo_integracao, tipo_documento, lst_documentos, id_romaneio, data_registro)
 				WITH t AS (
 					SELECT 
@@ -12,20 +15,114 @@ INSERT INTO fila_documentos_integracoes (tipo_integracao, tipo_documento, lst_do
 					FROM 
 						scr_romaneio_nf
 					WHERE 
-						id_romaneio = 207948)
+						id_romaneio = 207948);
+						
 SELECT 10, 1, string_agg(id_nota_fiscal_imp::text, ',') as lista, 207948, now() FROM t GROUP BY grupo;
 
-SELECT id_romaneio, emitido, numero_romaneio FROM scr_romaneios WHERE id_romaneio = 209934
- numero_romaneio = '0010010017853'
-SELECT * FROM fila_documentos_integracoes WHERE id_romaneio = 209934
-UPDATE scr_romaneios SET emitido = 0 WHERE id_romaneio = 19459;
-UPDATE scr_romaneios SET emitido = 1 WHERE id_romaneio = 19459;
+SELECT id_romaneio, emitido, numero_romaneio, cpf_motorista, tipo_destino FROM scr_romaneios WHERE numero_romaneio = '0010010033462'
+SELECT * FROM fila_documentos_integracoes WHERE id_romaneio = 46666
 
-SELECT id_nota_fiscal_imp FROM v_mgr_notas_fiscais WHERE numero_nota_fiscal::integer = 17991 AND data_expedicao = '2021-05-10'
+SELECT fp_set_session('pst_cod_empresa','001');
+UPDATE scr_romaneios SET emitido = 0 WHERE id_romaneio IN (11793,11791,11795,11796,11798,11797,11799,11800,11801,11802,11803,11808,11806,11807,11816,11805,11811,11818,11810,11819,11813,11812,11809,11804);
+UPDATE scr_romaneios SET emitido = 1 WHERE id_romaneio IN (11793,11791,11795,11796,11798,11797,11799,11800,11801,11802,11803,11808,11806,11807,11816,11805,11811,11818,11810,11819,11813,11812,11809,11804)
+
+SELECT id_nota_fiscal_imp FROM v_mgr_notas_fiscais WHERE numero_nota_fiscal::integer = 17991 AND data_expedicao = '2021-05-10';
+
+SELECT id_romaneio, emitido, numero_romaneio FROM scr_romaneios WHERE numero_romaneio = '0010010206031'
+
+SELECT string_agg(id_romaneio::text,',') FROM scr_romaneios WHERE data_romaneio >= current_date::timestamp AND emitido = 1 AND cancelado = 0;
+SELECT * FROM fila_documentos_integracoes WHERE enviado = 0 AND tipo_integracao = 11
+
+SELECT nf.id_nota_fiscal_imp, nf.chave_nfe, mensagens::text FROM fila_documentos_integracoes LEFT JOIN scr_notas_fiscais_imp nf ON nf.id_nota_fiscal_imp = fila_documentos_integracoes.id_nota_fiscal_imp WHERE fila_documentos_integracoes.data_registro >= '2021-06-29'::timestamp  AND id_integracao = -1
+ORDER BY 1 DESC LIMIT 1000
+WHERE tipo_integracao = 3
+
+SELECT * FROM fila_documentos_integracoes WHERE id_romaneio = 12870
+id_nota_fiscal_imp = 792803
+
+
+SELECT * FROM fila_documentos_integracoes WHERE tipo_documento = 1 ORDER BY 1 DESC LIMIT 10000
+
+SELECT * FROM fila_documentos_integracoes ORDER BY 1 DESC LIMIT 10000
+
+SELECT * FROM scr_romaneio_nf WHERE id_romaneio = 231136
+SELECT lpad('1',3,'0')
+SELECT * FROM fila_envio_romaneios WHERE id_romaneio = 231136 ORDER BY id DESC 
+
+UPDATE fila_envio_romaneios SET status_confirmacao = 0, data_registro = NOW() WHERE id = 6526
+WHERE id_romaneio = 225529
+
+
+SELECT * FROM scr_romaneios WHERE id_romaneio = 15324
+
+SELECT id_romaneio, emitido FROM scr_romaneios WHERE numero_romaneio = '0010010197940'
+SELECT COUNT(*) 
+FROM fornecedores f
+	LEFT JOIN fornecedor_parametros fp
+		ON fp.id_fornecedor = f.id_fornecedor
+WHERE
+	f.cnpj_cpf = '53747810578'
+	AND trim(fp.valor_parametro) = '1'
+	AND fp.id_tipo_parametro = 2;
+
+SELECT id_romaneio FROM scr_romaneios WHERE numero_romaneio = '0010010032899';
 
 
 
+SELECT * FROM fila_envio_romaneios WHERE id_romaneio = 232897
 
+
+
+SELECT * FROM fila_documentos_integracoes WHERE id_romaneio = 46666
+
+
+
+SELECT * FROM scr_romaneio_nf WHERE id_nota_fiscal_imp = 792803
+
+	SELECT 
+		string_agg(cliente.cnpj_cpf,',') as lst_cnpj
+	FROM 		
+		scr_romaneios r
+		LEFT JOIN scr_romaneio_nf rnf
+			ON rnf.id_romaneio = r.id_romaneio
+		LEFT JOIN scr_notas_fiscais_imp nf
+			ON rnf.id_nota_fiscal_imp = nf.id_nota_fiscal_imp
+		RIGHT JOIN msg_subscricao sub
+			ON sub.codigo_cliente = nf.remetente_id AND sub.id_notificacao = 1000
+		LEFT JOIN cliente
+			ON cliente.codigo_cliente = sub.codigo_cliente			
+	WHERE
+		r.id_romaneio = 225529
+		AND sub.ativo = 1;
+
+		SELECT * FROM msg_subscricao WHERE id_notificacao = 1000
+
+	SELECT * FROM v_mgr_notas_fiscais WHERE numero_nota_fiscal::integer = 58435
+	SELECT id_romaneio FROM scr_romaneios WHERE numero_romaneio = '0010040012590'
+	SELECT id_romaneio FROM scr_romaneios WHERE numero_romaneio = '0010010206036'
+
+
+	UPDATE fila_envio_romaneios SET data_registro = now() WHERE status_envio = 0 AND data_registro > '2021-11-10 00:00:00'
+	id_ocorrencia_nf = 27152493
+	SELECT * FROM fila_envio_romaneios WHERE id_tipo_servico = 301 ORDER BY 1 DESC LIMIT 100
+	WHERE id_nota_fiscal_imp = 20559072
+	id_tipo_servico = 2 ORDER BY 1 DESC
+	COMMIT;
+
+	SELECT * FROM scr_notas_fiscais_imp_ocorrencias WHERE id_nota_fiscal_imp = 20559072
+	SELECT * FROM scr_romaneios 	
+
+	SELECT id_romaneio, emitido, numero_romaneio FROM scr_romaneios WHERE numero_romaneio = '0010010206031'
+	UPDATE scr_romaneios SET emitido = 0 WHERE id_romaneio = 46666;
+	UPDATE scr_romaneios SET emitido = 1 WHERE id_romaneio = 46666
+
+	SELECT fp_set_session('pst_cod_empresa', '001')
+	ROLLBACK;
+	BEGIN;
+	UPDATE scr_romaneios SET emitido = 0 WHERE id_romaneio = 244684;
+	UPDATE scr_romaneios SET emitido = 1 WHERE id_romaneio = 244684;
+	SELECT * FROM fila_envio_romaneios WHERE id_romaneio IN (244684);
+	COMMIT;
 */
 
 CREATE OR REPLACE FUNCTION public.f_tgg_scr_romaneios_envio()
@@ -33,16 +130,22 @@ CREATE OR REPLACE FUNCTION public.f_tgg_scr_romaneios_envio()
 $BODY$
 DECLARE
 	v_lista_cnpj text;
+	v_lista_nf text;
 	v_tem_parametro integer;
 	has_comprovei integer;
+	has_comprovei_oco integer;
 	has_itrack integer;
 	has_vuupt integer;
 	has_notrexo integer;
 	has_alper integer;
+	has_krona integer;
+	
 	vEmpresa text;
 	vEmitido integer;
 	vExiste integer;
 	vExecuta boolean;
+	vRomaneioTransferencia integer;
+	has_comprovei_total integer;
 BEGIN
 
 	vEmpresa = fp_get_session('pst_cod_empresa');
@@ -53,7 +156,21 @@ BEGIN
 	FROM 	parametros 
 	WHERE 	cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_INTEGRACAO_COMPROVEI';	 
 
-	RAISE NOTICE 'Comprovei %', has_comprovei;
+--	RAISE NOTICE 'Comprovei %', has_comprovei;
+
+	SELECT 	(COALESCE(valor_parametro,'0'))::integer
+	INTO 	has_comprovei_oco
+	FROM 	parametros 
+	WHERE 	cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_OCORRENCIAS_COMPROVEI';	 
+
+
+	SELECT 	(COALESCE(valor_parametro,'0'))::integer
+	INTO 	has_comprovei_total
+	FROM 	parametros 
+	WHERE 	cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_COMPROVEI_TODOS';	 
+
+	has_comprovei_total = COALESCE(has_comprovei_total,0);
+
 
 	SELECT 	(COALESCE(valor_parametro,'0'))::integer
 	INTO 	has_itrack
@@ -76,6 +193,187 @@ BEGIN
 	WHERE 	cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_INTEGRACAO_ALPER';
 
 
+	SELECT 	(COALESCE(valor_parametro,'0'))::integer
+	INTO 	has_krona
+	FROM 	parametros 
+	WHERE 	cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_INTEGRACAO_KRONA';
+	
+
+
+
+
+
+	
+	-- Tabela de scr_romaneios 	
+	IF TG_TABLE_NAME = 'scr_romaneios' AND TG_OP = 'UPDATE' AND COALESCE(has_krona,0) = 1 THEN 
+
+		RAISE NOTICE 'Verifica Krona';
+		BEGIN 
+		
+			vExecuta = true;
+
+			--Envia para Krona apenas se tiver origem informada
+			IF COALESCE(NEW.id_remetente_origem,0) = 0 THEN 
+				vExecuta = False;
+			END IF;
+
+			--Envia para Krona apenas quando muda o status para emitido.
+			IF COALESCE(NEW.emitido,0) = COALESCE(OLD.emitido,0) AND OLD.emitido = 1 THEN 
+				vExecuta = False;
+			END IF;
+
+
+			--Nao envia se nao tiver emitido
+			IF NEW.emitido = 0 THEN 
+				vExecuta = False;
+			END IF;		
+
+			
+
+			--Verifica se o motorista esta autorizado pelo Krona.
+			SELECT 
+				count(*) 
+			INTO 
+				v_tem_parametro 
+			FROM 
+				fornecedores f
+				LEFT JOIN fornecedor_parametros fp
+					ON fp.id_fornecedor = f.id_fornecedor
+			WHERE
+				f.id_fornecedor = NEW.id_motorista
+				--AND trim(fp.valor_parametro) = '1'
+				AND fp.id_tipo_parametro = 12;
+				
+
+			---35235207890   
+
+			IF v_tem_parametro = 0 THEN 				
+				vExecuta = False;
+			ELSE
+				RAISE NOTICE 'Motorista autorizado';
+			END IF;
+
+			IF vExecuta THEN 
+			
+				SELECT count(*) as qt 
+				INTO vExiste
+				FROM fila_documentos_integracoes
+				WHERE 
+					id_romaneio = NEW.id_romaneio 
+					AND tipo_integracao = 11 
+					AND tipo_documento = 2;
+
+				IF vExiste > 0 THEN 
+					vExecuta = False;			
+				END IF;
+				
+			END IF;
+
+			
+			
+			IF vExecuta THEN 
+
+				RAISE NOTICE 'Executa Integracao';
+
+				/*
+				SELECT * FROM fornecedor_parametros WHERE id_tipo_parametro = 12
+				SELECT 
+					*
+				FROM 
+					fornecedores f
+					LEFT JOIN fornecedor_parametros fp
+						ON fp.id_fornecedor = f.id_fornecedor
+				WHERE
+					1=1
+					AND f.id_fornecedor = 1277
+					AND trim(fp.valor_parametro) = '1'
+					AND fp.id_tipo_parametro = 12;
+					
+
+SELECT
+            id,
+            f_get_dados_romaneio_krona(id_romaneio, '%(usuario)s', '%(password)s') as dados,
+            id_romaneio
+        FROM
+            fila_documentos_integracoes
+        WHERE
+            enviado = 0
+            AND pendencia = 0
+            AND tipo_integracao = 11
+            AND qt_tentativas < 4
+        ORDER BY
+            1
+				SELECT fp_set_session('pst_cod_empresa', '001')
+				UPDATE scr_romaneios SET emitido = 0 WHERE id_romaneio = 43106;
+				UPDATE scr_romaneios SET emitido = 1 WHERE id_romaneio = 43106
+
+				SELECT id_romaneio, cpf_motorista, id_motorista FROM scr_romaneios WHERE numero_romaneio = '0010010030763'
+				
+				SELECT * FROM fila_documentos_integracoes WHERE id_romaneio = 43106
+				
+				UPDATE scr_romaneios SET id_romaneio = id_romaneio WHERE id_romaneio = 190497;
+				SELECT * FROM 
+				SELECT COUNT(*) INTO v_tem_parametro 
+				FROM fornecedores f
+					LEFT JOIN fornecedor_parametros fp
+						ON fp.id_fornecedor = f.id_fornecedor
+				WHERE
+					f.cnpj_cpf = NEW.cpf_motorista
+					AND trim(fp.valor_parametro) = '1'
+					AND fp.id_tipo_parametro = 2;
+
+				IF v_tem_parametro = 0 THEN 
+					RETURN NEW;
+				END IF;
+
+				
+				SELECT * FROM fila_documentos_integracoes ORDER BY 1 DESC LIMIT 10000
+
+				WITH t AS (
+					SELECT 
+						(((row_number() over (partition by id_romaneio order by id_nota_fiscal_imp))-1)/150)::integer as grupo,
+						id_romaneio,
+						id_nota_fiscal_imp
+					FROM 
+						scr_romaneio_nf
+					WHERE 
+						id_romaneio = 190497
+				) 
+				SELECT string_agg(id_nota_fiscal_imp::text, ',') as lista FROM t GROUP BY grupo
+
+				SELECT 
+					count(*) as qt, 
+					id_romaneio 
+				FROM 
+					fila_documentos_integracoes 
+				WHERE 
+					id_romaneio IS NOT NULL 
+				GROUP BY id_romaneio 
+				HAVING count(*) > 149
+
+				SELECT * FROM fila_documentos_integracoes WHERE tipo_integracao = 11
+				
+				*/				
+				
+				
+				
+				INSERT INTO fila_documentos_integracoes (tipo_integracao, tipo_documento, lst_documentos, id_romaneio, data_registro)
+				
+				VALUES (11, 2, NULL, NEW.id_romaneio, now());
+				
+
+				RAISE NOTICE 'Romaneio %', NEW.id_romaneio;
+
+				
+				
+			END IF;
+
+		EXCEPTION WHEN OTHERS THEN 
+			RAISE NOTICE 'Ocorreu um erro ao tentar enfileirar documentos KRONA';
+			--RETURN NEW;
+		END;	
+	END IF; 
+
 
 	-- Tabela de scr_romaneios 
 	IF TG_TABLE_NAME = 'scr_romaneios' AND TG_OP = 'UPDATE' AND COALESCE(has_alper,0) = 1  THEN 
@@ -94,7 +392,7 @@ BEGIN
 			END IF;			
 
 			IF vExecuta THEN 
-
+				RAISE NOTICE 'Executa Integracao';
 				/*
 				
 				--SELECT * FROM fila_documentos_integracoes WHERE id_romaneio = 190497
@@ -141,8 +439,7 @@ BEGIN
 
 				SELECT * FROM fila_documentos_integracoes WHERE lst_documentos IS NOT NULL 
 				
-				*/
-				
+				*/				
 				
 				
 				INSERT INTO fila_documentos_integracoes (tipo_integracao, tipo_documento, lst_documentos, id_romaneio, data_registro)
@@ -164,6 +461,8 @@ BEGIN
 						)
 				) 
 				SELECT 10, 1, string_agg(id_nota_fiscal_imp::text, ',') as lista, NEW.id_romaneio, now() FROM t GROUP BY grupo;
+
+				RAISE NOTICE 'Romaneio %', NEW.id_romaneio;
 
 				/*
 				BEGIN;
@@ -199,53 +498,214 @@ BEGIN
 	END IF; 
 
 	-- Tabela de scr_romaneios 
-	IF TG_TABLE_NAME = 'scr_romaneios' AND TG_OP = 'UPDATE' AND COALESCE(has_comprovei,0) = 1   THEN 
+	IF TG_TABLE_NAME = 'scr_romaneios' AND TG_OP = 'UPDATE' AND COALESCE(has_comprovei,0) = 1   AND COALESCE(has_comprovei_oco,0) = 0 THEN 
 
+
+		
+		
 		RAISE NOTICE 'Integracao Comprovei';
-		--RAISE NOTICE 'Scr Romaneios';
-		vExecuta = true;
-		IF COALESCE(NEW.emitido,0) =  COALESCE(OLD.emitido,0) AND OLD.emitido = 1 THEN 
-			vExecuta = false;
-		END IF;
-
-		IF NEW.emitido = 0 THEN 
-			vExecuta = false;
-		END IF;
-
-		IF NEW.dispara_integracao = 1 THEN
+		BEGIN
+			--RAISE NOTICE 'Scr Romaneios';
 			vExecuta = true;
-		END IF;
+			IF COALESCE(NEW.emitido,0) =  COALESCE(OLD.emitido,0) AND OLD.emitido = 1 THEN 
+				RAISE NOTICE 'Sem alteracao status para emitido';
+				vExecuta = false;
+			END IF;
 
-		IF vExecuta THEN 
-			RAISE NOTICE 'Tem notificacao';
+			IF NEW.emitido = 0 THEN 
+				RAISE NOTICE 'Nao emitido';
+				vExecuta = false;
+			ELSE 
+				RAISE NOTICE 'Emitido';
+			END IF;
+			
+			IF NEW.dispara_integracao = 1 THEN
+				RAISE NOTICE 'Forca Importacao';
+				vExecuta = true;
+			END IF;
 
-			SELECT 
-				string_agg(cliente.cnpj_cpf,',') as lst_cnpj
-			INTO 
-				v_lista_cnpj
-			FROM 		
-				scr_romaneios r
-				LEFT JOIN scr_romaneio_nf rnf
-					ON rnf.id_romaneio = r.id_romaneio
-				LEFT JOIN scr_notas_fiscais_imp nf
-					ON rnf.id_nota_fiscal_imp = nf.id_nota_fiscal_imp
-				RIGHT JOIN msg_subscricao sub
-					ON sub.codigo_cliente = nf.remetente_id AND sub.id_notificacao = 1000
-				LEFT JOIN cliente
-					ON cliente.codigo_cliente = sub.codigo_cliente
-			WHERE
-				r.id_romaneio = NEW.id_romaneio
-				AND sub.ativo = 1;
+			RAISE NOTICE 'Verifica transferencia';
+			SELECT 	(COALESCE(valor_parametro,'1'))::integer
+			INTO 	vRomaneioTransferencia
+			FROM 	parametros 
+			WHERE 	cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_TRANSFERENCIA_COMPROVEI';
+
+			vRomaneioTransferencia = COALESCE(vRomaneioTransferencia,1);
+			
+			IF NEW.tipo_destino = 'T' AND vRomaneioTransferencia = 0 THEN 
+				RAISE NOTICE 'NAO ENVIA TRANSFERENCIA';
+				vExecuta = false;
+			ELSE 
+				RAISE NOTICE 'ENVIA TRANSFERENCIA';
+			END IF;
 
 			
+		
+			IF vExecuta THEN 
+				RAISE NOTICE 'Executa Integracao';
+
+
+				IF has_comprovei_total = 0 THEN 
+					SELECT 
+						string_agg(cliente.cnpj_cpf,',') as lst_cnpj,
+						string_agg(rnf.id_nota_fiscal_imp::text,',') as lst_nf
+					INTO 
+						v_lista_cnpj,
+						v_lista_nf
+					
+					FROM 		
+						scr_romaneios r
+						LEFT JOIN scr_romaneio_nf rnf
+							ON rnf.id_romaneio = r.id_romaneio
+						LEFT JOIN scr_notas_fiscais_imp nf
+							ON rnf.id_nota_fiscal_imp = nf.id_nota_fiscal_imp
+						RIGHT JOIN msg_subscricao sub
+							ON sub.codigo_cliente = nf.remetente_id AND sub.id_notificacao = 1000
+						LEFT JOIN cliente
+							ON cliente.codigo_cliente = sub.codigo_cliente			
+					WHERE
+						r.id_romaneio = NEW.id_romaneio
+						AND sub.ativo = 1;
+				ELSE
+					SELECT 
+						string_agg(cliente.cnpj_cpf,',') as lst_cnpj,
+						string_agg(rnf.id_nota_fiscal_imp::text,',') as lst_nf
+					INTO 
+						v_lista_cnpj,
+						v_lista_nf
+					
+					FROM 		
+						scr_romaneios r
+						LEFT JOIN scr_romaneio_nf rnf
+							ON rnf.id_romaneio = r.id_romaneio
+						LEFT JOIN scr_notas_fiscais_imp nf
+							ON rnf.id_nota_fiscal_imp = nf.id_nota_fiscal_imp
+						LEFT JOIN cliente
+							ON cliente.codigo_cliente = nf.remetente_id
+					WHERE
+						r.id_romaneio = NEW.id_romaneio;
+						
+				END IF;
+								
+				--SELECT * FROM msg_notificacao ORDER BY 1 
+				RAISE NOTICE 'Verifica se envia';
+				IF v_lista_cnpj IS NOT NULL THEN 
+					--Grava as informações na Fila
+					INSERT INTO fila_envio_romaneios(id_notificacao, id_romaneio, cnpjs_subscritos, lst_notas_fiscais)
+					VALUES (1000, NEW.id_romaneio, v_lista_cnpj, v_lista_nf);
+				ELSE 
+					RAISE NOTICE 'Cliente não configurado ';
+				END IF;		 
+			END IF;
 			
-			IF v_lista_cnpj IS NOT NULL THEN 
-				--Grava as informações na Fila
-				INSERT INTO fila_envio_romaneios(id_notificacao, id_romaneio, cnpjs_subscritos)
-				VALUES (1000, NEW.id_romaneio, v_lista_cnpj);
-			END IF;		 
-		END IF;
+		EXCEPTION WHEN OTHERS THEN 
+			RAISE NOTICE 'Ocorreu um erro ao tentar enfileirar documentos Comprovei';
+			RETURN NEW;
+		END;
+
+		
 	END IF; 
+
+
+	-- Tabela de scr_romaneios 
+	IF TG_TABLE_NAME = 'scr_romaneios' AND TG_OP = 'UPDATE' AND COALESCE(has_comprovei_oco,0) = 1   THEN 
+
+
+		
+		
+		RAISE NOTICE 'Integracao Comprovei';
+		BEGIN
+			--RAISE NOTICE 'Scr Romaneios';
+			vExecuta = true;
+			IF COALESCE(NEW.emitido,0) =  COALESCE(OLD.emitido,0) AND OLD.emitido = 1 THEN 
+				RAISE NOTICE 'Sem alteracao status para emitido';
+				vExecuta = false;
+			END IF;
+
+			IF NEW.emitido = 0 THEN 
+				RAISE NOTICE 'Nao emitido';
+				vExecuta = false;
+			ELSE 
+				RAISE NOTICE 'Emitido';
+			END IF;
+			
+			IF NEW.dispara_integracao = 1 THEN
+				RAISE NOTICE 'Forca Importacao';
+				vExecuta = true;
+			END IF;
+
+			RAISE NOTICE 'Verifica transferencia';
+			SELECT 	(COALESCE(valor_parametro,'1'))::integer
+			INTO 	vRomaneioTransferencia
+			FROM 	parametros 
+			WHERE 	cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_TRANSFERENCIA_COMPROVEI';
+
+			vRomaneioTransferencia = COALESCE(vRomaneioTransferencia,1);
+			
+			IF NEW.tipo_destino = 'T' AND vRomaneioTransferencia = 0 THEN 
+				RAISE NOTICE 'NAO ENVIA TRANSFERENCIA';
+				vExecuta = false;
+			ELSE 
+				RAISE NOTICE 'ENVIA TRANSFERENCIA';
+			END IF;
+			
+		
+			IF vExecuta THEN 
+
+				RAISE NOTICE 'Executa Integracao';
+
+
+				
+				SELECT 
+					string_agg(cliente.cnpj_cpf,',') as lst_cnpj,
+					string_agg(rnf.id_nota_fiscal_imp::text, ',') as lst_nf
+				INTO 
+					v_lista_cnpj,
+					v_lista_nf
+				FROM 		
+					scr_romaneios r
+					LEFT JOIN scr_romaneio_nf rnf
+						ON rnf.id_romaneio = r.id_romaneio
+					LEFT JOIN scr_notas_fiscais_imp nf
+						ON rnf.id_nota_fiscal_imp = nf.id_nota_fiscal_imp
+					RIGHT JOIN msg_subscricao sub
+	 					ON sub.codigo_cliente = nf.remetente_id AND sub.id_notificacao = 1000
+					LEFT JOIN cliente
+						ON cliente.codigo_cliente = sub.codigo_cliente			
+				WHERE
+					r.id_romaneio = NEW.id_romaneio
+					AND sub.ativo = 1;
+
+				--SELECT * FROM msg_notificacao ORDER BY 1 
+				-- RAISE NOTICE 'Verifica se envia';
+				IF v_lista_cnpj IS NOT NULL THEN 
+					--Grava as informações na Fila
+					INSERT INTO fila_envio_romaneios(id_notificacao, id_tipo_servico, id_romaneio, cnpjs_subscritos, lst_notas_fiscais)
+					SELECT 
+						1000, 
+						2, 
+						NEW.id_romaneio, 
+						v_lista_cnpj,
+						v_lista_nf
+					WHERE NOT EXISTS (SELECT 1 
+							  FROM fila_envio_romaneios 
+							  WHERE fila_envio_romaneios.id_romaneio = NEW.id_romaneio 
+							  AND id_notificacao = 1000 AND id_tipo_servico = 2
+					);
+					
+
+				ELSE 
+					RAISE NOTICE 'Cliente não configurado ';
+				END IF;		 
+			END IF;
+		EXCEPTION WHEN OTHERS THEN 
+			RAISE NOTICE 'Ocorreu um erro ao tentar enfileirar documentos Comprovei';
+			RETURN NEW;
+		END;
+
+		
+	END IF; 
+
 	
 	
 	IF TG_TABLE_NAME = 'scr_romaneios' AND TG_OP = 'UPDATE' AND NEW.tipo_destino = 'D' AND COALESCE(has_itrack,0) = 1 THEN 
@@ -313,7 +773,13 @@ BEGIN
 				WHERE
 					r.id_romaneio = NEW.id_romaneio
 					AND rnf.id_nota_fiscal_imp IS NOT NULL
-					AND COALESCE(cp.valor_parametro, '0') = '1';
+					AND COALESCE(cp.valor_parametro, '0') = '1'
+					AND NOT EXISTS (SELECT 1 
+							FROM fila_documentos_integracoes
+							WHERE id_romaneio = NEW.id_romaneio 
+							AND id_nota_fiscal_imp = rnf.id_nota_fiscal_imp
+							AND tipo_integracao = 3
+							) ;
 			END IF;
 
 		EXCEPTION WHEN OTHERS THEN 
@@ -513,4 +979,6 @@ END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
+
+--DROP TRIGGER tgg_scr_romaneios_envio ON public.scr_romaneios;
 

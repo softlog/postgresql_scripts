@@ -1,8 +1,9 @@
 -- Function: public.f_tgg_parser_doc_integracao()
 --SELECT * FROM com_nf WHERE modelo_doc_fiscal = '65'
 --UPDATE scr_doc_integracao SET id_doc_integracao = id_doc_integracao WHERE id_doc_integracao = 2991985
---SELECT * FROM scr_doc_integracao ORDER BY 1 DESC LIMIT 100
---SELECT * FROM scr_doc_integracao LIMIT 1
+-- SELECT * FROM scr_doc_integracao WHERE chave_doc = '52211003834913000282550010000080711708780714'
+-- ORDER BY 1 DESC LIMIT 100
+-- SELECT * FROM scr_doc_integracao WHERE tipo_doc = 15
 -- DROP FUNCTION public.f_tgg_parser_doc_integracao();
 
 CREATE OR REPLACE FUNCTION f_tgg_parser_doc_integracao()
@@ -107,6 +108,7 @@ BEGIN
 			);			
 			
 			vEmpresa 	= fp_get_session('pst_cod_empresa');
+
 			SELECT COALESCE(valor_parametro::integer,0)::integer
 			INTO v_importa_para_crm
 			FROM parametros 
@@ -167,14 +169,27 @@ BEGIN
 		
 	identificar = True;
 
-	IF NEW.tipo_doc = -2 THEN 
+	
+	IF NEW.tipo_doc= -2 THEN 
+
 		NEW.doc_xml = fpy_decode_base64(NEW.doc_xml);
+		
 		--RAISE NOTICE '%', NEW.doc_xml;
 		NEW.tipo_doc = 2;
 	END IF;
 
 	IF substr(NEW.doc_xml,1,1) = E'\xEF\xBB\xBF' THEN 
 		NEW.doc_xml = replace(NEW.doc_xml, E'\xEF\xBB\xBF','');
+	END IF;
+
+        RAISE NOTICE '%', NEW.doc_xml;
+	
+	--Verifica se eh EDI tipo Farmix
+	IF position('CHAVENFE' in NEW.doc_xml) > 0 THEN 
+		RAISE NOTICE 'FARMIX';
+		NEW.doc_xml = replace(NEW.doc_xml, '''', ' ');
+		NEW.tipo_doc = 15;
+		identificar =  False;
 	END IF;
 
 	--Verifica se eh EDI tipo VTEX
@@ -186,8 +201,9 @@ BEGIN
 	IF NEW.tipo_doc = 10 THEN 		
 		identificar = False;
 	END IF;
+
 	
-	IF identificar THEN 
+	IF identificar THEN 	
 		BEGIN 
 			
 			--RAISE NOTICE 'Verificando se eh NOTFIS';
@@ -255,11 +271,8 @@ BEGIN
 
 			NEW.tipo_doc = 8;		
 
-		END IF;
-		
+		END IF;		
 	END IF;
-
-
 
 	RAISE NOTICE 'Tipo Documento: %', NEW.tipo_doc;
 
@@ -277,6 +290,7 @@ BEGIN
 			v_tpevento = v_dados->>'tp_evento';
 
 			IF v_tpevento IS NOT NULL  THEN 	
+
 				--RAISE NOTICE 'Evento %', v_tpevento;			
 				IF v_tpevento = '110111' THEN 
 					NEW.chave_doc = v_dados->>'chave_nfe';
@@ -291,6 +305,7 @@ BEGIN
 					r = fp_set_session('pst_tipo_especifico_importacao',log_original);
 					RETURN NULL;
 				END IF;
+				
 			ELSE
 				--RAISE NOTICE 'Documento XML';
 				
@@ -356,6 +371,7 @@ BEGIN
 		ELSE
 			INSERT INTO debug (descricao,valor) VALUES ('Erro de XML',NEW.doc_xml);
 		END IF;       
+		
 	END IF;
 
 	-- 4) Documento tipo EDI PADRAO PROCEDA NOTFIS 
@@ -365,7 +381,9 @@ BEGIN
 	-- 8) Documento tipo Doria
 	-- 10) Planilha Excell a451
 	-- 14) Json NFe VTEX
-	IF NEW.tipo_doc IN (4, 5, 6, 7, 1, 8, 10, 14) THEN
+	-- 15) Farmix
+
+	IF NEW.tipo_doc IN (4, 5, 6, 7, 1, 8, 10, 14, 15) THEN
 
 		RAISE NOTICE 'Entrando para gravar arquivos';
 
@@ -431,7 +449,13 @@ BEGIN
 			v_dados = fpy_get_doc_vtex(NEW.doc_xml);
 			--RAISE NOTICE 'Dados: %s', v_dados;			
 		END IF;
-		
+
+		IF NEW.tipo_doc = 15 THEN 		
+			log = log || ' FARMIX';
+			r = fp_set_session('pst_tipo_especifico_importacao',LEFT(log,50));
+			v_dados = fpy_get_doc_farmix(NEW.doc_xml);
+			--RAISE NOTICE 'Dados: %s', v_dados;			
+		END IF;		
 		
 		--RAISE NOTICE '%', v_dados;
 		v_participantes = (v_dados->>'participantes')::json;
@@ -489,6 +513,7 @@ BEGIN
 		
 		--RAISE NOTICE '%', v_dados;
 		v_produtos = (v_dados->>'produtos')::json;
+				
 		t = json_array_length(v_produtos)-1;
 		
 		FOR i IN 0..t LOOP	

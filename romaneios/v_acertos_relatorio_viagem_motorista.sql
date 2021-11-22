@@ -1,8 +1,8 @@
 -- View: public.v_acertos_relatorio_viagem
-
---SELECT * FROM v_acertos_relatorio_viagem
+-- SELECT * FROM v_acertos_relatorio_viagem ORDER BY data_referencia DESC LIMIT 1
+-- SELECT * FROM v_acertos_relatorio_viagem
 -- DROP VIEW public.v_acertos_relatorio_viagem;
--- SELECT * FROM v_acertos_relatorio_viagem WHERE nr_documento = '0010010000765'
+-- SELECT * FROM v_acertos_relatorio_viagem WHERE nr_documento = '0010030000004'
 
 CREATE OR REPLACE VIEW public.v_acertos_relatorio_viagem AS 
  SELECT ((scr_romaneios.tipo_romaneio::character(3)::text || btrim(to_char(scr_romaneios.id_romaneio, '0000000000'::text))))::character(11) AS chave,

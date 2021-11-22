@@ -105,7 +105,11 @@ if xml_nfe['nfeProc']['NFe']['infNFe'].get('entrega') is None:
 
     p['part_logradouro'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest']['xLgr'].replace('&','e')
     p['part_numero'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest']['nro']
-    p['part_bairro'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest']['xBairro'].replace('&','e')
+    try:
+        p['part_bairro'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest']['xBairro'].replace('&','e')
+    except:
+        p['part_bairro'] = 'SN'
+        
     p['part_cod_mun'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest']['cMun']
     dest_cod_mun = p['part_cod_mun']
     p['part_uf'] = xml_nfe['nfeProc']['NFe']['infNFe']['dest']['enderDest']['UF']

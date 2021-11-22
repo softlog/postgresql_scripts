@@ -25,4 +25,4 @@ UNION
      LEFT JOIN scr_conhecimento_notas_fiscais nf ON c.id_conhecimento = nf.id_conhecimento;
 
 ALTER TABLE public.v_notfis_333_v31
-  OWNER TO softlog_bsb;
+  OWNER TO softlog_dfreire;

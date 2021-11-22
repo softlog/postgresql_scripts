@@ -1,0 +1,1 @@
+ALTER TABLE msg_edi_lista_chaves ADD COLUMN data_registro timestamp DEFAULT NOW();

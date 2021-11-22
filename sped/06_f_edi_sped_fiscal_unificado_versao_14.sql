@@ -829,7 +829,7 @@ BEGIN
 			data_entrada >= sped_fiscal.inicio
 			AND data_entrada <= sped_fiscal.fim
 			AND numero_compra IS NOT NULL
-			AND modelo_doc_fiscal NOT IN ('00','06','10', '07', '57', '21', '22','28','29','02')
+			AND modelo_doc_fiscal NOT IN ('00','06','10', '07', '57', '21', '22','28','29','02','2D')
 		ORDER BY 
 			numero_compra 
 

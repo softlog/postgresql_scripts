@@ -1,0 +1,1 @@
+ALTER TABLE edi_tms_docs ADD COLUMN funcao_nome_arquivo text;

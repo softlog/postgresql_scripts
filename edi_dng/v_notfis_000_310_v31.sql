@@ -13,6 +13,6 @@ CREATE OR REPLACE VIEW public.v_notfis_000_310_v31 AS
      LEFT JOIN cidades c ON c.id_cidade::numeric = f.id_cidade;
 
 ALTER TABLE public.v_notfis_000_310_v31
-  OWNER TO softlog_bsb;
+  OWNER TO softlog_dfreire;
 
 

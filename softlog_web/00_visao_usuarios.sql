@@ -27,7 +27,8 @@ SELECT
         null::timestamp as changed_on,
         null::integer as created_by_fk,
         null::integer as changed_by_fk, 
-        1::integer as acesso_raiz
+        1::integer as acesso_raiz,
+        null::character(14) as cnpj_cliente
 FROM 
 	usuarios
 UNION 
@@ -55,11 +56,13 @@ SELECT
         null::timestamp as changed_on,
         null::integer as created_by_fk,
         null::integer as changed_by_fk,
-        acesso_raiz
+        acesso_raiz,
+        cnpj_cliente
 FROM 
 	webtrack_login;
 
 
 --SELECT * FROM webtrack_login ORDER BY login_name
+--SELECT * FROM webtrack_login LIMIT 10
 
-	--SELECT * FROM v_usuarios ORDER BY login_name
+--SELECT * FROM v_usuarios ORDER BY login_name

@@ -1,4 +1,5 @@
 
+
 CREATE OR REPLACE FUNCTION fd_valida_cnpj_cpf(v_string text)
   RETURNS integer AS
 $BODY$

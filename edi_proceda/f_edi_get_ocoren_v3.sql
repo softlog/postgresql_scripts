@@ -1,6 +1,6 @@
 -- Function: public.f_edi_get_ocoren_v3(integer[])
 
--- SELECT f_edi_get_ocoren_v3('{2166}'::integer[])
+-- SELECT f_edi_get_ocoren_v3('{1518289,1518232,1497946,1525733,1496741,1529909,1519941,1529910,1519942}'::integer[])
 -- SELECT f_edi_
 -- DROP FUNCTION public.f_edi_get_ocoren_v3(integer[]);
 CREATE OR REPLACE FUNCTION public.f_edi_get_ocoren_v3(lst_conhecimentos integer[])
@@ -157,14 +157,15 @@ BEGIN
 		LEFT JOIN scr_ocorrencia_obs_edi obs	
 			ON nf.id_ocorrencia_obs = obs.codigo_edi_obs 
 		LEFT JOIN filial f 
-			ON f.codigo_empresa = COALESCE(c.empresa_responsavel,nf.empresa_emitente) AND f.codigo_filial = nf.filial_emitente
+			ON	f.codigo_empresa = COALESCE(c.empresa_responsavel,nf.empresa_emitente) 
+				AND f.codigo_filial = COALESCE(c.filial_responsavel, nf.filial_emitente)
 		LEFT JOIN empresa 
 			ON empresa.codigo_empresa = COALESCE(c.empresa_responsavel,nf.empresa_emitente)
 		LEFT JOIN scr_conhecimento con
 			ON con.id_conhecimento = nf.id_conhecimento
 		LEFT JOIN cliente_edi_ocoren_depara oc
 			ON oc.codigo_cliente = nf.remetente_id
-				AND nf.id_ocorrencia = oc.id_ocorrencia_softlog
+				AND nfo.id_ocorrencia = oc.id_ocorrencia_softlog
 	WHERE 		
 		--ARRAY[nf.id_conhecimento_notas_fiscais] <@ ARRAY[12583,12682,12683,12684,12686,12818,12869]
 		--ARRAY[c.id_conhecimento] <@ lst_conhecimentos
@@ -175,7 +176,7 @@ BEGIN
 				nfo.id_ocorrencia_nf IN (' || v_id || ')
 				--AND o.codigo_edi <> 0
 				AND CASE WHEN current_database() NOT IN (''softlog_assislog'') 
-					 THEN o.ocorrencia_coleta = 0 --AND o.publica = 1
+					 THEN o.ocorrencia_coleta = 0 AND o.publica = 1
 					 ELSE 1=1
 				END					
 			ELSE
@@ -194,7 +195,7 @@ BEGIN
 					t.ident,					
 					t.filial_cnpj as filial_cnpj,
 					t.remetente_cnpj,
-					CASE WHEN t.serie_nota_fiscal = '''' THEN ''0'' ELSE t.serie_nota_fiscal END as serie_nota_fiscal,
+					CASE WHEN trim(t.serie_nota_fiscal) = '''' THEN ''0'' ELSE t.serie_nota_fiscal END as serie_nota_fiscal,
 					lpad(trim(t.serie_nota_fiscal),3,''0'') as serie_nota_fiscal_z,
 					t.numero_nota_fiscal,
 					t.numero_nota_fiscal_9,
@@ -277,6 +278,8 @@ BEGIN
 						''341''::text as ident,
 						t.transportadora as razao_social,
 						t.transportadora_cnpj as cnpj,
+						t.filial_cnpj,
+						t.filial_emissora,						
 						t.espaco				
 					FROM
 						t,
@@ -284,12 +287,16 @@ BEGIN
 					GROUP BY 
 						t.transportadora,
 						t.transportadora_cnpj,		
+						t.filial_cnpj,
+						t.filial_emissora,
 						t.espaco
 				)
 				SELECT 
 					ident,
 					razao_social,
 					cnpj,
+					filial_cnpj,
+					filial_emissora,
 					espaco,
 					reg_342.reg_342
 				FROM 
@@ -316,7 +323,7 @@ BEGIN
 
 	
 
-	RAISE NOTICE '%', str_sql;
+	--RAISE NOTICE '%', str_sql;
 	OPEN v_cursor FOR EXECUTE str_sql;
 	
 	FETCH v_cursor INTO v_resultado;

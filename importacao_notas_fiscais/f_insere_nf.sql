@@ -816,6 +816,7 @@ BEGIN
 	IF vTermo IS NOT NULL THEN 
 		vCodigoDescarte = fpy_extrai_valor(v_inf,TRIM(vTermo));
 		IF vCodigoDescarte IS NOT NULL THEN 
+		
 				INSERT INTO scr_notas_fiscais_nao_imp (
 					dados_parametros,
 					numero_nota_fiscal,
@@ -901,7 +902,8 @@ BEGIN
 	SELECT 	id_filial, codigo_empresa, codigo_filial
 	INTO	vCodigoTransportador, v_empresa_xml, v_filial_xml
 	FROM	filial
-	WHERE 	filial.cnpj = v_transportador_cnpj_cpf;
+	WHERE 	filial.cnpj = v_transportador_cnpj_cpf AND filial.tipo_unidade IN (1,2);
+	
 
 	BEGIN 
 		v_usa_filial_xml = (vParametros->>'USAR_FILIAL_XML')::integer;		
@@ -1250,10 +1252,13 @@ BEGIN
 	IF v_forca_fob = 1 THEN 
 		v_modo_frete = '1';
 	END IF;
+
+	--SELECT * FROM fd_dados_tabela('scr_notas_fiscais_imp') ORDER BY 4
+
 	
-	--RAISE NOTICE 'Modo Frete %', v_modo_frete;
+	RAISE NOTICE 'Modo Frete %', v_modo_frete;
 	IF v_modo_frete IN ('0','2','9')  THEN 
-		--RAISE NOTICE 'CIF';
+		RAISE NOTICE 'CIF';
 		vCifFob = 1;
 		
 		SELECT	pag.codigo_cliente,
@@ -1268,7 +1273,7 @@ BEGIN
 		WHERE	
 			c.codigo_cliente = vCodigoRemetente;
 	ELSE
-		--RAISE NOTICE 'FOB';
+		RAISE NOTICE 'FOB';
 		vCifFob = 2;
 
 		SELECT	pag.codigo_cliente,
@@ -1606,7 +1611,7 @@ BEGIN
 			COALESCE(v_modal,1), --6
 			vTipoCtrcCte, -- 7
 			v_tipo_transporte_par, --8
-			vNaturezaCarga, --9
+			LEFT(vNaturezaCarga,30), --9
 			vEmpresa, --12
 			vFilial, --13
 			vCifFob, --14
@@ -1644,7 +1649,7 @@ BEGIN
 			v_placa_reboque2, --60
 			LEFT(vCodInternoFrete,13), --(61)
 			CASE WHEN v_is_tonelada THEN COALESCE(v_peso_liquido,0.0000) * 1000 ELSE v_peso_liquido END, --(62)
-			v_especie_mercadoria, --(63)
+			LEFT(v_especie_mercadoria,30), --(63)
 			v_cod_vendedor, --(64)
 			v_cobrar_tx_coleta, --65
 			v_cobrar_tx_dc, --66

@@ -21,7 +21,7 @@ SELECT * FROM scr_relatorio_viagem
 */
 
 
-CREATE OR REPLACE FUNCTION f_relatorio_viagem_automatico(p_cod_empresa text, p_cod_filial text, p_chave text, por_veiculo integer, p_placa_veiculo text,  p_data_inicio date, p_data_fim date, p_valor_pagar numeric(12,2), qt_diarias integer, p_lista_romaneios text)
+CREATE OR REPLACE FUNCTION f_relatorio_viagem_automatico(p_cod_empresa text, p_cod_filial text, p_chave text, por_veiculo integer, p_placa_veiculo text,  p_data_inicio date, p_data_fim date, p_valor_pagar numeric(12,2), qt_diarias integer, p_lista_romaneios text, p_id_centro_custo integer)
   RETURNS text AS
 $BODY$
 DECLARE
@@ -53,7 +53,7 @@ BEGIN
 		id_fornecedor = p_chave::integer;
 
 
-
+	
 	OPEN vCursor FOR
 	INSERT INTO PUBLIC.scr_relatorio_viagem (
 		categoria_acerto
@@ -67,6 +67,8 @@ BEGIN
 		,historico
 		,vl_servico_for	
 		,qtde_diarias
+		,parcelas
+		,periodicidade
 	) VALUES (
 		v_categoria_acerto
 		,p_cod_filial
@@ -79,6 +81,8 @@ BEGIN
 		,'ACERTO RELATÓRIO DE VIAGEM Nº' || v_numero_relatorio
 		,p_valor_pagar
 		,qt_diarias
+		,1
+		,1
 	)
 	RETURNING id_relatorio_viagem;
 
@@ -183,7 +187,7 @@ BEGIN
 
 	CLOSE vCursor;
 	
-	PERFORM f_lanca_cc_relatorio_viagem(v_id_relatorio_viagem,v_valor_pagar,NULL);
+	PERFORM f_lanca_cc_relatorio_viagem(v_id_relatorio_viagem,v_valor_pagar,p_id_centro_custo);
 
 
 	PERFORM f_calc_parc_relatorio_viagem(v_id_relatorio_viagem, 1);

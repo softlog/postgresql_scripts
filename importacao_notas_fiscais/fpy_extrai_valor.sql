@@ -77,6 +77,10 @@ Motorista:(.+?)/
 
 SELECT fpy_extrai_valor('PEDIDO 42755206 VOLUME 0,062700M3 OPERACAO CONTRATADA NO AMBITO DO COMERCIO ELETRONICO OU DO TELEMARKETING.  - Consulte o pedido em: http://bit.ly/1sapJlE','PEDIDO ([0-9]+?) ')
 
+SELECT fpy_extrai_valor('(Documento - 53210609053134000145550050002645611862734140) já esta em outra rota (35251 - 2021-06-07 - 07759006721) ou está finalizado. Importação cancelada!'
+,'rota \((.+)\)')
+
+
 */
 
 --ALTER FUNCTION fpy_extrai_valor(texto text, termo text) OWNER TO softlog_solar;

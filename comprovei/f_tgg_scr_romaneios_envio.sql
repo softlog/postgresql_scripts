@@ -12,6 +12,7 @@ DECLARE
 	has_itrack integer;
 	has_vuupt integer;
 	has_notrexo integer;
+	has_alper integer;
 	vEmpresa text;
 	vEmitido integer;
 	vExiste integer;
@@ -20,11 +21,13 @@ BEGIN
 
 	vEmpresa = fp_get_session('pst_cod_empresa');
 	RAISE NOTICE 'EMPRESA %s',vEmpresa;
+	
 	SELECT 	(COALESCE(valor_parametro,'0'))::integer
 	INTO 	has_comprovei
 	FROM 	parametros 
 	WHERE 	cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_INTEGRACAO_COMPROVEI';	 
 
+	RAISE NOTICE 'Comprovei %', has_comprovei;
 
 	SELECT 	(COALESCE(valor_parametro,'0'))::integer
 	INTO 	has_itrack
@@ -41,9 +44,17 @@ BEGIN
 	FROM 	parametros 
 	WHERE 	cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_INTEGRACAO_NOTREXO';
 
-	-- Tabela de scr_romaneios 
-	IF TG_TABLE_NAME = 'scr_romaneios' AND TG_OP = 'UPDATE' AND has_comprovei = 1 THEN 
+	SELECT 	(COALESCE(valor_parametro,'0'))::integer
+	INTO 	has_n
+	FROM 	parametros 
+	WHERE 	cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_INTEGRACAO_ALPER';
 
+
+
+	-- Tabela de scr_romaneios 
+	IF TG_TABLE_NAME = 'scr_romaneios' AND TG_OP = 'UPDATE' AND COALESCE(has_alper,0) = 1   THEN 
+
+		RAISE NOTICE 'Integracao Alper';
 		--RAISE NOTICE 'Scr Romaneios';
 		vExecuta = true;
 		IF COALESCE(NEW.emitido,0) =  COALESCE(OLD.emitido,0) AND OLD.emitido = 1 THEN 
@@ -52,6 +63,59 @@ BEGIN
 
 		IF NEW.emitido = 0 THEN 
 			vExecuta = false;
+		END IF;
+
+		IF NEW.dispara_integracao = 1 THEN
+			vExecuta = true;
+		END IF;
+
+		IF vExecuta THEN 
+			RAISE NOTICE 'Tem notificacao';
+
+			SELECT 
+				string_agg(cliente.cnpj_cpf,',') as lst_cnpj
+			INTO 
+				v_lista_cnpj
+			FROM 		
+				scr_romaneios r
+				LEFT JOIN scr_romaneio_nf rnf
+					ON rnf.id_romaneio = r.id_romaneio
+				LEFT JOIN scr_notas_fiscais_imp nf
+					ON rnf.id_nota_fiscal_imp = nf.id_nota_fiscal_imp
+				RIGHT JOIN msg_subscricao sub
+					ON sub.codigo_cliente = nf.remetente_id AND sub.id_notificacao = 1000
+				LEFT JOIN cliente
+					ON cliente.codigo_cliente = sub.codigo_cliente
+			WHERE
+				r.id_romaneio = NEW.id_romaneio
+				AND sub.ativo = 1;
+
+			
+			
+			IF v_lista_cnpj IS NOT NULL THEN 
+				--Grava as informações na Fila
+				INSERT INTO fila_envio_romaneios(id_notificacao, id_romaneio, cnpjs_subscritos)
+				VALUES (1000, NEW.id_romaneio, v_lista_cnpj);
+			END IF;		 
+		END IF;
+	END IF; 
+
+	-- Tabela de scr_romaneios 
+	IF TG_TABLE_NAME = 'scr_romaneios' AND TG_OP = 'UPDATE' AND COALESCE(has_comprovei,0) = 1   THEN 
+
+		RAISE NOTICE 'Integracao Comprovei';
+		--RAISE NOTICE 'Scr Romaneios';
+		vExecuta = true;
+		IF COALESCE(NEW.emitido,0) =  COALESCE(OLD.emitido,0) AND OLD.emitido = 1 THEN 
+			vExecuta = false;
+		END IF;
+
+		IF NEW.emitido = 0 THEN 
+			vExecuta = false;
+		END IF;
+
+		IF NEW.dispara_integracao = 1 THEN
+			vExecuta = true;
 		END IF;
 
 		IF vExecuta THEN 
@@ -86,7 +150,7 @@ BEGIN
 	END IF; 
 	
 	
-	IF TG_TABLE_NAME = 'scr_romaneios' AND TG_OP = 'UPDATE' AND NEW.tipo_destino = 'D' AND has_itrack = 1 THEN 
+	IF TG_TABLE_NAME = 'scr_romaneios' AND TG_OP = 'UPDATE' AND NEW.tipo_destino = 'D' AND COALESCE(has_itrack,0) = 1 THEN 
 
 	
 		RAISE NOTICE 'Verifica ITrack';
@@ -144,7 +208,7 @@ BEGIN
 	--RAISE NOTICE 'Tem VUUPT %', has_vuupt;
 	--RAISE NOTICE 'Redespacho %', COALESCE(NEW.id_transportador_redespacho,0);
 	
-	IF TG_TABLE_NAME = 'scr_romaneios' AND TG_OP = 'UPDATE' AND COALESCE(NEW.id_transportador_redespacho,0) = 0 AND has_vuupt = 1 THEN 
+	IF TG_TABLE_NAME = 'scr_romaneios' AND TG_OP = 'UPDATE' AND COALESCE(NEW.id_transportador_redespacho,0) = 0 AND COALESCE(has_vuupt,0) = 1 THEN 
 
 	
 		RAISE NOTICE 'INTEGRACAO VUUPT';
@@ -239,7 +303,7 @@ BEGIN
  		END;			
 	END IF;     
 
-	IF TG_TABLE_NAME = 'scr_notas_fiscais_imp' AND TG_OP = 'UPDATE' AND COALESCE(NEW.id_transportador_redespacho,0) = 0 AND has_vuupt = 1 THEN 
+	IF TG_TABLE_NAME = 'scr_notas_fiscais_imp' AND TG_OP = 'UPDATE' AND COALESCE(NEW.id_transportador_redespacho,0) = 0 AND COALESCE(has_vuupt,0) = 1 THEN 
 
 		
 			RAISE NOTICE 'INTEGRACAO VUUPT';
@@ -270,7 +334,7 @@ BEGIN
 	END IF; 
 
 	RAISE NOTICE 'Tem NOTREXO %', has_notrexo;			
-	IF TG_TABLE_NAME = 'scr_romaneios' AND TG_OP = 'UPDATE' AND has_notrexo = 1 THEN 
+	IF TG_TABLE_NAME = 'scr_romaneios' AND TG_OP = 'UPDATE' AND COALESCE(has_notrexo,0) = 1 THEN 
 
 	
 		RAISE NOTICE 'INTEGRACAO NOTREXO';
@@ -331,5 +395,4 @@ END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
-ALTER FUNCTION public.f_tgg_scr_romaneios_envio()
-  OWNER TO softlog_medilog;
+

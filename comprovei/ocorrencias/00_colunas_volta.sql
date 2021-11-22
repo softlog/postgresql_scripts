@@ -1,0 +1,1 @@
+ALTER TABLE edi_ocorrencias_comprovei ADD COLUMN softlog_p_comprovei integer DEFAULT 0;

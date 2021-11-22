@@ -1,5 +1,5 @@
 /*
-SELECT * FROM  f_get_url_canhoto(4343,1)
+SELECT * FROM  f_get_url_canhoto(1217,3)
 SELECT id_nota_fiscal_imp, chave_nfe, * FROM edi_ocorrencias_entrega WHERE id_nota_fiscal_imp IS NOT NULL ORDER BY 1 DESC LIMIT 100
 */
 
@@ -59,7 +59,7 @@ BEGIN
 		SELECT link_img 
 		INTO v_url		
 		FROM scr_docs_digitalizados
-		WHERE id_nota_fiscal_imp = p_id_documento;
+		WHERE id_nota_fiscal_imp = p_id_documento AND link_img IS NOT NULL;
 
 		RETURN v_url;
 		

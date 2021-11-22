@@ -1,0 +1,1 @@
+ALTER TABLE scr_relatorio_viagem ADD COLUMN flg_rateio_documentos integer DEFAULT 0;

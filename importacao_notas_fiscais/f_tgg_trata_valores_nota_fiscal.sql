@@ -1,9 +1,5 @@
 -- Function: public.f_tgg_trata_valores_nota_fiscal()
-/*
-BEGIN;
-DELETE FROM scr_conhecimento WHERE data_digitacao::date = current_date;
-COMMIT;
-*/
+
 -- DROP FUNCTION public.f_tgg_trata_valores_nota_fiscal();
 
 CREATE OR REPLACE FUNCTION public.f_tgg_trata_valores_nota_fiscal()
@@ -64,10 +60,17 @@ BEGIN
 	IF NEW.id_pre_fatura_entrega IS NULL AND NEW.cod_interno_frete IS NOT NULL THEN 
 		NEW.vl_frete_peso = 0.00;
 	END IF;
-	
+
+	IF TG_OP = 'UPDATE' THEN 
+		IF COALESCE(NEW.id_nota_fiscal_redespachador,-1) = 0 AND OLD.id_nota_fiscal_redespachador IS NOT NULL THEN 
+			NEW.id_nota_fiscal_redespachador = OLD.id_nota_fiscal_redespachador;			
+		END IF;
+
+	END IF;
 	RETURN NEW;
 END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
-
+ALTER FUNCTION public.f_tgg_trata_valores_nota_fiscal()
+  OWNER TO softlog_dng;

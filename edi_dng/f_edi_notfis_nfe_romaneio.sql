@@ -1,5 +1,6 @@
 -- Function: public.f_edi_notfis_nfe_romaneio(integer)
-
+-- SELECT id_romaneio FROM scr_romaneios WHERE numero_romaneio = '0010010001812'
+-- SELECT f_edi_notfis_nfe_romaneio(2152)
 -- DROP FUNCTION public.f_edi_notfis_nfe_romaneio(integer);
 
 CREATE OR REPLACE FUNCTION public.f_edi_notfis_nfe_romaneio(p_id_romaneio integer)
@@ -23,6 +24,7 @@ BEGIN
 		id_romaneio = p_id_romaneio;
 		
 	WITH t AS (
+	
 		SELECT 				
 			r311.registro || 
 			r312.registro || 
@@ -40,6 +42,7 @@ BEGIN
 			LEFT JOIN v_notfis_317_v31 r317 ON r317.codigo_filial = r313.filial_emitente AND 
 							r317.codigo_empresa = r313.empresa_emitente
 		WHERE r313.id_romaneio = p_id_romaneio
+		
 	)
 	SELECT 
 		string_agg(t.registros,'')
