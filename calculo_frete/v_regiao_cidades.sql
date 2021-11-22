@@ -18,7 +18,9 @@ CREATE OR REPLACE VIEW public.v_regiao_cidades AS
     r.id_regiao AS id_setor,
     r.descricao AS regiao,
     r.descricao AS setor,
-    NULL::character(50) AS bairro
+    NULL::character(50) AS bairro,
+    rc.faixa_cep_ini,
+    rc.faixa_cep_fim
 FROM regiao_cidades rc
      LEFT JOIN regiao r ON r.id_regiao = rc.id_regiao;
 
