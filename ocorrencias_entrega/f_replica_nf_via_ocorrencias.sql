@@ -1,8 +1,24 @@
 -- Function: public.f_replica_nf_via_ocorrencia(integer, integer)
---SELECT id_nota_fiscal_imp FROM scr_notas_fiscais_imp WHERE numero_nota_fiscal::integer = 121197                                                   
+/*
+SELECT id_nota_fiscal_imp, tipo_transporte, remetente_id, volume_presumido, peso_presumido FROM scr_notas_fiscais_imp 
+WHERE numero_nota_fiscal::integer = 122108 ORDER BY 1 
+
+WITH 
+	
+	id_nota_fiscal_imp 
+	
+
+SELECT * FROM scr_notas_fiscais_imp_log_atividades WHERE id_nota_fiscal_imp = 47965
+
+
+
+*/
 -- DROP FUNCTION public.f_replica_nf_via_ocorrencia(integer, integer);
---SELECT * FROM v_tipo_transporte ORDER BY 1
---SELECT f_replica_nf_via_ocorrencia(46269,3)
+-- SELECT * FROM v_tipo_transporte ORDER BY 1
+-- SELECT * FROM scr_notas_fiscais_imp LIMIT 1
+-- UPDATE scr_conhecimento SET cod_operacao_fiscal = '5353' WHERE numero_ctrc_filial = '0010010032510'
+-- SELECT f_replica_nf_via_ocorrencia(46269,3)
+
 CREATE OR REPLACE FUNCTION public.f_replica_nf_via_ocorrencia(
     p_id_nf integer,
     p_tipo_transporte integer)
@@ -54,16 +70,16 @@ BEGIN
 			nf.consumidor_final::text as nfe_ind_final,
 			trim(dest.inscricao_estadual) as nfe_ie_dest,
 			'1'::text as nfe_tp_nf,
-			nf.peso::text as nfe_peso_presumido,
+			nf.peso_presumido::text as nfe_peso_presumido,			
 			nf.peso_liquido::text as nfe_peso_liquido,
-			nf.qtd_volumes::text as nfe_volume_presumido,
+			nf.peso_presumido::text as nfe_volume_presumido,
 			nf.peso::text as nfe_peso_presumido,
 			nf.qtd_volumes::text as nfe_volume_produtos,
 			nf.valor_total_produtos::text as nfe_valor_produtos,
 			nf.peso::text as nfe_peso_produtos,						
 			r.emitido,						
-			c.chave_cte
-			,v_tipo_transporte as tipo_transporte,
+			--c.chave_cte
+			v_tipo_transporte as tipo_transporte,
 			-1::integer as id_romaneio,
 			nf.volume_cubico::text as nfe_volume_cubico
 			

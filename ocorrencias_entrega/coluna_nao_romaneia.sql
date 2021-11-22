@@ -1,0 +1,1 @@
+ALTER TABLE scr_notas_fiscais_imp ADD COLUMN nao_romaneia integer;

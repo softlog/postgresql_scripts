@@ -32,7 +32,7 @@ BEGIN
 					CASE WHEN  NEW.aplicativo_mobile::boolean THEN 'COM ' ELSE 'SEM ' END || 'INTEGRACAO SCONFIRMEI.' || chr(13) ||
 					CASE WHEN  NEW.aplicativo_sconferencia::boolean THEN 'COM ' ELSE 'SEM ' END || 'INTEGRACAO SCONFERENCIA.' || chr(13) ||
 					CASE WHEN  NEW.devolucao_direta::boolean THEN 'COM ' ELSE 'SEM ' END || 'COM GERACAO DEVOLUCAO DIRETA.' || chr(13) ||
-					CASE WHEN  NEW.id_::boolean THEN 'COM OCORRENCIA PROCEDA CODIGO ' || NEW.id_ocorrencia_proceda::text END;
+					CASE WHEN  NEW.id_ocorrencia_proceda::boolean THEN 'COM OCORRENCIA PROCEDA CODIGO ' || NEW.id_ocorrencia_proceda::text END;
 
 			v_id_ocorrencia = NEW.codigo_edi;
 			
