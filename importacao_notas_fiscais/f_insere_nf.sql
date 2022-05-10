@@ -123,6 +123,7 @@ DECLARE
 	vCodInternoFrete	text;
 	vParametros		json;
 	v_filial_responsavel    character(3);
+	v_empresa_responsavel	character(3);
 	v_cod_vendedor		text;
 	v_cobrar_tx_coleta	integer;
 	v_cobrar_tx_entrega	integer;
@@ -172,70 +173,70 @@ DECLARE
 
 BEGIN	
 
-	-- AlteraÁıes: 26/03/2015
-	-- 1 - ReconstruÁ„o do cÛdigo que captura os dados das informaÁıes da nfe.
-	-- 1 - ReconstruÁ„o do cÛdigo que captura os dados das informaÁıes da nfe.
-	-- 1.1 GravaÁ„o do cÛdigo interno de frete, recuperado na nfe do cliente.
+	-- Altera√ß√µes: 26/03/2015
+	-- 1 - Reconstru√ß√£o do c√≥digo que captura os dados das informacoes da nfe.
+	-- 1 - Reconstru√ß√£o do c√≥digo que captura os dados das informacoes da nfe.
+	-- 1.1 Grava√ß√£o do c√≥digo interno de frete, recuperado na nfe do cliente.
 	-- 1.2 Tratamento do volume_no_item presumido.
-	-- 1.3 Tratamento do fob dirigido. Quando o pagador n„o tem tabela frete, 
+	-- 1.3 Tratamento do fob dirigido. Quando o pagador nao tem tabela frete, 
 	--     pega a tabela do remetente.
 	
-	-- AlteraÁıes: 01/04/2015
-	-- 1 - CorreÁ„o da extraÁ„o do VALOR_CUBICO da inf da nfe, 
+	-- Altera√ß√µes: 01/04/2015
+	-- 1 - Corre√ß√£o da extra√ß√£o do VALOR_CUBICO da inf da nfe, 
 	--     quando retorna uma string vazia
 
-	-- AlteraÁıes: 28/04/2015
+	-- Altera√ß√µes: 28/04/2015
 	-- 1 - Verificar campo filial_responsavel do cadastro do remetente e 
 	-- 	importar a nota para a filial correta. A Pedido da Jetlog.
 
-	-- AlteraÁıes: 01/06/2015
-	-- 1 - AtualizaÁ„o de dois novos campos
+	-- Altera√ß√µes: 01/06/2015
+	-- 1 - Atualiza√ß√£o de dois novos campos
 	--	1.1 - peso_liquido
 	--	1.2 - especie_mercadoria (lista das ucom das nfes)
 
-	-- AlteraÁıes: 10/06/2015
-	-- 1 - Adicionado vari·vel para definir se usa filial respons·vel na
-	--	importaÁ„o da nota.
+	-- Altera√ß√µes: 10/06/2015
+	-- 1 - Adicionado vari√°vel para definir se usa filial respons√°vel na
+	--	importa√ß√£o da nota.
 
-	-- AlteraÁıes: 28/07/2015
-	-- 1 - ExtraÁ„o do cÛdigo do vendedor
+	-- Altera√ß√µes: 28/07/2015
+	-- 1 - Extra√ß√£o do c√≥digo do vendedor
 
-	-- AlteraÁıes: 14/09/2015
-	-- 1 - Setar informaÁıes sobre parametros de taxas de coletas e entregas
+	-- Altera√ß√µes: 14/09/2015
+	-- 1 - Setar informa√ß√µes sobre parametros de taxas de coletas e entregas
 
-	-- AlteraÁıes: 30/09/2015	
-	-- 1 - Identificar se o tipo de transporte È TransferÍncia
+	-- Altera√ß√µes: 30/09/2015	
+	-- 1 - Identificar se o tipo de transporte √© Transfer√™ncia
 
 	-- Alteracoes: 15/10/2015
-	-- 1 - ExtraÁ„o do cÛdigo de segmento para gravar natureza da carga correspondente
+	-- 1 - Extra√ß√£o do c√≥digo de segmento para gravar natureza da carga correspondente
 
 
 	-- Alteracoes: 28/01/2016
-	-- 1 - ExtraÁ„o de informaÁ„o da nfe das tags infFinal e indIEDest 
+	-- 1 - Extra√ß√£o de informa√ß√£o da nfe das tags infFinal e indIEDest 
 	-- 2 - Determinacao do Calculo de Difal v_contribuinte e v_calcula_difal
 
 	-- Alteracoes: 13/03/2016
 	-- 1 - Correcao da extracao do peso liquido e peso bruto 
 	--    quando o mesmo vem em mais de um item vol da nfe
-	-- 2 - Extrai informacao para saber se a unidade do produto È indicado por tonelada
+	-- 2 - Extrai informacao para saber se a unidade do produto √© indicado por tonelada
 
 	-- Alteracoes: 08/04/2016
-	-- 1 - Invers„o de Remetente quando for nota de entrada
+	-- 1 - Invers√£o de Remetente quando for nota de entrada
 
 	-- Alteracoes: 11/07/2016
-	-- 1 - ExtraÁ„o da tag de informaÁıes dados referentes a quebra de captcha 
-	---     no processo de importaÁ„o autom·tica
+	-- 1 - Extra√ß√£o da tag de informa√ß√µes dados referentes a quebra de captcha 
+	---     no processo de importa√ß√£o autom√°tica
 
 	-- Alteracoes: 29/07/2016
-	-- 1 - Definir o peso lÌquido com o peso bruto quando o peso lÌquido estiver vazio e o bruto n„o.
-	-- 2 - Definir o peso bruto com o peso lÌquido quando o peso lÌquido estiver vazio e o bruto n„o.
+	-- 1 - Definir o peso l√≠quido com o peso bruto quando o peso l√≠quido estiver vazio e o bruto n√£o.
+	-- 2 - Definir o peso bruto com o peso l√≠quido quando o peso l√≠quido estiver vazio e o bruto n√£o.
 
 	-- Alteracoes: 04/08/2016
 	-- 1 - Definir tabela de redespacho caso houver
 	-- 2 - Setar cidade origem do redespacho
 
 	-- Alteracoes: 07/10/2016
-	-- 1 - InserÁ„o de dados do consignatario da carga para redespacho
+	-- 1 - Inser√ß√£o de dados do consignatario da carga para redespacho
 
 
 	-- Alteracoes: 25/10/2016	
@@ -246,18 +247,18 @@ BEGIN
 	-- 1 - Acrescentado chave_cte nos parametros de entrada
 
 	-- Alteracoes: 16/11/2016
-	-- 1 - Importa nota duplicada se esta for do tipo reentrega ou devoluÁ„o no parceiro
+	-- 1 - Importa nota duplicada se esta for do tipo reentrega ou devolu√ß√£o no parceiro
 
 
 	-- Alteracoes: 28/11/2016
-	-- 1 - ImplementaÁ„o de parametro forca_importacao, se for 1, importa mesmo que a nota j· exista
-	-- 2 - Grava log de nota n„o importada
+	-- 1 - Implementa√ß√£o de parametro forca_importacao, se for 1, importa mesmo que a nota j√° exista
+	-- 2 - Grava log de nota n√£o importada
 
 	-- Alteracoes: 04/04/2017
-	-- 1 - Verificar nos parametros de cliente se È para usar apenas uma tag de volumes.
+	-- 1 - Verificar nos parametros de cliente se √© para usar apenas uma tag de volumes.
 
 	-- Alteracoes: 19/04/2017
-	-- 1 - Tratamento de erros dos valores numÈricos
+	-- 1 - Tratamento de erros dos valores num√©ricos
 
 	-- Alteracoes: 24/05/2017
 	-- 1 - Seta Dificuldade de Entrega para clientes associados a fornecedores. 
@@ -270,7 +271,7 @@ BEGIN
 	-- 1 - Importacao da data de emissao como timestamp
 	-- 2 - Extracao da tag de informacoes Natureza da Carga
 	-- 3 - Leitura do Parametro do Cliente Tipo Documento
-	-- 4 - ExtraÁ„o da tag de cnpj do transportador
+	-- 4 - Extra√ß√£o da tag de cnpj do transportador
 	-- 5 - Leitura do parametro do Cliente Cidade Origem Calculo
 
 	-- Alteracaoes: 11/09/2017
@@ -280,10 +281,10 @@ BEGIN
 	-- 1 - Cria uma conta financeira para o remetente
 
 	-- Alteracaoes: 25/10/2017
-	-- 1 - CorreÁ„o do modo de frete fob, de 2 para 1
+	-- 1 - Corre√ß√£o do modo de frete fob, de 2 para 1
 
 	-- Alteracoes: 30/10/2017
-	-- 1 - Tratamento de erro, quando violar regra de n„o duplicar a nota
+	-- 1 - Tratamento de erro, quando violar regra de n√£o duplicar a nota
 
 	-- Alteracoes: 09/01/2018
 	-- 1 - Alteracao da precisao volume cubico
@@ -292,10 +293,10 @@ BEGIN
 	-- 4 - Importacao do numero de romaneio polishop
 
 	-- Alteracoes: 03/07/2018
-	-- 1 - Leitura de parametro no Destinatario, para ver se ele È pagador
+	-- 1 - Leitura de parametro no Destinatario, para ver se ele √© pagador
 
 	-- Alteracoes: 17/08/2018
-	-- 1 - Coleta de campos de integraÁ„o Softlog. id_conhecimento_notas_fiscais, id_conhecimento,
+	-- 1 - Coleta de campos de integra√ß√£o Softlog. id_conhecimento_notas_fiscais, id_conhecimento,
 	--     id_nota_fiscal_imp, codigo_integracao e codigo_parceiro_softlog
 
 	-- Alteracoes: 14/12/2018
@@ -317,12 +318,12 @@ BEGIN
 	-- 1 - Valor Padrao para Modal - Valor 1
 
 	-- Alteracoes: 19/09/2019
-	-- A partir de agora, estas observaÁıes estar„o no controle de vers„o do GIT.
+	-- A partir de agora, estas observa√ß√µes estar√£o no controle de vers√£o do GIT.
 	
 
 	
 ------------------------------------------------------------------------------------------------------------------
---                             DESERIALIZA«√O dos dados de estrutura json	
+--                             DESERIALIZACAO dos dados de estrutura json	
 ------------------------------------------------------------------------------------------------------------------	
 	--RAISE NOTICE 'Dados Nf: %', dadosNf;
 	
@@ -333,6 +334,7 @@ BEGIN
 	v_dest_cnpj_cpf		= dadosNf->>'nfe_dest_cnpj_cpf';
 	v_dest_cod_mun		= dadosNf->>'nfe_dest_cod_mun';
 	v_transportador_cnpj_cpf= dadosNf->>'nfe_transportador_cnpj_cpf';
+	--RAISE NOTICE 'Dados NF %', dadosNf;
 	v_data_emissao		= dadosNf->>'nfe_data_emissao';
 	v_data_emissao_hr	= COALESCE((dadosNf->>'nfe_data_emissao_hr')::text,NULL)::timestamp;
 	v_previsao_entrega	= COALESCE((dadosNf->>'nfe_previsao_entrega')::text,NULL)::date;
@@ -465,9 +467,7 @@ BEGIN
 	vModuloCte 	= fp_get_session('pst_modulo_cte');
 	vLogin		= fp_get_session('pst_login');
 	vUsuario	= fp_get_session('pst_usuario');
-	v_modal		= fp_get_session('pst_modal');
-
-		 	
+	v_modal		= fp_get_session('pst_modal');	 	
 
 
 ------------------------------------------------------------------------------------------------------------------
@@ -489,19 +489,23 @@ BEGIN
 		SELECT count(*)
 		INTO   v_forca_importacao
 		FROM   filial
-		WHERE  cnpj = v_pagador_cnpj_cpf;
+		WHERE  cnpj = v_pagador_cnpj_cpf AND filial.tipo_unidade IN (1,2) AND filial.ativa = 1;
 
 		IF v_forca_importacao > 1 THEN 
 			v_forca_importacao = 1;
 		END IF;
 	END IF;
 
+	--SELECT * FROM filial WHERE cnpj= '28287523000180'
+
 	IF v_chave_nfe = '' THEN 
 		v_chave_nfe = NULL;
 	END IF;
-	
+
+	--RAISE NOTICE 'Verifica se ja existe**************** %, %, % --- Forca Importacao %', v_pagador_cnpj_cpf,ltrim(v_serie,'0'), v_numero_doc::integer, v_forca_importacao;
 	IF v_tipo_transporte_par NOT IN (2,3) AND v_forca_importacao = 0 THEN 
 
+		
 		
 		IF v_tp_nf = 0 THEN
 			SELECT 	codigo_cliente
@@ -516,7 +520,8 @@ BEGIN
 		END IF;
 
 
-		--Verifica quantos conhecimentos n„o cancelados existem para a nota
+		
+		--Verifica quantos conhecimentos n√£o cancelados existem para a nota
 		IF v_chave_nfe IS NULL THEN 
 				
 			SELECT 
@@ -545,11 +550,13 @@ BEGIN
 				AND c.tipo_documento IN (1,2)
 				AND nf.chave_nfe = v_chave_nfe;	
 		END IF;
-			
+
+		---Se ja existe conhecimento com esta Nota grava na tabela de nao importadas	
 		IF vExiste IS NOT NULL THEN 
 			
 			IF vExiste > 0 THEN 
-				RAISE NOTICE 'J· existe conhecimento com a chave desta NFe. %',v_chave_cte;
+			
+				RAISE NOTICE 'Ja existe conhecimento com a chave desta NFe. %',v_chave_nfe;
 				INSERT INTO scr_notas_fiscais_nao_imp (
 					dados_parametros,
 					numero_nota_fiscal,
@@ -561,41 +568,64 @@ BEGIN
 					v_numero_doc,
 					v_serie,					
 					vCodigoCliente,
-					'J· existe conhecimento com a chave desta NFe.'
-				);			
+					'Ja existe conhecimento com a chave desta NFe.'
+				);
+							
 				RETURN 0;
 			END IF;
 		END IF;
+		
 
-
-		-- Verifica se a nota j· n„o est· importada
+		-- Verifica se a nota ja nao esta no banco de dados
 		BEGIN 
-			--RAISE NOTICE 'Remetente %', vCodigoRemetente;
-			--RAISE NOTICE 'Serie %', ltrim(v_serie,'0');
-			--RAISE NOTICE 'Nota %', v_numero_doc::integer;
-			SELECT	
-				COUNT(*) as qt		
-			INTO 	
-				vExiste
-			FROM 
-				scr_notas_fiscais_imp nf
-			WHERE 
-				nf.id_conhecimento IS NULL
-				--AND nf.chave_nfe = v_chave_nfe;	
-	-- 			AND ltrim(nf.numero_nota_fiscal,'0') = ltrim(v_numero_doc,'0')
-	-- 			AND ltrim(nf.serie_nota_fiscal,'0')  = ltrim(v_serie,'0')
-				AND nf.numero_nota_fiscal::integer = v_numero_doc::integer
-				AND ltrim(nf.serie_nota_fiscal,'0')  = ltrim(v_serie,'0')
-				AND nf.remetente_id = vCodigoCliente;
+
+			-- RAISE NOTICE 'Remetente %', vCodigoRemetente;
+-- 			RAISE NOTICE 'Serie %', ltrim(v_serie,'0');
+-- 			RAISE NOTICE 'Nota %', v_numero_doc::integer;
+-- 			RAISE NOTICE 'Chave %', v_chave_nfe;
+
+
+			IF v_chave_nfe IS NULL THEN 
+				SELECT	
+					COUNT(*) as qt		
+				INTO 	
+					vExiste
+				FROM 
+					scr_notas_fiscais_imp nf
+				WHERE 
+					1=1
+					-- nf.id_conhecimento IS NULL
+					-- AND nf.chave_nfe = v_chave_nfe;	
+		-- 			AND ltrim(nf.numero_nota_fiscal,'0') = ltrim(v_numero_doc,'0')
+		-- 			AND ltrim(nf.serie_nota_fiscal,'0')  = ltrim(v_serie,'0')
+					AND nf.numero_nota_fiscal::integer = v_numero_doc::integer
+					AND ltrim(nf.serie_nota_fiscal,'0')  = ltrim(v_serie,'0')
+					AND nf.remetente_id = vCodigoCliente;
+			ELSE 
+				SELECT	
+					COUNT(*) as qt		
+				INTO 	
+					vExiste
+				FROM 
+					scr_notas_fiscais_imp nf
+				WHERE 
+					1=1
+					-- nf.id_conhecimento IS NULL
+					-- AND nf.chave_nfe = v_chave_nfe;	
+		-- 			AND ltrim(nf.numero_nota_fiscal,'0') = ltrim(v_numero_doc,'0')
+		-- 			AND ltrim(nf.serie_nota_fiscal,'0')  = ltrim(v_serie,'0')
+					AND nf.chave_nfe = v_chave_nfe;
+			END IF;
+				
 		EXCEPTION WHEN OTHERS  THEN
-			
+			RETURN 0;
 			vExiste = 0;
 		END;
 
 		IF COALESCE(vExiste,0) > 0 THEN 
 			
 			IF vExiste > 0 THEN 
-				RAISE NOTICE 'Nota Fiscal j· importada. Quantidade: % ', vExiste;
+				RAISE NOTICE 'Nota Fiscal ja importada. Quantidade: % ', vExiste;
 				INSERT INTO scr_notas_fiscais_nao_imp (
 					dados_parametros,
 					numero_nota_fiscal,
@@ -607,7 +637,7 @@ BEGIN
 					v_numero_doc,
 					v_serie,					
 					vCodigoCliente,
-					'Nota Fiscal j· importada. ' || COALESCE(v_chave_cte,'')
+					'Nota Fiscal ja importada. ' || COALESCE(v_chave_nfe,'')
 				);			
 				RETURN 0;
 			END IF;
@@ -618,7 +648,7 @@ BEGIN
 
 	--RAISE NOTICE 'NOTA NAO EXISTE';
 ------------------------------------------------------------------------------------------------------------------
---          	                       DADOS de quebra de Captcha autom·tico
+--          	                       DADOS de quebra de Captcha automatico
 ------------------------------------------------------------------------------------------------------------------	
 	vTermo = '#Captcha_img:';	
 	v_captcha_img = fpy_extrai_valor(v_inf,TRIM(vTermo));
@@ -717,7 +747,7 @@ BEGIN
 		c.id_cidade,
 		c.volume_no_item_nota,
 		c.fob_dirigido,
-		c.filial_responsavel,
+		c.filial_responsavel,		
 		c.cobrar_tx_coleta,
 		c.cobrar_tx_dce,
 		('{' || COALESCE(string_agg('"' || nome_parametro 
@@ -730,7 +760,7 @@ BEGIN
 		vCidadeRemetente,
 		vVolumeNoItemNota,
 		vFobDirigido,
-		v_filial_responsavel,
+		v_filial_responsavel,		
 		v_cobrar_tx_coleta,
 		v_cobrar_tx_dc,
 		vParametros,
@@ -778,20 +808,23 @@ BEGIN
 	vTermo = vParametros->>'TAG_MOTORISTA';	
 	
 	IF vTermo IS NOT NULL THEN 
+	
 		vNomeMotorista = fpy_extrai_valor(v_inf,TRIM(vTermo));
 
 		IF vNomeMotorista IS NOT NULL THEN 
+		
 			SELECT id_fornecedor
 			INTO vIdMotorista
 			FROM fornecedores
-			WHERE upper(nome_razao) = trim(UPPER(vNomeMotorista));			
+			WHERE upper(nome_razao) = trim(UPPER(vNomeMotorista));
+			
 		END IF;
 		
 		--RAISE NOTICE 'Natureza da Carga %', vTermo;
 	END IF;
 
 	
-	-- Pega o cÛdigo do pedido da NFE
+	-- Pega o c√≥digo do pedido da NFE
 	vTermo = vParametros->>'CODIGO_PEDIDO';	
 
 	--RAISE NOTICE 'Termo para Codigo do Pedido %', vTermo;
@@ -803,14 +836,14 @@ BEGIN
 	--RAISE NOTICE 'INFO NFE %', v_inf;
 	--RAISE NOTICE 'Codigo Pedido %', vCodigoPedido;
 
-	-- Pega o cÛdigo interno do frete se ele existir
+	-- Pega o c√≥digo interno do frete se ele existir
 	vTermo = vParametros->>'COD_INTERNO_FRETE';	
 	
 	IF vTermo IS NOT NULL THEN 
 		vCodInternoFrete = fpy_extrai_valor(v_inf,TRIM(vTermo));
 	END IF;
 
-	-- Pega o cÛdigo do pedido da NFE
+	-- Pega o c√≥digo do pedido da NFE
 	vTermo = vParametros->>'IGNORAR_NFE';	
 	
 	IF vTermo IS NOT NULL THEN 
@@ -836,7 +869,7 @@ BEGIN
 	END IF;
 
 
-	-- Pega o volume c˙bico da mercadoria se ala existir;
+	-- Pega o volume c√∫bico da mercadoria se ala existir;
 	vTermo = NULL;
 	vTermo = vParametros->>'VOLUME_CUBICO';
 	IF vTermo IS NOT NULL THEN 
@@ -849,7 +882,7 @@ BEGIN
 					'.')::numeric(16,6);
 	END IF;
 
-	-- Pega a Unidade de Medida que indica que o peso do produto È por tonelada;
+	-- Pega a Unidade de Medida que indica que o peso do produto √© por tonelada;
 	vUnidadeTonelada = NULL;
 	vUnidadeTonelada = vParametros->>'UNIDADE TONELADA NFE';
 	v_is_tonelada = false;
@@ -861,15 +894,15 @@ BEGIN
 	
 	--RAISE NOTICE 'Unidade Tonelada Cliente %', vUnidadeTonelada;
 	--RAISE NOTICE 'Unidade Tonelada NFe %', v_unidade;
-	--RAISE NOTICE '… tonelada? %', v_is_tonelada;
+	--RAISE NOTICE '√â tonelada? %', v_is_tonelada;
 
 	-- Set Natureza Carga
-	-- Pega o segmento na observaÁ„o da nfe e associa a uma natureza carga
+	-- Pega o segmento na observa√ß√£o da nfe e associa a uma natureza carga
 	v_tag_codigo_segmento = vParametros->>'COD_SEGMENTO_NFE';
 	IF v_tag_codigo_segmento IS NOT NULL THEN 
 		v_codigo_segmento = fpy_extrai_valor(v_inf,TRIM(v_tag_codigo_segmento));
 
-		--Se algum outro cliente usar, passar a utilizar no filtro o cÛdigo do cliente
+		--Se algum outro cliente usar, passar a utilizar no filtro o c√≥digo do cliente
 		SELECT 	natureza_carga 
 		INTO 	vNaturezaCarga
 		FROM	scr_notas_fiscais_segmento s
@@ -879,7 +912,7 @@ BEGIN
 			codigo_segmento = v_codigo_segmento;		
 	END IF;
 
-	--Se n„o tem natureza carga por segmento, verifia se tem pre-cadastrado no cliente	
+	--Se n√£o tem natureza carga por segmento, verifia se tem pre-cadastrado no cliente	
 	IF vNaturezaCarga IS NULL THEN 
 		SELECT 	natureza_da_carga 
 		INTO 	vNaturezaCarga 
@@ -887,7 +920,7 @@ BEGIN
 		WHERE 	codigo_cliente = vCodigoRemetente;
 	END IF;
 
-	--Se natureza carga ainda est· nulo, define com DIVERSOS
+	--Se natureza carga ainda esta nulo, define com DIVERSOS
 	IF vNaturezaCarga IS NULL THEN 
 		vNaturezaCarga = 'DIVERSOS';
 	END IF;	
@@ -916,6 +949,28 @@ BEGIN
 		vEmpresa = COALESCE(v_empresa_xml, vEmpresa);
 		vFilial = COALESCE(v_filial_xml, vFilial);
 	END IF; 
+
+
+	/*
+	
+	Encontra Filial Responsavel no cliente
+	
+	
+	SELECT cnpj INTO v_cnpj_emitente FROM filial WHERE codigo_empresa = v_empresa AND codigo_filial = v_filial;
+
+	v_empresa_operacional = v_empresa;
+	v_filial_operacional = v_filial;
+
+	SELECT COALESCE(codigo_empresa,v_empresa), COALESCE(codigo_filial,v_filial), COALESCE(serie_emitente,  vCteSerie)
+	INTO v_empresa, v_filial, vCteSerie
+	FROM filial
+	WHERE cnpj = vCnpjEmitente AND tipo_unidade IN (1,2) AND ativa = 1;
+
+
+	Encontra Filial emitente na Unidade
+
+	
+	*/
 		
 
 	SELECT 	(COALESCE(valor_parametro,'0'))::integer
@@ -1054,7 +1109,7 @@ BEGIN
 	
 	CLOSE vCursor;
 
-	--Se quem utiliza peso presumido padr„o tem cliente com peso n„o presumido
+	--Se quem utiliza peso presumido padr√£o tem cliente com peso n√£o presumido
 	IF vVolumeNoItemNota = 1 THEN 
 		v_volume_presumido =  v_volume_produtos;
 	END IF;
@@ -1076,64 +1131,17 @@ BEGIN
 	END;
 
 	CLOSE vCursor;
-------------------------------------------------------------------------------------------------------------------
--- 						Filial Responssavel
-------------------------------------------------------------------------------------------------------------------
-	SELECT 	valor_parametro::integer
-	INTO 	vUsaFilialResponsavel
-	FROM 	parametros 
-	WHERE 	cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_FILIAL_RESPONSAVEL_IMP_NFE';
-
-	vUsaFilialResponsavel = COALESCE(vUsaFilialResponsavel,0);
-
-	--OperaÁ„o Especial para Jetlog
-	--Alterado em 25/10/2016
-	IF 	trim(v_dest_cnpj_cpf) = '02060549000105' 
-		AND ltrim(trim(v_serie),'0') = '4' 
-		AND v_tp_nf = 0 
-		AND v_uf_rem = 'DF' THEN 
-		
-		vUsaFilialResponsavel = 0;
-		vFilialFixa = '003';
-		
-	ELSE
-		vFilialFixa = NULL;
-	END IF;
-
-	--RAISE NOTICE '------------------------------------------------------';
-	-- RAISE NOTICE 'v_tp_nf: %', v_tp_nf;
--- 	RAISE NOTICE 'v_dest_cnpj_cpf: %', v_dest_cnpj_cpf;
--- 	RAISE NOTICE 'v_uf_rem: %', v_uf_rem;
--- 	RAISE NOTICE 'vFilialFixa: %', vFilialFixa;
--- 	RAISE NOTICE '------------------------------------------------------';
-
-
-	--Se n„o usa filial responsavel na importaÁ„o, ent„o coloca NULL na variavel
-	IF vUsaFilialResponsavel = 0 THEN 
-		v_filial_responsavel = NULL;
-	END IF;
-	
-	--Se tiver Filial Responsavel faz uso da mesma
-	vFilial	= COALESCE(vFilialFixa,v_filial_responsavel, vFilial);
 
 ------------------------------------------------------------------------------------------------------------------
---                                         Verifica se emite CTE
+--                                         Emite CTE
 ------------------------------------------------------------------------------------------------------------------
-	SELECT 	valor_parametro::integer
-	INTO 	vEmiteCte
-	FROM 	parametros 
-	WHERE 	cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_EMITE_CONHECIMENTO';
 
+	vEmiteCte = 1;
 
 ------------------------------------------------------------------------------------------------------------------	
 -- 					Outras Informacoes
 ------------------------------------------------------------------------------------------------------------------
 
-	-- Serie do Cte
-	SELECT 	cte_serie 
-	INTO 	vSerieCte
-	FROM 	scr_cte_parametros
-	WHERE 	codigo_empresa = vEmpresa AND codigo_filial = vFilial;	
 
 	-- 1 - Se Modelo for 04, mudar para 01	
 	IF v_modelo = '04' THEN 
@@ -1204,14 +1212,14 @@ BEGIN
 	RAISE NOTICE 'Origem Filial %', vOrigemFilial;
 	RAISE NOTICE 'Tipo Documento Cliente %', vTipoDocumento;
 ------------------------------------------------------------------------------------------------------------------
---                                    Agente/redespacho destino padr„o
+--                                    Agente/redespacho destino padr√£o
 ------------------------------------------------------------------------------------------------------------------
 	SELECT 	id_agente_redespacho_padrao
 	INTO 	vCidadeAgentePadrao
 	FROM 	cidades
 	WHERE 	id_cidade = vCidadeDestino;
 
-	-- Cidade e Tabela do agente/redespacho padr„o 
+	-- Cidade e Tabela do agente/redespacho padr√£o 
 	IF  vCidadeAgentePadrao IS NOT NULL THEN 
 		SELECT 	f.id_cidade::integer, t.numero_tabela_frete
 		INTO 	v_id_cidade_origem_redespacho, v_tabela_redespacho
@@ -1225,7 +1233,7 @@ BEGIN
 --                                             FRETE CIF/FOB
 ------------------------------------------------------------------------------------------------------------------
 	-- 8 - Set Cif Fob e Cliente Pagador (Remetente, Destinatario ou Terceiro)
-	--Verifica a configuraÁ„o padr„o de modo de frete
+	--Verifica a configura√ß√£o padr√£o de modo de frete
 	-- 0 - Utiliza o que vem da nota
 	-- 1 - CIF
 	-- 2 - FOB
@@ -1233,7 +1241,7 @@ BEGIN
 	SELECT valor_parametro::integer 
 	INTO vModoFretePadrao
 	FROM parametros 
-	WHERE cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_MODO_FRETE_PADRAO';
+	WHERE cod_empresa = vEmpresa AND upper(cod_parametro) = 'PST_MODO_FRETE_PADRAO'; 
 
 	--RAISE NOTICE 'Modo Frete Padrao %', vModoFretePadrao;
 
@@ -1292,11 +1300,11 @@ BEGIN
 ------------------------------------------------------------------------------------------------------------------
 --                                         Tipo de Transporte
 ------------------------------------------------------------------------------------------------------------------	
-	-- Por Padr„o tipo de transporte È Normal
+	-- Por Padr√£o tipo de transporte √© Normal
 	vTipoTransporte = 1;
 
 	--Se emitente e destinatario da nfe for do mesmo grupo de empresa, 
-	--Definir tipo de transporte como TransferÍncia
+	--Definir tipo de transporte como Transfer√™ncia
 	IF char_length(trim(v_dest_cnpj_cpf)) > 11 THEN 
 		IF left(v_emit_cnpj_cpf,8) = left(v_dest_cnpj_cpf,8) THEN 
 			v_tipo_transporte_par = 6;
@@ -1331,7 +1339,7 @@ BEGIN
 -----------------------------------------------------------------------------------------------------------------
 -- 					Tipo Imposto
 -----------------------------------------------------------------------------------------------------------------
-	--Determina se o imposto È incluso ou n„o
+	--Determina se o imposto √© incluso ou n√£o
 	IF v_imposto_por_conta = 0 THEN 
 		v_imposto_incluso = 1;
 	ELSE
@@ -1365,7 +1373,7 @@ BEGIN
 		WHERE 	cliente.codigo_cliente = vCodigoPagador AND scr_tabelas.ativa = 1;		
 	END IF;
 
-	--Se for fob e o pagador n„o tem tabela procura pela tabela do remetente
+	--Se for fob e o pagador n√£o tem tabela procura pela tabela do remetente
 	IF vTabelaFrete IS NULL AND vFobDirigido = 1 THEN 
 		SELECT 	tabela_padrao 
 		INTO	vTabelaFrete
@@ -1431,7 +1439,7 @@ BEGIN
 
 	
 ------------------------------------------------------------------------------------------------------------------	
-----                                       Determina se È contribuinte
+----                                       Determina se √© contribuinte
 -----------------------------------------------------------------------------------------------------------------
 	IF trim(v_ie_dest) = '9' THEN
 		v_contribuinte = 0;
@@ -1526,7 +1534,21 @@ BEGIN
 	EXCEPTION WHEN OTHERS  THEN 
 		v_peso_transportado = 0.0000;		
 	END;
-	
+
+
+	--PROCESSAMENTO FILIAL RESPONSAVEL
+	SELECT empresa_responsavel, filial_responsavel
+	INTO v_empresa_responsavel, v_filial_responsavel
+	FROM cliente
+	WHERE cliente.codigo_cliente = vCodigoPagador;
+
+
+	-- Serie do Cte
+	SELECT 	cte_serie 
+	INTO 	vSerieCte
+	FROM 	scr_cte_parametros
+	WHERE 	codigo_empresa = COALESCE(v_empresa_responsavel,vEmpresa) AND codigo_filial = COALESCE(v_filial_responsavel, vFilial);	
+				
 -----------------------------------------------------------------------------------------------------------------
 --- 					GRAVACAO DOS DADOS  
 -----------------------------------------------------------------------------------------------------------------
@@ -1603,7 +1625,10 @@ BEGIN
 			total_frete_origem, --87
 			data_previsao_entrega,--, --88
 			nao_romaneia, --89
-			id_motorista --90
+			id_motorista, --90
+			empresa_operacional, --91
+			filial_operacional, --92
+			tem_filial_responsavel --93
 		)
 		VALUES 
 		(
@@ -1612,8 +1637,8 @@ BEGIN
 			vTipoCtrcCte, -- 7
 			v_tipo_transporte_par, --8
 			LEFT(vNaturezaCarga,30), --9
-			vEmpresa, --12
-			vFilial, --13
+			COALESCE(v_empresa_responsavel,vEmpresa), --12
+			COALESCE(v_filial_responsavel, vFilial), --13
 			vCifFob, --14
 			vCodigoRemetente, --15
 			COALESCE(vCidadeOrigem), --16
@@ -1676,7 +1701,10 @@ BEGIN
 			v_valor_cte_origem, --87
 			v_previsao_entrega,--, --88
 			CASE WHEN COALESCE(v_id_romaneio,0) < 0 THEN 1 ELSE 0 END, --89 
-			vIdMotorista --90
+			vIdMotorista, --90
+			COALESCE(v_empresa_responsavel,vEmpresa), --91
+			COALESCE(v_filial_responsavel, vFilial), --92
+			CASE WHEN v_usa_filial_xml = 1 THEN 1  WHEN v_empresa_responsavel IS NOT NULL THEN 1 ELSE 0 END --93
 
 		) RETURNING id_nota_fiscal_imp;
 	

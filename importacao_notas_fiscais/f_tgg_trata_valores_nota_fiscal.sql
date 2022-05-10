@@ -9,6 +9,20 @@ DECLARE
 	hora_corte_expedicao integer;
 BEGIN
 
+	--NAO EXECUTA TRIGGER
+	IF fp_get_session('nao_executa_trigger') IS NOT NULL AND TG_OP = 'UPDATE' THEN 
+	
+		IF TG_WHEN = 'AFTER' THEN 
+			RETURN NULL;
+		END IF;
+
+		IF TG_WHEN = 'BEFORE' THEN 
+			RETURN NEW;
+		END IF;
+
+	END IF;
+
+
 	IF NEW.numero_nota_fiscal IS NOT NULL THEN 
 		NEW.numero_nota_fiscal = lpad(trim(translate(NEW.numero_nota_fiscal,'"','')),9,'0');
 	END IF;
@@ -60,17 +74,12 @@ BEGIN
 	IF NEW.id_pre_fatura_entrega IS NULL AND NEW.cod_interno_frete IS NOT NULL THEN 
 		NEW.vl_frete_peso = 0.00;
 	END IF;
-
-	IF TG_OP = 'UPDATE' THEN 
-		IF COALESCE(NEW.id_nota_fiscal_redespachador,-1) = 0 AND OLD.id_nota_fiscal_redespachador IS NOT NULL THEN 
-			NEW.id_nota_fiscal_redespachador = OLD.id_nota_fiscal_redespachador;			
-		END IF;
-
-	END IF;
+	
+	NEW.empresa_operacional = COALESCE(NEW.empresa_operacional, NEW.empresa_emitente);
+	NEW.filial_operacional = COALESCE(NEW.filial_operacional, NEW.filial_emitente);
+	
 	RETURN NEW;
 END;
 $BODY$
   LANGUAGE plpgsql VOLATILE
   COST 100;
-ALTER FUNCTION public.f_tgg_trata_valores_nota_fiscal()
-  OWNER TO softlog_dng;

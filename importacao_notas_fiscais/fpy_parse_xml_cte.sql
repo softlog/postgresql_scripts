@@ -76,27 +76,54 @@ p['part_email'] = xml['cteProc']['CTe']['infCte']['dest'].get('email')
 lst_part.append(p)
 
 #Dados do Emitente/Transportador
-p = dict()
 try:
-    p['part_cnpj_cpf'] = xml['cteProc']['CTe']['infCte']['emit']['CNPJ']
-except:    
-    p['part_cnpj_cpf'] = xml['cteProc']['CTe']['infCte']['emit']['CPF']
+    tomador = xml['cteProc']['CTe']['infCte']['ide']['toma4'].get('toma')
 
-pagador_cnpj = p['part_cnpj_cpf']
+    p = dict()
+    try:
+        p['part_cnpj_cpf'] = xml['cteProc']['CTe']['infCte']['ide']['toma4']['CNPJ']
+    except:    
+        p['part_cnpj_cpf'] = xml['cteProc']['CTe']['infCte']['ide']['toma4']['CPF']
 
-p['part_nome'] = xml['cteProc']['CTe']['infCte']['emit']['xNome'].replace('&','e')
-p['part_logradouro'] = xml['cteProc']['CTe']['infCte']['emit']['enderEmit']['xLgr'].replace('&','e')
-p['part_numero'] = xml['cteProc']['CTe']['infCte']['emit']['enderEmit']['nro']
-p['part_bairro'] = xml['cteProc']['CTe']['infCte']['emit']['enderEmit']['xBairro'].replace('&','e')
-p['part_cod_mun'] = xml['cteProc']['CTe']['infCte']['emit']['enderEmit']['cMun']
+    pagador_cnpj = p['part_cnpj_cpf']
 
-pagador_cod_mun = p['part_cod_mun']
-p['part_uf'] = xml['cteProc']['CTe']['infCte']['emit']['enderEmit']['UF']
-p['part_cep'] = xml['cteProc']['CTe']['infCte']['emit']['enderEmit'].get('CEP')
-p['part_pais'] = xml['cteProc']['CTe']['infCte']['emit']['enderEmit'].get('xPais')
-p['part_fone'] = xml['cteProc']['CTe']['infCte']['emit'].get('fone')
-p['part_ie'] = xml['cteProc']['CTe']['infCte']['emit']['IE']
-lst_part.append(p)
+    p['part_nome'] = xml['cteProc']['CTe']['infCte']['ide']['toma4']['xNome'].replace('&','e')
+    p['part_logradouro'] = xml['cteProc']['CTe']['infCte']['ide']['toma4']['enderToma']['xLgr'].replace('&','e')
+    p['part_numero'] = xml['cteProc']['CTe']['infCte']['ide']['toma4']['enderToma'].get('nro')
+    p['part_bairro'] = xml['cteProc']['CTe']['infCte']['ide']['toma4']['enderToma']['xBairro'].replace('&','e')
+    p['part_cod_mun'] = xml['cteProc']['CTe']['infCte']['ide']['toma4']['enderToma']['cMun']
+
+    pagador_cod_mun = p['part_cod_mun']
+    p['part_uf'] = xml['cteProc']['CTe']['infCte']['ide']['toma4']['enderToma']['UF']
+    p['part_cep'] = xml['cteProc']['CTe']['infCte']['ide']['toma4']['enderToma'].get('CEP')
+    p['part_pais'] = xml['cteProc']['CTe']['infCte']['ide']['toma4']['enderToma'].get('xPais')    
+    p['part_ie'] = xml['cteProc']['CTe']['infCte']['ide']['toma4'].get('IE')
+    lst_part.append(p)    
+
+    
+except:
+    p = dict()
+    try:
+        p['part_cnpj_cpf'] = xml['cteProc']['CTe']['infCte']['emit']['CNPJ']
+    except:    
+        p['part_cnpj_cpf'] = xml['cteProc']['CTe']['infCte']['emit']['CPF']
+
+    pagador_cnpj = p['part_cnpj_cpf']
+
+    p['part_nome'] = xml['cteProc']['CTe']['infCte']['emit']['xNome'].replace('&','e')
+    p['part_logradouro'] = xml['cteProc']['CTe']['infCte']['emit']['enderEmit']['xLgr'].replace('&','e')
+    p['part_numero'] = xml['cteProc']['CTe']['infCte']['emit']['enderEmit']['nro']
+    p['part_bairro'] = xml['cteProc']['CTe']['infCte']['emit']['enderEmit']['xBairro'].replace('&','e')
+    p['part_cod_mun'] = xml['cteProc']['CTe']['infCte']['emit']['enderEmit']['cMun']
+
+    pagador_cod_mun = p['part_cod_mun']
+    p['part_uf'] = xml['cteProc']['CTe']['infCte']['emit']['enderEmit']['UF']
+    p['part_cep'] = xml['cteProc']['CTe']['infCte']['emit']['enderEmit'].get('CEP')
+    p['part_pais'] = xml['cteProc']['CTe']['infCte']['emit']['enderEmit'].get('xPais')
+    p['part_fone'] = xml['cteProc']['CTe']['infCte']['emit'].get('fone')
+    p['part_ie'] = xml['cteProc']['CTe']['infCte']['emit']['IE']
+    lst_part.append(p)    
+
 
 #dados da Nota Fiscal
 
@@ -139,11 +166,30 @@ if type(inf_c) == type([]):
     lista_inf = [x for x in inf_c]
 
 for inf in lista_inf:
-     if peso_carga == Decimal(0.00) and inf['tpMed'].upper().find('PESO') > -1 and peso_carga == Decimal(0.00):
-        peso_carga = Decimal(inf.get('qCarga'))
+     #plpy.notice(str(inf))
+    if inf['tpMed'].upper().find('PESO AFERIDO') > -1:   
+        vl = inf.get('qCarga')
+        if type(vl) == type([]):
+            vl = vl[0]
+        peso_carga = Decimal(vl)
 
-     if volume_carga == Decimal(0.00) and inf['tpMed'].upper().find('VOLUME') > -1:
-        volume_carga = Decimal(inf.get('qCarga'))
+
+    if peso_carga == Decimal(0.00) and inf['tpMed'].upper().find('PESO') > -1 and peso_carga == Decimal(0.00):
+        vl = inf.get('qCarga')
+        if type(vl) == type([]):
+            vl = vl[0]
+
+        #plpy.notice(inf.get('qCarga'))
+        peso_carga = Decimal(vl)
+        
+    if volume_carga == Decimal(0.00) and inf['tpMed'].upper().find('VOLUME') > -1:
+        #plpy.notice(inf.get('qCarga'))
+        vl = inf.get('qCarga')
+        if type(vl) == type([]):
+            vl = vl[0]
+        
+        volume_carga = Decimal(vl)
+        
 
 notas_fiscais = []
 for chave in lista_nfe:
@@ -153,7 +199,7 @@ for chave in lista_nfe:
     ##Chave do CTe
     try:
         n['chave_cte'] = xml['cteProc']['protCTe']['infProt']['chCTe']
-    except:
+    except: 
         try:
             n['chave_cte'] = xml['cteProc']['CTe']['infCte']['@Id'][-44:]
         except:

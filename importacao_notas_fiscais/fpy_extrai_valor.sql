@@ -48,8 +48,8 @@ SELECT fpy_extrai_valor('PGTO APOLICE SEGURO N 3002651 - INDIANA SEGUROS CNPJ: {
 'CNPJ[^0-9]+([0-9\.\-/]+)[^0-9]');
 
 SELECT * FROM cliente_parametros
-SELECT fpy_extrai_valor('PEDIDO 200669. ISENTO DE ICMS CONF Art. 7 Inciso 25 Alinea F do anexo 9 DO RICMS. -  - TORTA DE ALGODAO ENSACADA 40KG - TORTA DE ALGODAO CONCENTRAL ENSACADA 40KG',
-'(ALGODAO CONCENTRAL ENSACADA)');
+SELECT fpy_extrai_valor('#R1P7V5; ITEM 4 Imposto Recolhido por Substituicao Tributaria ITEM 4 ICMS-ST retido por operacao anterior base: 242,75 valor: 24,50 Pedido: 111789 Setor de Cobranca: (11)4934-1669 / 4934-1673 / 4934-1671 QUALQUER INCONFORMIDADE NA ENTREGA, ENTRE IMEDIATAMENTE EM CONTATO COM NOSSO POS-VENDAS NO NUMERO (11) 4934-1703 Rota....: 11 Cubagem: 0,16 Setor de Cobranca: (11)4934-1669',
+'Cubagem:');
 
 
 SELECT * FROM scr_natureza_carga WHERE natureza_carga = 'ALGODAO CONCENTRAL ENSACADA'

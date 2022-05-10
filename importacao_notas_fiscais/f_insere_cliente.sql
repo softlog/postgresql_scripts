@@ -175,15 +175,16 @@ BEGIN
 			WHERE cnpj_cpf = p_cnpj_cpf;
 		
 	
-
+	RAISE NOTICE 'DESTINATARIO %', p_cnpj_cpf;
 	FETCH vCursor INTO vExiste, vEndereco, vIE, vRazao;
 
 	CLOSE vCursor;
-
+		
 			
 
 	IF (vExiste = 0) THEN 		
-
+		RAISE NOTICE 'NAO EXISTE';
+		
 		IF p_busca_mun_por_cep = 1 THEN 
 			SELECT 
 				cod_ibge
@@ -297,15 +298,15 @@ BEGIN
 					     )
 				VALUES (  
 						trim(p_cnpj_cpf), --1
-						fpy_limpa_caracteres(upper(left(p_nome_cliente,50))), --2
-						fpy_limpa_caracteres(upper(left(p_nome_cliente,50))), --3
+						replace(fpy_limpa_caracteres(upper(left(p_nome_cliente,50))),'''',''), --2
+						replace(fpy_limpa_caracteres(upper(left(p_nome_cliente,50))),'''',''), --3
 						upper(COALESCE(left(p_ie,18),'')), --4
 						COALESCE(vDDD,''), --5
 						COALESCE(p_fone,''), --6
 						trim(p_cnpj_cpf), --7
-						fpy_limpa_caracteres(upper(COALESCE(LEFT(p_lgr,100),''))), --8
+						replace(fpy_limpa_caracteres(upper(COALESCE(LEFT(p_lgr,100),''))),'''',''), --8
 						COALESCE(LEFT(p_nro,6),''), --9
-						fpy_limpa_caracteres(upper(COALESCE(LEFT(p_bairro,30),''))), --10
+						replace(fpy_limpa_caracteres(upper(COALESCE(LEFT(p_bairro,30),''))),'''',''), --10
 						COALESCE(trim(p_cep),''), --11
 						vIdCidade, --12
 						vTipoCliente, --13
@@ -386,7 +387,8 @@ BEGIN
 			END IF;
 		END IF;	
 	ELSE
-
+		RAISE NOTICE 'Existe';
+		
 		IF LEFT(trim(vEndereco),100) = fpy_limpa_caracteres(upper(COALESCE(LEFT(p_lgr,100),'')))
 			AND trim(vIE) = upper(COALESCE(left(p_ie,18),'')) 
 			AND trim(vRazao) = fpy_limpa_caracteres(upper(left(p_nome_cliente,50)))
@@ -450,13 +452,13 @@ BEGIN
 		--RAISE NOTICE 'Cliente ja esta no sistema %', p_nome_cliente;	
 		OPEN vCursor FOR 
 		UPDATE cliente SET
-			nome_cliente  =  fpy_limpa_caracteres(upper(left(p_nome_cliente,50))), --2
-			nome_fantasia = fpy_limpa_caracteres(upper(left(p_nome_cliente,50))), --3
+			nome_cliente  =  replace(fpy_limpa_caracteres(upper(left(p_nome_cliente,50))),'''',''), --2
+			nome_fantasia = replace(fpy_limpa_caracteres(upper(left(p_nome_cliente,50))),'''',''), --3
 			ddd = COALESCE(vDDD,''), --5
 			telefone = COALESCE(p_fone,''), --6				
-			endereco = fpy_limpa_caracteres(upper(COALESCE(LEFT(p_lgr,100),''))), --8
+			endereco = replace(fpy_limpa_caracteres(upper(COALESCE(LEFT(p_lgr,100),''))),'''',''), --8
 			numero=COALESCE(LEFT(p_nro,6),''), --9
-			bairro=fpy_limpa_caracteres(upper(COALESCE(LEFT(p_bairro,30),''))), --10
+			bairro= replace(fpy_limpa_caracteres(upper(COALESCE(LEFT(p_bairro,30),''))),'''',''), --10
 			cep=COALESCE(trim(p_cep),''), --11
 			id_cidade = vIdCidade, --12				
 			ddd_cliente = NULLIF(vDDD,''), --21

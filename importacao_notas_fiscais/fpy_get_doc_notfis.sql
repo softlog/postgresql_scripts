@@ -1,5 +1,6 @@
 -- Function: public.fpy_get_doc_notfis(text)
-
+-- SELECT fpy_get_doc_notfis(doc_xml), doc_xml FROM scr_doc_integracao ORDER BY id_doc_integracao DESC LIMIT 10
+--SELECT * FROM cliente WHERE cnpj_cpf = '28287523000180'
 CREATE OR REPLACE FUNCTION public.fpy_get_doc_notfis(arquivo text)
   RETURNS json AS
 $BODY$
@@ -179,8 +180,7 @@ $BODY$
 
     reg_311 = DocParser.make_parser((3,14,15,40,35,9,9,8,40,67))
 
-    reg_311_IDHEX = DocParser.make_parser((3,14,15,40,35,9,9,8,40,17,15,238))
-  
+    reg_311_IDHEX = DocParser.make_parser((3,14,15,40,35,9,9,8,40,17,15,238))  
     
     
     # Customizacao SIMPRESS
@@ -252,10 +252,13 @@ $BODY$
     reg_313_IDHEX = DocParser.make_parser((3,15,7,1,1,1,1,3,9,8,14,15,7,15,7,5,1,
                                       1,15,15,7,1,15, 15, 15, 15, 2, 44, 44))
 
+    reg_313_IDHEX2 =  DocParser.make_parser((3,15,7,1,1,1,1,3,8,8,15,15,7,15,7,5,1,
+                                      1,15,15,7,1,15,15,15,15,1,12,12,1,2, 2, 2, 2, 2, 7, 44, 44))
 
+    
 
     reg_313_intelipost = DocParser.make_parser((3,15,7,1,1,1,1,3,8,8,15,15,7,15,7,5,1,
-                                      1,15,15,7,1,15,15,15,15,1,12,12,1,44,18))
+                                      1,15,15,7,1,15,15,15,15,1,12,12,1,44,44))
 
 
     reg_333 = DocParser.make_parser((3,4,1,8,4,8,4,15,1,10,26,26,26,26,15,5,
@@ -279,6 +282,9 @@ $BODY$
 
     linhas = arquivo.split('\n')
 
+    
+
+    
     #Faz o parser de cada linha, de acordo com o seu tipo de registro
     registros = []
     linhas2 = []
@@ -289,6 +295,7 @@ $BODY$
         #plpy.notice('Linha %i %i',i,linha)
         reg = linhas[i]  
         #plpy.notice(reg)      
+
         while 1:
             if reg.find("\r\r") == -1:
                 break
@@ -313,11 +320,19 @@ $BODY$
 
     i = -1    
     for linha in linhas2: 
+        plpy.execute("INSERT INTO debug (descricao, valor) VALUES ('linha','%s')" % linha)
+        plpy.execute("INSERT INTO debug (descricao, valor) VALUES ('tamanho','%i')" % (len(linha)))    
+        
         i = i + 1
         id_reg = linha[0:3]
-
+        
         if id_reg == '000':
+            reg_embarcador = linha[0:10]
             registros.append(reg_000(linha))
+            if reg_embarcador == '000RODOFAR':
+                pagador_fixo = '28287523000180'
+            else:
+                pagador_fixo = None
 
         elif id_reg == '310':
             registros.append(reg_310(linha))
@@ -327,24 +342,35 @@ $BODY$
             emb_311_idhex = False
             if len(linha) == 444:                
                 emb_311_idhex = True
-            
+                #plpy.notice('IDHEX')
+            plpy.notice(reg_embarcador)
+            if reg_embarcador == '000RODOFAR':
+                            
+                emb_311_idhex = True
+                
             if linha[3:11] in  ('07432517') or tamanho == 303 and not emb_311_idhex:
+                #plpy.notice(linha)
+                #plpy.notice('Entrando Nao IDHEX')
                 emb_spss = True
             else:                
                 emb_spss = False
 
                 
 
+            
             if tamanho in (346,347):
                 emb_softlog = True
             else:
                 emb_softlog = False
 
             if emb_softlog:
+                plpy.notice('311 Softlog')
                 registros.append(reg_311_SPSS(linha))
             elif emb_311_idhex: 
+                plpy.notice('311 IDHEX')
                 registros.append(reg_311_IDHEX(linha))
             else:
+                plpy.notice('311 Normal')
                 registros.append(reg_311(linha))
 
             if linha[3:11] in ('21902826'):
@@ -354,7 +380,7 @@ $BODY$
 
         elif id_reg == '312':
             emb_jeu = False;
-            #plpy.notice(len(linha))
+            plpy.notice(len(linha))
             if len(linha)==341:
                 plpy.notice('Jeunesse')                   
                 emb_jeu = True
@@ -369,27 +395,37 @@ $BODY$
                 plpy.notice('360')
                 registros.append(reg_312_360(linha))
             else:
+                plpy.notice('312 Normal')
                 #plpython.notice(linha)
                 registros.append(reg_312(linha))
 
         elif id_reg == '313':
             #plpy.notice('Funcionando aqui inicio')
-
+            #plpy.notice(len(linha))
             emb_pratti = False
             emb_luche = False
             emb_rc = False
             emb_softlog_parceiro = False
             emb_idhex = False
+            emb_idhex2 = False
             emb_intelipost = False
-            
-            if linha[264:272] == '23979770':
-                #plpy.notice('IDHEX')
+
+            if len(linha) == 344:
+                plpy.notice('IDHEX 2')
+                emb_idhex2 = True
+                registros.append(reg_313_IDHEX2(linha))
+            elif linha[264:272] == '23979770' or emb_311_idhex:
+                plpy.notice('IDHEX')
                 emb_idhex = True
                 registros.append(reg_313_IDHEX(linha))
             elif len(linha) == 303:
                 emb_spss = True
                 #plpy.notice('LEIAUTE SIMPRESS')
                 registros.append(reg_313_SPSS(linha))           
+            elif len(linha) == 259:
+                emb_idhex2 = True
+                #plpy.notice('LEIAUTE SIMPRESS')
+                registros.append(reg_313_IDHEX2(linha))           
             elif len(linha)== 420:                
                 registros.append(reg_313_softlog_parceiro(linha))           
                 emb_softlog_parceiro = True
@@ -654,7 +690,11 @@ $BODY$
             n['nfe_pagador_cnpj_cpf'] = nfe_pagador_cnpj_cpf
             #plpy.notice(str(len(r)))
 
-            if emb_idhex:
+            if emb_idhex2:
+                plpy.notice(r)
+                n['nfe_chave_nfe'] = r[36]
+                n['nfe_chave_cte'] = r[37]
+            elif emb_idhex:
                 plpy.notice(r)
                 plpy.notice(r[28])
                 n['nfe_chave_nfe'] = r[27]
@@ -738,7 +778,7 @@ $BODY$
             ##informacoes gerais
 
             de = r[9]
-            plpy.notice(de)
+            #plpy.notice(de)
             n['nfe_data_emissao'] = de[-4:] + '-' + de[2:4] + '-' + de[0:2]
             n['nfe_numero_doc'] = r[8]
             n['nfe_modelo'] = '55'
@@ -808,7 +848,9 @@ $BODY$
             except:
                 print(traceback.format_exc())         
 
-                 
+            if pagador_fixo is not None:
+                n['nfe_pagador_cnpj_cpf'] = '28287523000180'
+                  
             nfs.append(n)
             lst_notas.append(n)
 

@@ -42,6 +42,7 @@ DECLARE
 	v_importa_para_crm integer;
 	vEmpresa text;
 	v_id_contato integer;
+	v_id_doc_anterior integer;
 
 
 BEGIN
@@ -54,6 +55,15 @@ BEGIN
 		i = fpy_read_epta_sga(NEW.doc_xml);
 		RETURN NEW;		
 	END IF;
+
+	IF NEW.tipo_doc = 1001 THEN 
+		NEW.doc_xml = fpy_decode_base64(NEW.doc_xml);
+		i = fpy_read_portal_ctf(NEW.doc_xml);
+		RETURN NEW;		
+	END IF;
+
+
+
 
 	IF NEW.tipo_doc = 300 THEN 
 
@@ -182,7 +192,7 @@ BEGIN
 		NEW.doc_xml = replace(NEW.doc_xml, E'\xEF\xBB\xBF','');
 	END IF;
 
-        RAISE NOTICE '%', NEW.doc_xml;
+        --RAISE NOTICE '%', NEW.doc_xml;
 	
 	--Verifica se eh EDI tipo Farmix
 	IF position('CHAVENFE' in NEW.doc_xml) > 0 THEN 
@@ -268,13 +278,14 @@ BEGIN
 			OR left(NEW.doc_xml,6) = 'VER002' --Doria Normal
 			OR fd_valida_cnpj_cpf(substr(NEW.doc_xml,275,14)) = 1 --Doria Profarma
 		THEN 
-
-			NEW.tipo_doc = 8;		
+			IF LEFT(NEW.doc_xml,5) <> '<?xml' THEN 
+				NEW.tipo_doc = 8;		
+			END IF;
 
 		END IF;		
 	END IF;
 
-	RAISE NOTICE 'Tipo Documento: %', NEW.tipo_doc;
+	RAISE NOTICE 'Tipo Documento Identificado: %', NEW.tipo_doc;
 
 	-- 2) Documento tipo XML da NFe
 	IF NEW.tipo_doc = 2 THEN 
@@ -283,7 +294,7 @@ BEGIN
                 r = fp_set_session('pst_tipo_especifico_importacao',LEFT(log,50));
 		v_dados = fpy_parse_xml_nfe(NEW.doc_xml);	        
 	
-		RAISE NOTICE 'Dados %', v_dados;
+		--RAISE NOTICE 'Dados %', v_dados;
 		
 		IF v_dados IS NOT NULL THEN 
 		
@@ -314,7 +325,7 @@ BEGIN
 				--RAISE NOTICE 'Chave %', NEW.chave_doc;
 				
 				IF NEW.chave_doc IS NULL THEN 
-					--RAISE NOTICE 'Não grava o registro, sem chave';
+					--RAISE NOTICE 'NÃ£o grava o registro, sem chave';
 					r = fp_set_session('pst_tipo_especifico_importacao',log_original);
 					UPDATE scr_doc_integracao SET id_doc_integracao = id_doc_integracao 
 					WHERE chave_doc = NEW.chave_doc AND id_doc_integracao <> NEW.id_doc_integracao; 
@@ -322,17 +333,17 @@ BEGIN
 				END IF;
 				
 				IF TG_OP = 'INSERT' AND ((v_dados->>'dados_nota')::json)->>'nfe_pagador_cnpj_cpf' IS NULL THEN
-					--RAISE NOTICE 'Não grava o registro, pois já existe e não é subcontrato';
+					--RAISE NOTICE 'NÃ£o grava o registro, pois jÃ¡ existe e nÃ£o Ã© subcontrato';
 
 					SELECT count(*) 
 					INTO v_qt 
 					FROM scr_doc_integracao 
 					WHERE chave_doc = NEW.chave_doc;
 
-					--RAISE NOTICE 'Qt de Notas %', v_qt;
+					RAISE NOTICE 'Qt de Notas %', v_qt;
 
 					IF v_qt > 0 THEN 
-						UPDATE scr_doc_integracao SET id_doc_integracao = id_doc_integracao WHERE chave_doc = NEW.chave_doc;
+						--UPDATE scr_doc_integracao SET id_doc_integracao = id_doc_integracao WHERE chave_doc = NEW.chave_doc;
 						r = fp_set_session('pst_tipo_especifico_importacao',log_original);
 						RETURN NULL;
 					END IF;
@@ -351,7 +362,7 @@ BEGIN
 					IF v_qt > 0 THEN 
 						
 						r = fp_set_session('pst_tipo_especifico_importacao',log_original);
-						UPDATE scr_doc_integracao SET id_doc_integracao = id_doc_integracao WHERE chave_doc = NEW.chave_doc;
+						--UPDATE scr_doc_integracao SET id_doc_integracao = id_doc_integracao WHERE chave_doc = NEW.chave_doc;
 						RETURN NULL;
 						
 					END IF;
@@ -371,6 +382,8 @@ BEGIN
 		ELSE
 			INSERT INTO debug (descricao,valor) VALUES ('Erro de XML',NEW.doc_xml);
 		END IF;       
+
+		
 		
 	END IF;
 
@@ -462,30 +475,51 @@ BEGIN
 		t = json_array_length(v_participantes)-1;
 		
 		FOR i IN 0..t LOOP	
-			RAISE NOTICE 'Participante %', (v_participantes->>i)::json;
+			--RAISE NOTICE 'Participante %', (v_participantes->>i)::json;
 			v_destinatario = f_insere_cliente((v_participantes->>i)::json);			
 		END LOOP;
 
 		
 		v_notas_fiscais = (v_dados->>'nfs')::json;
 
+		--INSERT INTO debug (descricao, valor) VALUES ('Notas Fiscais ' || NEW.id_doc_integracao::text, v_notas_fiscais::text);
+
 		t = json_array_length(v_notas_fiscais)-1;
 				
 		FOR i IN 0..t LOOP				
-			
-			v_nf = f_insere_nf((v_notas_fiscais->>i)::json);
-			NEW.chave_doc = (((v_notas_fiscais->>i)::json)::json)->>'nfe_chave_nfe';
-			
-			RAISE NOTICE 'Nota Fiscal %', NEW.chave_doc;			
-			INSERT INTO scr_doc_integracao_nfe (id_doc_integracao, id_nota_fiscal_imp, chave_doc)
-			VALUES (NEW.id_doc_integracao, v_nf, (((v_notas_fiscais->>i)::json)::json)->>'nfe_chave_nfe');
 
-			IF NEW.tipo_doc = 14 THEN 
-				UPDATE scr_notas_fiscais_imp SET 
-					id_ocorrencia = 302,
-					data_ocorrencia = now()
-				WHERE id_nota_fiscal_imp = v_nf;
+			NEW.chave_doc = (((v_notas_fiscais->>i)::json)::json)->>'nfe_chave_nfe';
+
+			--SELECT count(*) FROM scr_doc_integracao_nfe 
+			--SELECT * FROM debug ORDER BY 1 DESC 
+			SELECT id_nota_fiscal_imp, id_doc_integracao
+ 			INTO v_nf, v_id_doc_anterior
+ 			FROM 
+ 				scr_doc_integracao_nfe
+ 			WHERE chave_doc = NEW.chave_doc
+ 			ORDER BY 1 LIMIT 1;
+
+			IF v_nf IS NULL THEN 
+			
+				v_nf = f_insere_nf((v_notas_fiscais->>i)::json);
+				--INSERT INTO debug (descricao, valor) VALUES ('NF ' || NEW.id_doc_integracao, v_nf::text);
+				IF NEW.tipo_doc = 14 THEN 
+					UPDATE scr_notas_fiscais_imp SET 
+						id_ocorrencia = 302,
+						data_ocorrencia = now()
+					WHERE id_nota_fiscal_imp = v_nf;
+				END IF;
+
+				--RAISE NOTICE 'Nota Fiscal %', NEW.chave_doc;			
+				
+			ELSE
+				RAISE NOTICE 'NFe ja existe %',NEW.chave_doc;
 			END IF;
+
+			INSERT INTO scr_doc_integracao_nfe (id_doc_integracao, id_nota_fiscal_imp, chave_doc, id_doc_integracao_anterior)
+			VALUES (NEW.id_doc_integracao, v_nf, (((v_notas_fiscais->>i)::json)::json)->>'nfe_chave_nfe', v_id_doc_anterior);
+			
+
 		
 		END LOOP;
 		
