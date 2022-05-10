@@ -1,0 +1,1 @@
+ALTER TABLE scr_ciot ADD COLUMN viagem_padrao integer DEFAULT 1;

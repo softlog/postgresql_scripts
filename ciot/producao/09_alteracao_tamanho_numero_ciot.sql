@@ -1,0 +1,1 @@
+ALTER TABLE scr_ciot ALTER COLUMN numero_ciot TYPE character(30);

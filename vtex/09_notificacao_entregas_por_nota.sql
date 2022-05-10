@@ -1,0 +1,2 @@
+INSERT INTO msg_notificacao (id_notificacao, ativo, notificacao, especie_notificacao, remetente_email, notifica_cliente, notifica_usuario, notifica_fornecedor)
+VALUES (4, 1, 'Ocorrências de Entrega Por Nota Fiscal', 1, 'softlog@softlog.eti.br',1,0,0);

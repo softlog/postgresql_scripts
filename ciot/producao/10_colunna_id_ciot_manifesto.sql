@@ -1,0 +1,1 @@
+ALTER TABLE scr_manifesto ADD COLUMN id_ciot integer;

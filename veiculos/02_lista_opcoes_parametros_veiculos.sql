@@ -1,0 +1,1 @@
+ALTER TABLE veiculo_tipo_parametros ADD COLUMN lista_opcoes TEXT;
