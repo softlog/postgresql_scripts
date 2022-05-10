@@ -1,0 +1,1 @@
+ALTER TABLE public.com_produtos_temp DROP CONSTRAINT com_produtos_temp_xml_nfe_id_fkey;
